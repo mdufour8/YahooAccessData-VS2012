@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Express 2012 for Windows Desktop
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "howto_net_linear_least_squares", "howto_net_linear_least_squares.vbproj", "{00FD212C-2DD5-4073-9527-7B20C6E505BB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{00FD212C-2DD5-4073-9527-7B20C6E505BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00FD212C-2DD5-4073-9527-7B20C6E505BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{00FD212C-2DD5-4073-9527-7B20C6E505BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{00FD212C-2DD5-4073-9527-7B20C6E505BB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

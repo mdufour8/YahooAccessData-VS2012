@@ -1,0 +1,1645 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+    <Schema Namespace="StockYahooData.Store" Alias="Self" Provider="System.Data.SqlClient" ProviderManifestToken="2008" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+  <EntityContainer Name="StockYahooDataStoreContainer">
+    <EntitySet Name="FinancialHighlights" EntityType="StockYahooData.Store.FinancialHighlights" store:Type="Tables" Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+    <EntitySet Name="Industries" EntityType="StockYahooData.Store.Industries" store:Type="Tables" Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+    <EntitySet Name="MarketQuoteDatas" EntityType="StockYahooData.Store.MarketQuoteDatas" store:Type="Tables" Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+    <EntitySet Name="QuoteValues" EntityType="StockYahooData.Store.QuoteValues" store:Type="Tables" Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+    <EntitySet Name="Records" EntityType="StockYahooData.Store.Records" store:Type="Tables" Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+    <EntitySet Name="Reports" EntityType="StockYahooData.Store.Reports" store:Type="Tables" Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+    <EntitySet Name="Sectors" EntityType="StockYahooData.Store.Sectors" store:Type="Tables" Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+    <EntitySet Name="SplitFactors" EntityType="StockYahooData.Store.SplitFactors" store:Type="Tables" Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+    <EntitySet Name="Stocks" EntityType="StockYahooData.Store.Stocks" store:Type="Tables" Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+    <EntitySet Name="TradeInfoes" EntityType="StockYahooData.Store.TradeInfoes" store:Type="Tables" Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+    <EntitySet Name="ValuationMeasures" EntityType="StockYahooData.Store.ValuationMeasures" store:Type="Tables" Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+    <EntitySet Name="SplitFactorFutures" EntityType="StockYahooData.Store.SplitFactorFutures" store:Type="Tables" Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+    <EntitySet Name="BondRates" EntityType="StockYahooData.Store.BondRates" store:Type="Tables" Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+    <EntitySet Name="StockSymbols" EntityType="StockYahooData.Store.StockSymbols" store:Type="Tables" Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+    <EntitySet Name="StockErrors" EntityType="StockYahooData.Store.StockErrors" store:Type="Tables" Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+    <AssociationSet Name="FK_RecordFinancialHighlights" Association="StockYahooData.Store.FK_RecordFinancialHighlights">
+      <End Role="Records" EntitySet="Records" />
+      <End Role="FinancialHighlights" EntitySet="FinancialHighlights" />
+    </AssociationSet>
+    <AssociationSet Name="FK_IndustryStock" Association="StockYahooData.Store.FK_IndustryStock">
+      <End Role="Industries" EntitySet="Industries" />
+      <End Role="Stocks" EntitySet="Stocks" />
+    </AssociationSet>
+    <AssociationSet Name="FK_ReportIndustry" Association="StockYahooData.Store.FK_ReportIndustry">
+      <End Role="Reports" EntitySet="Reports" />
+      <End Role="Industries" EntitySet="Industries" />
+    </AssociationSet>
+    <AssociationSet Name="FK_SectorIndustry" Association="StockYahooData.Store.FK_SectorIndustry">
+      <End Role="Sectors" EntitySet="Sectors" />
+      <End Role="Industries" EntitySet="Industries" />
+    </AssociationSet>
+    <AssociationSet Name="FK_RecordMarketQuoteData" Association="StockYahooData.Store.FK_RecordMarketQuoteData">
+      <End Role="Records" EntitySet="Records" />
+      <End Role="MarketQuoteDatas" EntitySet="MarketQuoteDatas" />
+    </AssociationSet>
+    <AssociationSet Name="FK_RecordQuoteValue" Association="StockYahooData.Store.FK_RecordQuoteValue">
+      <End Role="Records" EntitySet="Records" />
+      <End Role="QuoteValues" EntitySet="QuoteValues" />
+    </AssociationSet>
+    <AssociationSet Name="FK_RecordTradeInfo" Association="StockYahooData.Store.FK_RecordTradeInfo">
+      <End Role="Records" EntitySet="Records" />
+      <End Role="TradeInfoes" EntitySet="TradeInfoes" />
+    </AssociationSet>
+    <AssociationSet Name="FK_RecordValuationMeasure" Association="StockYahooData.Store.FK_RecordValuationMeasure">
+      <End Role="Records" EntitySet="Records" />
+      <End Role="ValuationMeasures" EntitySet="ValuationMeasures" />
+    </AssociationSet>
+    <AssociationSet Name="FK_StockRecord" Association="StockYahooData.Store.FK_StockRecord">
+      <End Role="Stocks" EntitySet="Stocks" />
+      <End Role="Records" EntitySet="Records" />
+    </AssociationSet>
+    <AssociationSet Name="FK_ReportSector" Association="StockYahooData.Store.FK_ReportSector">
+      <End Role="Reports" EntitySet="Reports" />
+      <End Role="Sectors" EntitySet="Sectors" />
+    </AssociationSet>
+    <AssociationSet Name="FK_ReportStock" Association="StockYahooData.Store.FK_ReportStock">
+      <End Role="Reports" EntitySet="Reports" />
+      <End Role="Stocks" EntitySet="Stocks" />
+    </AssociationSet>
+    <AssociationSet Name="FK_SectorStock" Association="StockYahooData.Store.FK_SectorStock">
+      <End Role="Sectors" EntitySet="Sectors" />
+      <End Role="Stocks" EntitySet="Stocks" />
+    </AssociationSet>
+    <AssociationSet Name="FK_StockSplitFactor" Association="StockYahooData.Store.FK_StockSplitFactor">
+      <End Role="Stocks" EntitySet="Stocks" />
+      <End Role="SplitFactors" EntitySet="SplitFactors" />
+    </AssociationSet>
+    <AssociationSet Name="ReportSplitFactorFuture" Association="StockYahooData.Store.ReportSplitFactorFuture">
+      <End Role="Report" EntitySet="Reports" />
+      <End Role="SplitFactorFuture" EntitySet="SplitFactorFutures" />
+    </AssociationSet>
+    <AssociationSet Name="ReportBondRate" Association="StockYahooData.Store.ReportBondRate">
+      <End Role="Report" EntitySet="Reports" />
+      <End Role="BondRate" EntitySet="BondRates" />
+    </AssociationSet>
+    <AssociationSet Name="StockToStockError" Association="StockYahooData.Store.StockToStockError">
+      <End Role="Stock" EntitySet="Stocks" />
+      <End Role="StockError" EntitySet="StockErrors" />
+    </AssociationSet>
+    <AssociationSet Name="StockToStockSymbol" Association="StockYahooData.Store.StockToStockSymbol">
+      <End Role="Stock" EntitySet="Stocks" />
+      <End Role="StockSymbol" EntitySet="StockSymbols" />
+    </AssociationSet>
+  </EntityContainer>
+  <EntityType Name="FinancialHighlights">
+    <Key>
+      <PropertyRef Name="ID" />
+    </Key>
+    <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="BookValuePerShare" Type="real" Nullable="false" />
+    <Property Name="CurrentRatio" Type="real" Nullable="false" />
+    <Property Name="DilutedEPS" Type="real" Nullable="false" />
+    <Property Name="EBITDAInMillion" Type="real" Nullable="false" />
+    <Property Name="FiscalYearEnds" Type="datetime" Nullable="false" />
+    <Property Name="GrossProfitInMillion" Type="real" Nullable="false" />
+    <Property Name="LeveredFreeCashFlowInMillion" Type="real" Nullable="false" />
+    <Property Name="MostRecentQuarter" Type="datetime" Nullable="false" />
+    <Property Name="NetIncomeAvlToCommonInMillion" Type="real" Nullable="false" />
+    <Property Name="OperatingCashFlowInMillion" Type="real" Nullable="false" />
+    <Property Name="OperatingMarginPercent" Type="real" Nullable="false" />
+    <Property Name="ProfitMarginPercent" Type="real" Nullable="false" />
+    <Property Name="QuarterlyRevenueGrowthPercent" Type="real" Nullable="false" />
+    <Property Name="QuaterlyEarningsGrowthPercent" Type="real" Nullable="false" />
+    <Property Name="ReturnOnAssetsPercent" Type="real" Nullable="false" />
+    <Property Name="ReturnOnEquityPercent" Type="real" Nullable="false" />
+    <Property Name="RevenueInMillion" Type="real" Nullable="false" />
+    <Property Name="RevenuePerShare" Type="real" Nullable="false" />
+    <Property Name="TotalCashInMillion" Type="real" Nullable="false" />
+    <Property Name="TotalCashPerShare" Type="real" Nullable="false" />
+    <Property Name="TotalDeptInMillion" Type="real" Nullable="false" />
+    <Property Name="TotalDeptPerEquity" Type="real" Nullable="false" />
+    <Property Name="RecordID" Type="int" Nullable="false" />
+    <Property Name="DateUpdate" Type="datetime" Nullable="false" />
+  </EntityType>
+  <EntityType Name="Industries">
+    <Key>
+      <PropertyRef Name="ID" />
+    </Key>
+    <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="Name" Type="nvarchar" Nullable="false" MaxLength="50" />
+    <Property Name="ReportID" Type="int" Nullable="false" />
+    <Property Name="SectorID" Type="int" Nullable="false" />
+    <Property Name="DataSourceID" Type="int" Nullable="false" />
+  </EntityType>
+  <EntityType Name="MarketQuoteDatas">
+    <Key>
+      <PropertyRef Name="ID" />
+    </Key>
+    <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="DividendYieldPercent" Type="real" Nullable="false" />
+    <Property Name="LongTermDeptToEquity" Type="real" Nullable="false" />
+    <Property Name="MarketCapitalizationInMillion" Type="real" Nullable="false" />
+    <Property Name="NetProfitMarginPercent" Type="real" Nullable="false" />
+    <Property Name="PriceEarningsRatio" Type="real" Nullable="false" />
+    <Property Name="PriceToBookValue" Type="real" Nullable="false" />
+    <Property Name="PriceToFreeCashFlow" Type="real" Nullable="false" />
+    <Property Name="ReturnOnEquityPercent" Type="real" Nullable="false" />
+    <Property Name="RecordID" Type="int" Nullable="false" />
+    <Property Name="DateUpdate" Type="datetime" Nullable="false" />
+  </EntityType>
+  <EntityType Name="QuoteValues">
+    <Key>
+      <PropertyRef Name="ID" />
+    </Key>
+    <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="AfterHoursChangeRealtime" Type="real" Nullable="false" />
+    <Property Name="AnnualizedGain" Type="real" Nullable="false" />
+    <Property Name="Ask" Type="real" Nullable="false" />
+    <Property Name="AskRealTime" Type="real" Nullable="false" />
+    <Property Name="AskSize" Type="int" Nullable="false" />
+    <Property Name="AverageDailyVolume" Type="int" Nullable="false" />
+    <Property Name="Bid" Type="real" Nullable="false" />
+    <Property Name="BidRealtime" Type="real" Nullable="false" />
+    <Property Name="BidSize" Type="int" Nullable="false" />
+    <Property Name="BookValue" Type="real" Nullable="false" />
+    <Property Name="DividendPayDate" Type="datetime" Nullable="false" />
+    <Property Name="DividendShare" Type="real" Nullable="false" />
+    <Property Name="DividendYield" Type="real" Nullable="false" />
+    <Property Name="EarningsShare" Type="real" Nullable="false" />
+    <Property Name="EBITDA" Type="real" Nullable="false" />
+    <Property Name="EPSEstimateCurrentYear" Type="real" Nullable="false" />
+    <Property Name="EPSEstimateNextQuarter" Type="real" Nullable="false" />
+    <Property Name="EPSEstimateNextYear" Type="real" Nullable="false" />
+    <Property Name="ExDividendDate" Type="datetime" Nullable="false" />
+    <Property Name="FloatShares" Type="int" Nullable="false" />
+    <Property Name="HoldingsValue" Type="real" Nullable="false" />
+    <Property Name="HoldingsValueRealtime" Type="real" Nullable="false" />
+    <Property Name="LastTradeDate" Type="datetime" Nullable="false" />
+    <Property Name="LastTradePriceOnly" Type="real" Nullable="false" />
+    <Property Name="LastTradeRealtimeWithTime" Type="datetime" Nullable="false" />
+    <Property Name="LastTradeSize" Type="int" Nullable="false" />
+    <Property Name="MarketCapitalization" Type="real" Nullable="false" />
+    <Property Name="MarketCapRealtime" Type="real" Nullable="false" />
+    <Property Name="OneyrTargetPrice" Type="real" Nullable="false" />
+    <Property Name="OrderBookRealtime" Type="real" Nullable="false" />
+    <Property Name="PEGRatio" Type="real" Nullable="false" />
+    <Property Name="PERatio" Type="real" Nullable="false" />
+    <Property Name="PERatioRealtime" Type="real" Nullable="false" />
+    <Property Name="PriceBook" Type="real" Nullable="false" />
+    <Property Name="PriceEPSEstimateCurrentYear" Type="real" Nullable="false" />
+    <Property Name="PriceEPSEstimateNextYear" Type="real" Nullable="false" />
+    <Property Name="PriceSales" Type="real" Nullable="false" />
+    <Property Name="SharesOwned" Type="int" Nullable="false" />
+    <Property Name="ShortRatio" Type="real" Nullable="false" />
+    <Property Name="TickerTrend" Type="real" Nullable="false" />
+    <Property Name="RecordID" Type="int" Nullable="false" />
+    <Property Name="StockExchange" Type="nvarchar(max)" Nullable="false" />
+    <Property Name="DateUpdate" Type="datetime" Nullable="false" />
+  </EntityType>
+  <EntityType Name="Records">
+    <Key>
+      <PropertyRef Name="ID" />
+    </Key>
+    <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="StockID" Type="int" Nullable="false" />
+    <Property Name="DateDay" Type="datetime" Nullable="false" />
+    <Property Name="DateUpdate" Type="datetime" Nullable="false" />
+    <Property Name="DateLastTrade" Type="datetime" Nullable="false" />
+    <Property Name="Open" Type="real" Nullable="false" />
+    <Property Name="Last" Type="real" Nullable="false" />
+    <Property Name="High" Type="real" Nullable="false" />
+    <Property Name="Low" Type="real" Nullable="false" />
+    <Property Name="Vol" Type="int" Nullable="false" />
+  </EntityType>
+  <EntityType Name="Reports">
+    <Key>
+      <PropertyRef Name="ID" />
+    </Key>
+    <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="Name" Type="nvarchar" Nullable="false" DefaultValue="" MaxLength="50" />
+    <Property Name="DateStart" Type="datetime" Nullable="false" />
+    <Property Name="DateStop" Type="datetime" Nullable="false" />
+  </EntityType>
+  <EntityType Name="Sectors">
+    <Key>
+      <PropertyRef Name="ID" />
+    </Key>
+    <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="Name" Type="nvarchar" Nullable="false" MaxLength="50" />
+    <Property Name="ReportID" Type="int" Nullable="false" />
+    <Property Name="DataSourceID" Type="int" Nullable="false" />
+  </EntityType>
+  <EntityType Name="SplitFactors">
+    <Key>
+      <PropertyRef Name="ID" />
+    </Key>
+    <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="StockID" Type="int" Nullable="false" />
+    <Property Name="DateDay" Type="datetime" Nullable="false" />
+    <Property Name="SharesLast" Type="int" Nullable="false" />
+    <Property Name="SharesNew" Type="int" Nullable="false" />
+    <Property Name="Ratio" Type="real" Nullable="false" />
+  </EntityType>
+  <EntityType Name="Stocks">
+    <Key>
+      <PropertyRef Name="ID" />
+    </Key>
+    <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="Symbol" Type="nvarchar" Nullable="false" MaxLength="50" />
+    <Property Name="Name" Type="nvarchar" Nullable="false" MaxLength="4000" />
+    <Property Name="IndustryID" Type="int" Nullable="false" />
+    <Property Name="SectorID" Type="int" Nullable="false" />
+    <Property Name="IsOption" Type="bit" Nullable="false" />
+    <Property Name="DateStart" Type="datetime" Nullable="false" />
+    <Property Name="DateStop" Type="datetime" Nullable="false" />
+    <Property Name="IsSymbolError" Type="bit" Nullable="false" />
+    <Property Name="ReportID" Type="int" Nullable="false" />
+    <Property Name="Exchange" Type="nvarchar(max)" Nullable="false" />
+    <Property Name="ErrorDescription" Type="nvarchar(max)" Nullable="false" />
+  </EntityType>
+  <EntityType Name="TradeInfoes">
+    <Key>
+      <PropertyRef Name="ID" />
+    </Key>
+    <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="AverageVolumeTenDaysInThousand" Type="real" Nullable="false" />
+    <Property Name="AverageVolumeThreeMonthInThousand" Type="real" Nullable="false" />
+    <Property Name="Beta" Type="real" Nullable="false" />
+    <Property Name="DividendDate" Type="datetime" Nullable="false" />
+    <Property Name="ExDividendDate" Type="datetime" Nullable="false" />
+    <Property Name="FiftyDayMovingAverage" Type="real" Nullable="false" />
+    <Property Name="FiveYearAverageDividendYieldPercent" Type="real" Nullable="false" />
+    <Property Name="FloatInMillion" Type="real" Nullable="false" />
+    <Property Name="ForwardAnnualDividendRate" Type="real" Nullable="false" />
+    <Property Name="ForwardAnnualDividendYieldPercent" Type="real" Nullable="false" />
+    <Property Name="LastSplitDate" Type="datetime" Nullable="false" />
+    <Property Name="LastSplitFactor" Type="datetime" Nullable="false" />
+    <Property Name="OneYearChangePercent" Type="real" Nullable="false" />
+    <Property Name="OneYearHigh" Type="real" Nullable="false" />
+    <Property Name="OneYearLow" Type="real" Nullable="false" />
+    <Property Name="PayoutRatio" Type="real" Nullable="false" />
+    <Property Name="PercentHeldByInsiders" Type="real" Nullable="false" />
+    <Property Name="PercentHeldByInstitutions" Type="real" Nullable="false" />
+    <Property Name="SharesOutstandingInMillion" Type="real" Nullable="false" />
+    <Property Name="SharesShortInMillion" Type="real" Nullable="false" />
+    <Property Name="SharesShortPriorMonthInMillion" Type="real" Nullable="false" />
+    <Property Name="ShortPercentOfFloat" Type="real" Nullable="false" />
+    <Property Name="ShortRatio" Type="real" Nullable="false" />
+    <Property Name="TrailingAnnualDividendYield" Type="real" Nullable="false" />
+    <Property Name="TrailingAnnualDividendYieldPercent" Type="real" Nullable="false" />
+    <Property Name="TwoHundredDayMovingAverage" Type="real" Nullable="false" />
+    <Property Name="RecordID" Type="int" Nullable="false" />
+    <Property Name="DateUpdate" Type="datetime" Nullable="false" />
+  </EntityType>
+  <EntityType Name="ValuationMeasures">
+    <Key>
+      <PropertyRef Name="ID" />
+    </Key>
+    <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="EnterpriseValueInMillion" Type="real" Nullable="false" />
+    <Property Name="EnterpriseValueToEBITDA" Type="real" Nullable="false" />
+    <Property Name="EnterpriseValueToRevenue" Type="real" Nullable="false" />
+    <Property Name="ForwardPE" Type="real" Nullable="false" />
+    <Property Name="MarketCapitalisationInMillion" Type="real" Nullable="false" />
+    <Property Name="PEGRatio" Type="real" Nullable="false" />
+    <Property Name="PriceToBook" Type="real" Nullable="false" />
+    <Property Name="PriceToSales" Type="real" Nullable="false" />
+    <Property Name="TrailingPE" Type="real" Nullable="false" />
+    <Property Name="RecordID" Type="int" Nullable="false" />
+    <Property Name="DateUpdate" Type="datetime" Nullable="false" />
+  </EntityType>
+  <EntityType Name="SplitFactorFutures">
+    <Key>
+      <PropertyRef Name="ID" />
+    </Key>
+    <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="ReportID" Type="int" Nullable="false" />
+    <Property Name="Symbol" Type="nvarchar" Nullable="false" MaxLength="50" />
+    <Property Name="Name" Type="nvarchar" Nullable="false" MaxLength="50" />
+    <Property Name="DateAnnounce" Type="datetime" Nullable="true" />
+    <Property Name="DatePayable" Type="datetime" Nullable="true" />
+    <Property Name="Exchange" Type="nvarchar" Nullable="false" MaxLength="50" />
+    <Property Name="DateEx" Type="datetime" Nullable="false" />
+    <Property Name="SharesLast" Type="int" Nullable="false" />
+    <Property Name="SharesNew" Type="int" Nullable="false" />
+    <Property Name="Ratio" Type="real" Nullable="false" />
+    <Property Name="DateUpdate" Type="datetime" Nullable="true" />
+  </EntityType>
+  <EntityType Name="BondRates">
+    <Key>
+      <PropertyRef Name="ID" />
+    </Key>
+    <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="ReportID" Type="int" Nullable="false" />
+    <Property Name="Symbol" Type="nvarchar" Nullable="false" MaxLength="50" />
+    <Property Name="Name" Type="nvarchar" Nullable="false" MaxLength="50" />
+    <Property Name="Type" Type="smallint" Nullable="false" />
+    <Property Name="Security" Type="smallint" Nullable="false" />
+    <Property Name="Interest" Type="real" Nullable="false" />
+    <Property Name="MaturityDays" Type="int" Nullable="false" />
+    <Property Name="DateUpdate" Type="datetime" Nullable="false" />
+  </EntityType>
+  <EntityType Name="StockSymbols">
+    <Key>
+      <PropertyRef Name="ID" />
+    </Key>
+    <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="DateUpdate" Type="datetime" Nullable="false" />
+    <Property Name="Exchange" Type="nvarchar(max)" Nullable="false" />
+    <Property Name="Name" Type="nvarchar" Nullable="false" MaxLength="4000" />
+    <Property Name="IndustryID" Type="int" Nullable="false" />
+    <Property Name="SectorID" Type="int" Nullable="false" />
+    <Property Name="Symbol" Type="nvarchar" Nullable="false" MaxLength="50" />
+    <Property Name="SymbolNew" Type="nvarchar" Nullable="false" MaxLength="50" />
+    <Property Name="StockID" Type="int" Nullable="false" />
+  </EntityType>
+  <EntityType Name="StockErrors">
+    <Key>
+      <PropertyRef Name="ID" />
+    </Key>
+    <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="DateUpdate" Type="datetime" Nullable="false" />
+    <Property Name="Symbol" Type="nvarchar" Nullable="false" MaxLength="50" />
+    <Property Name="Description" Type="nvarchar(max)" Nullable="false" />
+    <Property Name="StockID" Type="int" Nullable="false" />
+  </EntityType>
+  <Association Name="FK_RecordFinancialHighlights">
+    <End Role="Records" Type="StockYahooData.Store.Records" Multiplicity="1">
+      <OnDelete Action="Cascade" />
+    </End>
+    <End Role="FinancialHighlights" Type="StockYahooData.Store.FinancialHighlights" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Records">
+        <PropertyRef Name="ID" />
+      </Principal>
+      <Dependent Role="FinancialHighlights">
+        <PropertyRef Name="RecordID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_IndustryStock">
+    <End Role="Industries" Type="StockYahooData.Store.Industries" Multiplicity="1" />
+    <End Role="Stocks" Type="StockYahooData.Store.Stocks" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Industries">
+        <PropertyRef Name="ID" />
+      </Principal>
+      <Dependent Role="Stocks">
+        <PropertyRef Name="IndustryID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_ReportIndustry">
+    <End Role="Reports" Type="StockYahooData.Store.Reports" Multiplicity="1">
+      <OnDelete Action="Cascade" />
+    </End>
+    <End Role="Industries" Type="StockYahooData.Store.Industries" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Reports">
+        <PropertyRef Name="ID" />
+      </Principal>
+      <Dependent Role="Industries">
+        <PropertyRef Name="ReportID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_SectorIndustry">
+    <End Role="Sectors" Type="StockYahooData.Store.Sectors" Multiplicity="1" />
+    <End Role="Industries" Type="StockYahooData.Store.Industries" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Sectors">
+        <PropertyRef Name="ID" />
+      </Principal>
+      <Dependent Role="Industries">
+        <PropertyRef Name="SectorID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_RecordMarketQuoteData">
+    <End Role="Records" Type="StockYahooData.Store.Records" Multiplicity="1">
+      <OnDelete Action="Cascade" />
+    </End>
+    <End Role="MarketQuoteDatas" Type="StockYahooData.Store.MarketQuoteDatas" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Records">
+        <PropertyRef Name="ID" />
+      </Principal>
+      <Dependent Role="MarketQuoteDatas">
+        <PropertyRef Name="RecordID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_RecordQuoteValue">
+    <End Role="Records" Type="StockYahooData.Store.Records" Multiplicity="1">
+      <OnDelete Action="Cascade" />
+    </End>
+    <End Role="QuoteValues" Type="StockYahooData.Store.QuoteValues" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Records">
+        <PropertyRef Name="ID" />
+      </Principal>
+      <Dependent Role="QuoteValues">
+        <PropertyRef Name="RecordID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_RecordTradeInfo">
+    <End Role="Records" Type="StockYahooData.Store.Records" Multiplicity="1">
+      <OnDelete Action="Cascade" />
+    </End>
+    <End Role="TradeInfoes" Type="StockYahooData.Store.TradeInfoes" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Records">
+        <PropertyRef Name="ID" />
+      </Principal>
+      <Dependent Role="TradeInfoes">
+        <PropertyRef Name="RecordID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_RecordValuationMeasure">
+    <End Role="Records" Type="StockYahooData.Store.Records" Multiplicity="1">
+      <OnDelete Action="Cascade" />
+    </End>
+    <End Role="ValuationMeasures" Type="StockYahooData.Store.ValuationMeasures" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Records">
+        <PropertyRef Name="ID" />
+      </Principal>
+      <Dependent Role="ValuationMeasures">
+        <PropertyRef Name="RecordID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_StockRecord">
+    <End Role="Stocks" Type="StockYahooData.Store.Stocks" Multiplicity="1">
+      <OnDelete Action="Cascade" />
+    </End>
+    <End Role="Records" Type="StockYahooData.Store.Records" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Stocks">
+        <PropertyRef Name="ID" />
+      </Principal>
+      <Dependent Role="Records">
+        <PropertyRef Name="StockID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_ReportSector">
+    <End Role="Reports" Type="StockYahooData.Store.Reports" Multiplicity="1">
+      <OnDelete Action="Cascade" />
+    </End>
+    <End Role="Sectors" Type="StockYahooData.Store.Sectors" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Reports">
+        <PropertyRef Name="ID" />
+      </Principal>
+      <Dependent Role="Sectors">
+        <PropertyRef Name="ReportID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_ReportStock">
+    <End Role="Reports" Type="StockYahooData.Store.Reports" Multiplicity="1">
+      <OnDelete Action="Cascade" />
+    </End>
+    <End Role="Stocks" Type="StockYahooData.Store.Stocks" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Reports">
+        <PropertyRef Name="ID" />
+      </Principal>
+      <Dependent Role="Stocks">
+        <PropertyRef Name="ReportID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_SectorStock">
+    <End Role="Sectors" Type="StockYahooData.Store.Sectors" Multiplicity="1" />
+    <End Role="Stocks" Type="StockYahooData.Store.Stocks" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Sectors">
+        <PropertyRef Name="ID" />
+      </Principal>
+      <Dependent Role="Stocks">
+        <PropertyRef Name="SectorID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_StockSplitFactor">
+    <End Role="Stocks" Type="StockYahooData.Store.Stocks" Multiplicity="1">
+      <OnDelete Action="Cascade" />
+    </End>
+    <End Role="SplitFactors" Type="StockYahooData.Store.SplitFactors" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Stocks">
+        <PropertyRef Name="ID" />
+      </Principal>
+      <Dependent Role="SplitFactors">
+        <PropertyRef Name="StockID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="ReportSplitFactorFuture">
+    <End Role="Report" Type="StockYahooData.Store.Reports" Multiplicity="1">
+      <OnDelete Action="Cascade" />
+    </End>
+    <End Role="SplitFactorFuture" Type="StockYahooData.Store.SplitFactorFutures" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Report">
+        <PropertyRef Name="ID" />
+      </Principal>
+      <Dependent Role="SplitFactorFuture">
+        <PropertyRef Name="ReportID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="ReportBondRate">
+    <End Role="Report" Type="StockYahooData.Store.Reports" Multiplicity="1">
+      <OnDelete Action="Cascade" />
+    </End>
+    <End Role="BondRate" Type="StockYahooData.Store.BondRates" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Report">
+        <PropertyRef Name="ID" />
+      </Principal>
+      <Dependent Role="BondRate">
+        <PropertyRef Name="ReportID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="StockToStockError">
+    <End Role="Stock" Type="StockYahooData.Store.Stocks" Multiplicity="1">
+      <OnDelete Action="Cascade" />
+    </End>
+    <End Role="StockError" Type="StockYahooData.Store.StockErrors" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Stock">
+        <PropertyRef Name="ID" />
+      </Principal>
+      <Dependent Role="StockError">
+        <PropertyRef Name="StockID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="StockToStockSymbol">
+    <End Role="Stock" Type="StockYahooData.Store.Stocks" Multiplicity="1">
+      <OnDelete Action="Cascade" />
+    </End>
+    <End Role="StockSymbol" Type="StockYahooData.Store.StockSymbols" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="Stock">
+        <PropertyRef Name="ID" />
+      </Principal>
+      <Dependent Role="StockSymbol">
+        <PropertyRef Name="StockID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+</Schema></edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema Namespace="StockYahooData" Alias="Self" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+        <EntityContainer Name="StockYahooEntities" annotation:LazyLoadingEnabled="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation">
+          <EntitySet Name="FinancialHighlights" EntityType="StockYahooData.FinancialHighlight" />
+          <EntitySet Name="Industries" EntityType="StockYahooData.Industry" />
+          <EntitySet Name="MarketQuoteDatas" EntityType="StockYahooData.MarketQuoteData" />
+          <EntitySet Name="QuoteValues" EntityType="StockYahooData.QuoteValue" />
+          <EntitySet Name="Records" EntityType="StockYahooData.Record" />
+          <EntitySet Name="Reports" EntityType="StockYahooData.Report" />
+          <EntitySet Name="Sectors" EntityType="StockYahooData.Sector" />
+          <EntitySet Name="SplitFactors" EntityType="StockYahooData.SplitFactor" />
+          <EntitySet Name="Stocks" EntityType="StockYahooData.Stock" />
+          <EntitySet Name="TradeInfoes" EntityType="StockYahooData.TradeInfo" />
+          <EntitySet Name="ValuationMeasures" EntityType="StockYahooData.ValuationMeasure" />
+          <AssociationSet Name="FK_RecordFinancialHighlights" Association="StockYahooData.FK_RecordFinancialHighlights">
+            <End Role="Records" EntitySet="Records" />
+            <End Role="FinancialHighlights" EntitySet="FinancialHighlights" />
+          </AssociationSet>
+          <AssociationSet Name="FK_IndustryStock" Association="StockYahooData.FK_IndustryStock">
+            <End Role="Industries" EntitySet="Industries" />
+            <End Role="Stocks" EntitySet="Stocks" />
+          </AssociationSet>
+          <AssociationSet Name="FK_ReportIndustry" Association="StockYahooData.FK_ReportIndustry">
+            <End Role="Reports" EntitySet="Reports" />
+            <End Role="Industries" EntitySet="Industries" />
+          </AssociationSet>
+          <AssociationSet Name="FK_SectorIndustry" Association="StockYahooData.FK_SectorIndustry">
+            <End Role="Sectors" EntitySet="Sectors" />
+            <End Role="Industries" EntitySet="Industries" />
+          </AssociationSet>
+          <AssociationSet Name="FK_RecordMarketQuoteData" Association="StockYahooData.FK_RecordMarketQuoteData">
+            <End Role="Records" EntitySet="Records" />
+            <End Role="MarketQuoteDatas" EntitySet="MarketQuoteDatas" />
+          </AssociationSet>
+          <AssociationSet Name="FK_RecordQuoteValue" Association="StockYahooData.FK_RecordQuoteValue">
+            <End Role="Records" EntitySet="Records" />
+            <End Role="QuoteValues" EntitySet="QuoteValues" />
+          </AssociationSet>
+          <AssociationSet Name="FK_RecordTradeInfo" Association="StockYahooData.FK_RecordTradeInfo">
+            <End Role="Records" EntitySet="Records" />
+            <End Role="TradeInfoes" EntitySet="TradeInfoes" />
+          </AssociationSet>
+          <AssociationSet Name="FK_RecordValuationMeasure" Association="StockYahooData.FK_RecordValuationMeasure">
+            <End Role="Records" EntitySet="Records" />
+            <End Role="ValuationMeasures" EntitySet="ValuationMeasures" />
+          </AssociationSet>
+          <AssociationSet Name="FK_StockRecord" Association="StockYahooData.FK_StockRecord">
+            <End Role="Stocks" EntitySet="Stocks" />
+            <End Role="Records" EntitySet="Records" />
+          </AssociationSet>
+          <AssociationSet Name="FK_ReportSector" Association="StockYahooData.FK_ReportSector">
+            <End Role="Reports" EntitySet="Reports" />
+            <End Role="Sectors" EntitySet="Sectors" />
+          </AssociationSet>
+          <AssociationSet Name="FK_ReportStock" Association="StockYahooData.FK_ReportStock">
+            <End Role="Reports" EntitySet="Reports" />
+            <End Role="Stocks" EntitySet="Stocks" />
+          </AssociationSet>
+          <AssociationSet Name="FK_SectorStock" Association="StockYahooData.FK_SectorStock">
+            <End Role="Sectors" EntitySet="Sectors" />
+            <End Role="Stocks" EntitySet="Stocks" />
+          </AssociationSet>
+          <AssociationSet Name="FK_StockSplitFactor" Association="StockYahooData.FK_StockSplitFactor">
+            <End Role="Stocks" EntitySet="Stocks" />
+            <End Role="SplitFactors" EntitySet="SplitFactors" />
+          </AssociationSet>
+          <EntitySet Name="SplitFactorFutures" EntityType="StockYahooData.SplitFactorFuture" />
+          <AssociationSet Name="ReportSplitFactorFuture" Association="StockYahooData.ReportSplitFactorFuture">
+            <End Role="Report" EntitySet="Reports" />
+            <End Role="SplitFactorFuture" EntitySet="SplitFactorFutures" />
+          </AssociationSet>
+          <EntitySet Name="BondRates" EntityType="StockYahooData.BondRate" />
+          <AssociationSet Name="ReportBondRate" Association="StockYahooData.ReportBondRate">
+            <End Role="Report" EntitySet="Reports" />
+            <End Role="BondRate" EntitySet="BondRates" />
+          </AssociationSet>
+          <EntitySet Name="StockSymbols" EntityType="StockYahooData.StockSymbol" />
+          <EntitySet Name="StockErrors" EntityType="StockYahooData.StockError" />
+          <AssociationSet Name="StockToStockError" Association="StockYahooData.StockToStockError">
+            <End Role="Stock" EntitySet="Stocks" />
+            <End Role="StockError" EntitySet="StockErrors" />
+          </AssociationSet>
+          <AssociationSet Name="StockToStockSymbol" Association="StockYahooData.StockToStockSymbol">
+            <End Role="Stock" EntitySet="Stocks" />
+            <End Role="StockSymbol" EntitySet="StockSymbols" />
+          </AssociationSet>
+        </EntityContainer>
+        <EntityType Name="FinancialHighlight">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Name="BookValuePerShare" Type="Single" Nullable="false" />
+          <Property Name="CurrentRatio" Type="Single" Nullable="false" />
+          <Property Name="DilutedEPS" Type="Single" Nullable="false" />
+          <Property Name="EBITDAInMillion" Type="Single" Nullable="false" />
+          <Property Name="FiscalYearEnds" Type="DateTime" Nullable="false" />
+          <Property Name="GrossProfitInMillion" Type="Single" Nullable="false" />
+          <Property Name="LeveredFreeCashFlowInMillion" Type="Single" Nullable="false" />
+          <Property Name="MostRecentQuarter" Type="DateTime" Nullable="false" />
+          <Property Name="NetIncomeAvlToCommonInMillion" Type="Single" Nullable="false" />
+          <Property Name="OperatingCashFlowInMillion" Type="Single" Nullable="false" />
+          <Property Name="OperatingMarginPercent" Type="Single" Nullable="false" />
+          <Property Name="ProfitMarginPercent" Type="Single" Nullable="false" />
+          <Property Name="QuarterlyRevenueGrowthPercent" Type="Single" Nullable="false" />
+          <Property Name="QuaterlyEarningsGrowthPercent" Type="Single" Nullable="false" />
+          <Property Name="ReturnOnAssetsPercent" Type="Single" Nullable="false" />
+          <Property Name="ReturnOnEquityPercent" Type="Single" Nullable="false" />
+          <Property Name="RevenueInMillion" Type="Single" Nullable="false" />
+          <Property Name="RevenuePerShare" Type="Single" Nullable="false" />
+          <Property Name="TotalCashInMillion" Type="Single" Nullable="false" />
+          <Property Name="TotalCashPerShare" Type="Single" Nullable="false" />
+          <Property Name="TotalDeptInMillion" Type="Single" Nullable="false" />
+          <Property Name="TotalDeptPerEquity" Type="Single" Nullable="false" />
+          <Property Name="RecordID" Type="Int32" Nullable="false" />
+          <Property Name="DateUpdate" Type="DateTime" Nullable="false" />
+          <NavigationProperty Name="Record" Relationship="StockYahooData.FK_RecordFinancialHighlights" FromRole="FinancialHighlights" ToRole="Records" />
+        </EntityType>
+        <EntityType Name="Industry">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Name="Name" Type="String" Nullable="false" MaxLength="50" Unicode="true" FixedLength="false" />
+          <Property Name="ReportID" Type="Int32" Nullable="false" />
+          <Property Name="SectorID" Type="Int32" Nullable="false" />
+          <Property Name="DataSourceID" Type="Int32" Nullable="false" />
+          <NavigationProperty Name="Stocks" Relationship="StockYahooData.FK_IndustryStock" FromRole="Industries" ToRole="Stocks" />
+          <NavigationProperty Name="Report" Relationship="StockYahooData.FK_ReportIndustry" FromRole="Industries" ToRole="Reports" />
+          <NavigationProperty Name="Sector" Relationship="StockYahooData.FK_SectorIndustry" FromRole="Industries" ToRole="Sectors" />
+        </EntityType>
+        <EntityType Name="MarketQuoteData">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Name="DividendYieldPercent" Type="Single" Nullable="false" />
+          <Property Name="LongTermDeptToEquity" Type="Single" Nullable="false" />
+          <Property Name="MarketCapitalizationInMillion" Type="Single" Nullable="false" />
+          <Property Name="NetProfitMarginPercent" Type="Single" Nullable="false" />
+          <Property Name="PriceEarningsRatio" Type="Single" Nullable="false" />
+          <Property Name="PriceToBookValue" Type="Single" Nullable="false" />
+          <Property Name="PriceToFreeCashFlow" Type="Single" Nullable="false" />
+          <Property Name="ReturnOnEquityPercent" Type="Single" Nullable="false" />
+          <Property Name="RecordID" Type="Int32" Nullable="false" />
+          <Property Name="DateUpdate" Type="DateTime" Nullable="false" />
+          <NavigationProperty Name="Record" Relationship="StockYahooData.FK_RecordMarketQuoteData" FromRole="MarketQuoteDatas" ToRole="Records" />
+        </EntityType>
+        <EntityType Name="QuoteValue">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Name="AfterHoursChangeRealtime" Type="Single" Nullable="false" />
+          <Property Name="AnnualizedGain" Type="Single" Nullable="false" />
+          <Property Name="Ask" Type="Single" Nullable="false" />
+          <Property Name="AskRealTime" Type="Single" Nullable="false" />
+          <Property Name="AskSize" Type="Int32" Nullable="false" />
+          <Property Name="AverageDailyVolume" Type="Int32" Nullable="false" />
+          <Property Name="Bid" Type="Single" Nullable="false" />
+          <Property Name="BidRealtime" Type="Single" Nullable="false" />
+          <Property Name="BidSize" Type="Int32" Nullable="false" />
+          <Property Name="BookValue" Type="Single" Nullable="false" />
+          <Property Name="DividendPayDate" Type="DateTime" Nullable="false" />
+          <Property Name="DividendShare" Type="Single" Nullable="false" />
+          <Property Name="DividendYield" Type="Single" Nullable="false" />
+          <Property Name="EarningsShare" Type="Single" Nullable="false" />
+          <Property Name="EBITDA" Type="Single" Nullable="false" />
+          <Property Name="EPSEstimateCurrentYear" Type="Single" Nullable="false" />
+          <Property Name="EPSEstimateNextQuarter" Type="Single" Nullable="false" />
+          <Property Name="EPSEstimateNextYear" Type="Single" Nullable="false" />
+          <Property Name="ExDividendDate" Type="DateTime" Nullable="false" />
+          <Property Name="FloatShares" Type="Int32" Nullable="false" />
+          <Property Name="HoldingsValue" Type="Single" Nullable="false" />
+          <Property Name="HoldingsValueRealtime" Type="Single" Nullable="false" />
+          <Property Name="LastTradeDate" Type="DateTime" Nullable="false" />
+          <Property Name="LastTradePriceOnly" Type="Single" Nullable="false" />
+          <Property Name="LastTradeRealtimeWithTime" Type="DateTime" Nullable="false" />
+          <Property Name="LastTradeSize" Type="Int32" Nullable="false" />
+          <Property Name="MarketCapitalization" Type="Single" Nullable="false" />
+          <Property Name="MarketCapRealtime" Type="Single" Nullable="false" />
+          <Property Name="OneyrTargetPrice" Type="Single" Nullable="false" />
+          <Property Name="OrderBookRealtime" Type="Single" Nullable="false" />
+          <Property Name="PEGRatio" Type="Single" Nullable="false" />
+          <Property Name="PERatio" Type="Single" Nullable="false" />
+          <Property Name="PERatioRealtime" Type="Single" Nullable="false" />
+          <Property Name="PriceBook" Type="Single" Nullable="false" />
+          <Property Name="PriceEPSEstimateCurrentYear" Type="Single" Nullable="false" />
+          <Property Name="PriceEPSEstimateNextYear" Type="Single" Nullable="false" />
+          <Property Name="PriceSales" Type="Single" Nullable="false" />
+          <Property Name="SharesOwned" Type="Int32" Nullable="false" />
+          <Property Name="ShortRatio" Type="Single" Nullable="false" />
+          <Property Name="TickerTrend" Type="Single" Nullable="false" />
+          <Property Name="RecordID" Type="Int32" Nullable="false" />
+          <Property Name="StockExchange" Type="String" Nullable="false" MaxLength="Max" Unicode="true" FixedLength="false" />
+          <Property Name="DateUpdate" Type="DateTime" Nullable="false" />
+          <NavigationProperty Name="Record" Relationship="StockYahooData.FK_RecordQuoteValue" FromRole="QuoteValues" ToRole="Records" />
+        </EntityType>
+        <EntityType Name="Record">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Name="StockID" Type="Int32" Nullable="false" />
+          <Property Name="DateDay" Type="DateTime" Nullable="false" />
+          <Property Name="DateUpdate" Type="DateTime" Nullable="false" />
+          <Property Name="DateLastTrade" Type="DateTime" Nullable="false" />
+          <Property Name="Open" Type="Single" Nullable="false" />
+          <Property Name="Last" Type="Single" Nullable="false" />
+          <Property Name="High" Type="Single" Nullable="false" />
+          <Property Name="Low" Type="Single" Nullable="false" />
+          <Property Name="Vol" Type="Int32" Nullable="false" />
+          <NavigationProperty Name="FinancialHighlights" Relationship="StockYahooData.FK_RecordFinancialHighlights" FromRole="Records" ToRole="FinancialHighlights" />
+          <NavigationProperty Name="MarketQuoteDatas" Relationship="StockYahooData.FK_RecordMarketQuoteData" FromRole="Records" ToRole="MarketQuoteDatas" />
+          <NavigationProperty Name="QuoteValues" Relationship="StockYahooData.FK_RecordQuoteValue" FromRole="Records" ToRole="QuoteValues" />
+          <NavigationProperty Name="TradeInfoes" Relationship="StockYahooData.FK_RecordTradeInfo" FromRole="Records" ToRole="TradeInfoes" />
+          <NavigationProperty Name="ValuationMeasures" Relationship="StockYahooData.FK_RecordValuationMeasure" FromRole="Records" ToRole="ValuationMeasures" />
+          <NavigationProperty Name="Stock" Relationship="StockYahooData.FK_StockRecord" FromRole="Records" ToRole="Stocks" />
+        </EntityType>
+        <EntityType Name="Report">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Name="Name" Type="String" Nullable="false" MaxLength="50" Unicode="true" FixedLength="false" DefaultValue="" />
+          <Property Name="DateStart" Type="DateTime" Nullable="false" />
+          <Property Name="DateStop" Type="DateTime" Nullable="false" />
+          <NavigationProperty Name="Industries" Relationship="StockYahooData.FK_ReportIndustry" FromRole="Reports" ToRole="Industries" />
+          <NavigationProperty Name="Sectors" Relationship="StockYahooData.FK_ReportSector" FromRole="Reports" ToRole="Sectors" />
+          <NavigationProperty Name="Stocks" Relationship="StockYahooData.FK_ReportStock" FromRole="Reports" ToRole="Stocks" />
+          <NavigationProperty Name="SplitFactorFutures" Relationship="StockYahooData.ReportSplitFactorFuture" FromRole="Report" ToRole="SplitFactorFuture" />
+          <NavigationProperty Name="BondRates" Relationship="StockYahooData.ReportBondRate" FromRole="Report" ToRole="BondRate" />
+        </EntityType>
+        <EntityType Name="Sector">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Name="Name" Type="String" Nullable="false" MaxLength="50" Unicode="true" FixedLength="false" />
+          <Property Name="ReportID" Type="Int32" Nullable="false" />
+          <Property Name="DataSourceID" Type="Int32" Nullable="false" />
+          <NavigationProperty Name="Industries" Relationship="StockYahooData.FK_SectorIndustry" FromRole="Sectors" ToRole="Industries" />
+          <NavigationProperty Name="Report" Relationship="StockYahooData.FK_ReportSector" FromRole="Sectors" ToRole="Reports" />
+          <NavigationProperty Name="Stocks" Relationship="StockYahooData.FK_SectorStock" FromRole="Sectors" ToRole="Stocks" />
+        </EntityType>
+        <EntityType Name="SplitFactor">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Name="StockID" Type="Int32" Nullable="false" />
+          <Property Name="DateDay" Type="DateTime" Nullable="false" />
+          <Property Name="SharesLast" Type="Int32" Nullable="false" />
+          <Property Name="SharesNew" Type="Int32" Nullable="false" />
+          <Property Name="Ratio" Type="Single" Nullable="false" />
+          <NavigationProperty Name="Stock" Relationship="StockYahooData.FK_StockSplitFactor" FromRole="SplitFactors" ToRole="Stocks" />
+        </EntityType>
+        <EntityType Name="Stock">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Name="Symbol" Type="String" Nullable="false" MaxLength="50" Unicode="true" FixedLength="false" />
+          <Property Name="Name" Type="String" Nullable="false" MaxLength="4000" Unicode="true" FixedLength="false" />
+          <Property Name="IndustryID" Type="Int32" Nullable="false" />
+          <Property Name="SectorID" Type="Int32" Nullable="false" />
+          <Property Name="IsOption" Type="Boolean" Nullable="false" />
+          <Property Name="DateStart" Type="DateTime" Nullable="false" />
+          <Property Name="DateStop" Type="DateTime" Nullable="false" />
+          <Property Name="IsSymbolError" Type="Boolean" Nullable="false" />
+          <Property Name="ReportID" Type="Int32" Nullable="false" />
+          <Property Name="Exchange" Type="String" Nullable="false" MaxLength="Max" Unicode="true" FixedLength="false" />
+          <Property Name="ErrorDescription" Type="String" Nullable="false" MaxLength="Max" Unicode="true" FixedLength="false" />
+          <NavigationProperty Name="Industry" Relationship="StockYahooData.FK_IndustryStock" FromRole="Stocks" ToRole="Industries" />
+          <NavigationProperty Name="Records" Relationship="StockYahooData.FK_StockRecord" FromRole="Stocks" ToRole="Records" />
+          <NavigationProperty Name="Report" Relationship="StockYahooData.FK_ReportStock" FromRole="Stocks" ToRole="Reports" />
+          <NavigationProperty Name="Sector" Relationship="StockYahooData.FK_SectorStock" FromRole="Stocks" ToRole="Sectors" />
+          <NavigationProperty Name="SplitFactors" Relationship="StockYahooData.FK_StockSplitFactor" FromRole="Stocks" ToRole="SplitFactors" />
+          <NavigationProperty Name="StockErrors" Relationship="StockYahooData.StockToStockError" FromRole="Stock" ToRole="StockError" />
+          <NavigationProperty Name="StockSymbols" Relationship="StockYahooData.StockToStockSymbol" FromRole="Stock" ToRole="StockSymbol" />
+        </EntityType>
+        <EntityType Name="TradeInfo">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Name="AverageVolumeTenDaysInThousand" Type="Single" Nullable="false" />
+          <Property Name="AverageVolumeThreeMonthInThousand" Type="Single" Nullable="false" />
+          <Property Name="Beta" Type="Single" Nullable="false" />
+          <Property Name="DividendDate" Type="DateTime" Nullable="false" />
+          <Property Name="ExDividendDate" Type="DateTime" Nullable="false" />
+          <Property Name="FiftyDayMovingAverage" Type="Single" Nullable="false" />
+          <Property Name="FiveYearAverageDividendYieldPercent" Type="Single" Nullable="false" />
+          <Property Name="FloatInMillion" Type="Single" Nullable="false" />
+          <Property Name="ForwardAnnualDividendRate" Type="Single" Nullable="false" />
+          <Property Name="ForwardAnnualDividendYieldPercent" Type="Single" Nullable="false" />
+          <Property Name="LastSplitDate" Type="DateTime" Nullable="false" />
+          <Property Name="LastSplitFactor" Type="DateTime" Nullable="false" />
+          <Property Name="OneYearChangePercent" Type="Single" Nullable="false" />
+          <Property Name="OneYearHigh" Type="Single" Nullable="false" />
+          <Property Name="OneYearLow" Type="Single" Nullable="false" />
+          <Property Name="PayoutRatio" Type="Single" Nullable="false" />
+          <Property Name="PercentHeldByInsiders" Type="Single" Nullable="false" />
+          <Property Name="PercentHeldByInstitutions" Type="Single" Nullable="false" />
+          <Property Name="SharesOutstandingInMillion" Type="Single" Nullable="false" />
+          <Property Name="SharesShortInMillion" Type="Single" Nullable="false" />
+          <Property Name="SharesShortPriorMonthInMillion" Type="Single" Nullable="false" />
+          <Property Name="ShortPercentOfFloat" Type="Single" Nullable="false" />
+          <Property Name="ShortRatio" Type="Single" Nullable="false" />
+          <Property Name="TrailingAnnualDividendYield" Type="Single" Nullable="false" />
+          <Property Name="TrailingAnnualDividendYieldPercent" Type="Single" Nullable="false" />
+          <Property Name="TwoHundredDayMovingAverage" Type="Single" Nullable="false" />
+          <Property Name="RecordID" Type="Int32" Nullable="false" />
+          <Property Name="DateUpdate" Type="DateTime" Nullable="false" />
+          <NavigationProperty Name="Record" Relationship="StockYahooData.FK_RecordTradeInfo" FromRole="TradeInfoes" ToRole="Records" />
+        </EntityType>
+        <EntityType Name="ValuationMeasure">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Name="EnterpriseValueInMillion" Type="Single" Nullable="false" />
+          <Property Name="EnterpriseValueToEBITDA" Type="Single" Nullable="false" />
+          <Property Name="EnterpriseValueToRevenue" Type="Single" Nullable="false" />
+          <Property Name="ForwardPE" Type="Single" Nullable="false" />
+          <Property Name="MarketCapitalisationInMillion" Type="Single" Nullable="false" />
+          <Property Name="PEGRatio" Type="Single" Nullable="false" />
+          <Property Name="PriceToBook" Type="Single" Nullable="false" />
+          <Property Name="PriceToSales" Type="Single" Nullable="false" />
+          <Property Name="TrailingPE" Type="Single" Nullable="false" />
+          <Property Name="RecordID" Type="Int32" Nullable="false" />
+          <Property Name="DateUpdate" Type="DateTime" Nullable="false" />
+          <NavigationProperty Name="Record" Relationship="StockYahooData.FK_RecordValuationMeasure" FromRole="ValuationMeasures" ToRole="Records" />
+        </EntityType>
+        <Association Name="FK_RecordFinancialHighlights">
+          <End Role="Records" Type="StockYahooData.Record" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="FinancialHighlights" Type="StockYahooData.FinancialHighlight" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Records">
+              <PropertyRef Name="ID" />
+            </Principal>
+            <Dependent Role="FinancialHighlights">
+              <PropertyRef Name="RecordID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_IndustryStock">
+          <End Role="Industries" Type="StockYahooData.Industry" Multiplicity="1" />
+          <End Role="Stocks" Type="StockYahooData.Stock" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Industries">
+              <PropertyRef Name="ID" />
+            </Principal>
+            <Dependent Role="Stocks">
+              <PropertyRef Name="IndustryID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_ReportIndustry">
+          <End Role="Reports" Type="StockYahooData.Report" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="Industries" Type="StockYahooData.Industry" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Reports">
+              <PropertyRef Name="ID" />
+            </Principal>
+            <Dependent Role="Industries">
+              <PropertyRef Name="ReportID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_SectorIndustry">
+          <End Role="Sectors" Type="StockYahooData.Sector" Multiplicity="1">
+          </End>
+          <End Role="Industries" Type="StockYahooData.Industry" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Sectors">
+              <PropertyRef Name="ID" />
+            </Principal>
+            <Dependent Role="Industries">
+              <PropertyRef Name="SectorID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_RecordMarketQuoteData">
+          <End Role="Records" Type="StockYahooData.Record" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="MarketQuoteDatas" Type="StockYahooData.MarketQuoteData" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Records">
+              <PropertyRef Name="ID" />
+            </Principal>
+            <Dependent Role="MarketQuoteDatas">
+              <PropertyRef Name="RecordID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_RecordQuoteValue">
+          <End Role="Records" Type="StockYahooData.Record" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="QuoteValues" Type="StockYahooData.QuoteValue" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Records">
+              <PropertyRef Name="ID" />
+            </Principal>
+            <Dependent Role="QuoteValues">
+              <PropertyRef Name="RecordID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_RecordTradeInfo">
+          <End Role="Records" Type="StockYahooData.Record" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="TradeInfoes" Type="StockYahooData.TradeInfo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Records">
+              <PropertyRef Name="ID" />
+            </Principal>
+            <Dependent Role="TradeInfoes">
+              <PropertyRef Name="RecordID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_RecordValuationMeasure">
+          <End Role="Records" Type="StockYahooData.Record" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="ValuationMeasures" Type="StockYahooData.ValuationMeasure" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Records">
+              <PropertyRef Name="ID" />
+            </Principal>
+            <Dependent Role="ValuationMeasures">
+              <PropertyRef Name="RecordID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_StockRecord">
+          <End Role="Stocks" Type="StockYahooData.Stock" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="Records" Type="StockYahooData.Record" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Stocks">
+              <PropertyRef Name="ID" />
+            </Principal>
+            <Dependent Role="Records">
+              <PropertyRef Name="StockID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_ReportSector">
+          <End Role="Reports" Type="StockYahooData.Report" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="Sectors" Type="StockYahooData.Sector" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Reports">
+              <PropertyRef Name="ID" />
+            </Principal>
+            <Dependent Role="Sectors">
+              <PropertyRef Name="ReportID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_ReportStock">
+          <End Role="Reports" Type="StockYahooData.Report" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="Stocks" Type="StockYahooData.Stock" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Reports">
+              <PropertyRef Name="ID" />
+            </Principal>
+            <Dependent Role="Stocks">
+              <PropertyRef Name="ReportID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_SectorStock">
+          <End Role="Sectors" Type="StockYahooData.Sector" Multiplicity="1">
+          </End>
+          <End Role="Stocks" Type="StockYahooData.Stock" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Sectors">
+              <PropertyRef Name="ID" />
+            </Principal>
+            <Dependent Role="Stocks">
+              <PropertyRef Name="SectorID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_StockSplitFactor">
+          <End Role="Stocks" Type="StockYahooData.Stock" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="SplitFactors" Type="StockYahooData.SplitFactor" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Stocks">
+              <PropertyRef Name="ID" />
+            </Principal>
+            <Dependent Role="SplitFactors">
+              <PropertyRef Name="StockID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityType Name="SplitFactorFuture">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Type="Int32" Name="ID" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <NavigationProperty Name="Report" Relationship="StockYahooData.ReportSplitFactorFuture" FromRole="SplitFactorFuture" ToRole="Report" />
+          <Property Type="Int32" Name="ReportID" Nullable="false" />
+          <Property Type="String" Name="Symbol" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="Name" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Type="DateTime" Name="DateAnnounce" Nullable="true" />
+          <Property Type="DateTime" Name="DatePayable" Nullable="true" />
+          <Property Type="String" Name="Exchange" Nullable="false" FixedLength="false" Unicode="true" MaxLength="50" />
+          <Property Type="DateTime" Name="DateEx" Nullable="false" />
+          <Property Type="Int32" Name="SharesLast" Nullable="false" />
+          <Property Type="Int32" Name="SharesNew" Nullable="false" />
+          <Property Type="Single" Name="Ratio" Nullable="false" />
+          <Property Type="DateTime" Name="DateUpdate" Nullable="true" />
+        </EntityType>
+        <Association Name="ReportSplitFactorFuture">
+          <End Type="StockYahooData.Report" Role="Report" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Type="StockYahooData.SplitFactorFuture" Role="SplitFactorFuture" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Report">
+              <PropertyRef Name="ID" />
+            </Principal>
+            <Dependent Role="SplitFactorFuture">
+              <PropertyRef Name="ReportID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityType Name="BondRate">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Type="Int32" Name="ID" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <NavigationProperty Name="Report" Relationship="StockYahooData.ReportBondRate" FromRole="BondRate" ToRole="Report" />
+          <Property Type="Int32" Name="ReportID" Nullable="false" />
+          <Property Type="String" Name="Symbol" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="Name" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Type="Int16" Name="Type" Nullable="false" />
+          <Property Type="Int16" Name="Security" Nullable="false" />
+          <Property Type="Single" Name="Interest" Nullable="false" />
+          <Property Type="Int32" Name="MaturityDays" Nullable="false" />
+          <Property Type="DateTime" Name="DateUpdate" Nullable="false" />
+        </EntityType>
+        <Association Name="ReportBondRate">
+          <End Type="StockYahooData.Report" Role="Report" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Type="StockYahooData.BondRate" Role="BondRate" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Report">
+              <PropertyRef Name="ID" />
+            </Principal>
+            <Dependent Role="BondRate">
+              <PropertyRef Name="ReportID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityType Name="StockSymbol">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Type="Int32" Name="ID" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Type="DateTime" Name="DateUpdate" Nullable="false" />
+          <Property Name="Exchange" Nullable="false" MaxLength="Max" FixedLength="false" Unicode="true" Type="String" />
+          <Property Type="String" Name="Name" Nullable="false" MaxLength="4000" FixedLength="false" Unicode="true" />
+          <Property Name="IndustryID" Nullable="false" Type="Int32" />
+          <Property Name="SectorID" Nullable="false" Type="Int32" />
+          <Property Type="String" Name="Symbol" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="SymbolNew" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="Stock" Relationship="StockYahooData.StockToStockSymbol" FromRole="StockSymbol" ToRole="Stock" />
+          <Property Type="Int32" Name="StockID" Nullable="false" />
+        </EntityType>
+        <EntityType Name="StockError">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Type="Int32" Name="ID" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Type="DateTime" Name="DateUpdate" Nullable="false" />
+          <Property Type="String" Name="Symbol" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Type="String" Name="Description" Nullable="false" MaxLength="Max" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="Stock" Relationship="StockYahooData.StockToStockError" FromRole="StockError" ToRole="Stock" />
+          <Property Type="Int32" Name="StockID" Nullable="false" />
+        </EntityType>
+        <Association Name="StockToStockError">
+          <End Type="StockYahooData.Stock" Role="Stock" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Type="StockYahooData.StockError" Role="StockError" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Stock">
+              <PropertyRef Name="ID" />
+            </Principal>
+            <Dependent Role="StockError">
+              <PropertyRef Name="StockID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="StockToStockSymbol">
+          <End Type="StockYahooData.Stock" Role="Stock" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Type="StockYahooData.StockSymbol" Role="StockSymbol" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Stock">
+              <PropertyRef Name="ID" />
+            </Principal>
+            <Dependent Role="StockSymbol">
+              <PropertyRef Name="StockID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+      </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+    <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
+  <EntityContainerMapping StorageEntityContainer="StockYahooDataStoreContainer" CdmEntityContainer="StockYahooEntities">
+    <EntitySetMapping Name="FinancialHighlights">
+      <EntityTypeMapping TypeName="IsTypeOf(StockYahooData.FinancialHighlight)">
+        <MappingFragment StoreEntitySet="FinancialHighlights">
+          <ScalarProperty Name="ID" ColumnName="ID" />
+          <ScalarProperty Name="BookValuePerShare" ColumnName="BookValuePerShare" />
+          <ScalarProperty Name="CurrentRatio" ColumnName="CurrentRatio" />
+          <ScalarProperty Name="DilutedEPS" ColumnName="DilutedEPS" />
+          <ScalarProperty Name="EBITDAInMillion" ColumnName="EBITDAInMillion" />
+          <ScalarProperty Name="FiscalYearEnds" ColumnName="FiscalYearEnds" />
+          <ScalarProperty Name="GrossProfitInMillion" ColumnName="GrossProfitInMillion" />
+          <ScalarProperty Name="LeveredFreeCashFlowInMillion" ColumnName="LeveredFreeCashFlowInMillion" />
+          <ScalarProperty Name="MostRecentQuarter" ColumnName="MostRecentQuarter" />
+          <ScalarProperty Name="NetIncomeAvlToCommonInMillion" ColumnName="NetIncomeAvlToCommonInMillion" />
+          <ScalarProperty Name="OperatingCashFlowInMillion" ColumnName="OperatingCashFlowInMillion" />
+          <ScalarProperty Name="OperatingMarginPercent" ColumnName="OperatingMarginPercent" />
+          <ScalarProperty Name="ProfitMarginPercent" ColumnName="ProfitMarginPercent" />
+          <ScalarProperty Name="QuarterlyRevenueGrowthPercent" ColumnName="QuarterlyRevenueGrowthPercent" />
+          <ScalarProperty Name="QuaterlyEarningsGrowthPercent" ColumnName="QuaterlyEarningsGrowthPercent" />
+          <ScalarProperty Name="ReturnOnAssetsPercent" ColumnName="ReturnOnAssetsPercent" />
+          <ScalarProperty Name="ReturnOnEquityPercent" ColumnName="ReturnOnEquityPercent" />
+          <ScalarProperty Name="RevenueInMillion" ColumnName="RevenueInMillion" />
+          <ScalarProperty Name="RevenuePerShare" ColumnName="RevenuePerShare" />
+          <ScalarProperty Name="TotalCashInMillion" ColumnName="TotalCashInMillion" />
+          <ScalarProperty Name="TotalCashPerShare" ColumnName="TotalCashPerShare" />
+          <ScalarProperty Name="TotalDeptInMillion" ColumnName="TotalDeptInMillion" />
+          <ScalarProperty Name="TotalDeptPerEquity" ColumnName="TotalDeptPerEquity" />
+          <ScalarProperty Name="RecordID" ColumnName="RecordID" />
+          <ScalarProperty Name="DateUpdate" ColumnName="DateUpdate" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="Industries">
+      <EntityTypeMapping TypeName="IsTypeOf(StockYahooData.Industry)">
+        <MappingFragment StoreEntitySet="Industries">
+          <ScalarProperty Name="ID" ColumnName="ID" />
+          <ScalarProperty Name="Name" ColumnName="Name" />
+          <ScalarProperty Name="ReportID" ColumnName="ReportID" />
+          <ScalarProperty Name="SectorID" ColumnName="SectorID" />
+          <ScalarProperty Name="DataSourceID" ColumnName="DataSourceID" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="MarketQuoteDatas">
+      <EntityTypeMapping TypeName="IsTypeOf(StockYahooData.MarketQuoteData)">
+        <MappingFragment StoreEntitySet="MarketQuoteDatas">
+          <ScalarProperty Name="ID" ColumnName="ID" />
+          <ScalarProperty Name="DividendYieldPercent" ColumnName="DividendYieldPercent" />
+          <ScalarProperty Name="LongTermDeptToEquity" ColumnName="LongTermDeptToEquity" />
+          <ScalarProperty Name="MarketCapitalizationInMillion" ColumnName="MarketCapitalizationInMillion" />
+          <ScalarProperty Name="NetProfitMarginPercent" ColumnName="NetProfitMarginPercent" />
+          <ScalarProperty Name="PriceEarningsRatio" ColumnName="PriceEarningsRatio" />
+          <ScalarProperty Name="PriceToBookValue" ColumnName="PriceToBookValue" />
+          <ScalarProperty Name="PriceToFreeCashFlow" ColumnName="PriceToFreeCashFlow" />
+          <ScalarProperty Name="ReturnOnEquityPercent" ColumnName="ReturnOnEquityPercent" />
+          <ScalarProperty Name="RecordID" ColumnName="RecordID" />
+          <ScalarProperty Name="DateUpdate" ColumnName="DateUpdate" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="QuoteValues">
+      <EntityTypeMapping TypeName="IsTypeOf(StockYahooData.QuoteValue)">
+        <MappingFragment StoreEntitySet="QuoteValues">
+          <ScalarProperty Name="ID" ColumnName="ID" />
+          <ScalarProperty Name="AfterHoursChangeRealtime" ColumnName="AfterHoursChangeRealtime" />
+          <ScalarProperty Name="AnnualizedGain" ColumnName="AnnualizedGain" />
+          <ScalarProperty Name="Ask" ColumnName="Ask" />
+          <ScalarProperty Name="AskRealTime" ColumnName="AskRealTime" />
+          <ScalarProperty Name="AskSize" ColumnName="AskSize" />
+          <ScalarProperty Name="AverageDailyVolume" ColumnName="AverageDailyVolume" />
+          <ScalarProperty Name="Bid" ColumnName="Bid" />
+          <ScalarProperty Name="BidRealtime" ColumnName="BidRealtime" />
+          <ScalarProperty Name="BidSize" ColumnName="BidSize" />
+          <ScalarProperty Name="BookValue" ColumnName="BookValue" />
+          <ScalarProperty Name="DividendPayDate" ColumnName="DividendPayDate" />
+          <ScalarProperty Name="DividendShare" ColumnName="DividendShare" />
+          <ScalarProperty Name="DividendYield" ColumnName="DividendYield" />
+          <ScalarProperty Name="EarningsShare" ColumnName="EarningsShare" />
+          <ScalarProperty Name="EBITDA" ColumnName="EBITDA" />
+          <ScalarProperty Name="EPSEstimateCurrentYear" ColumnName="EPSEstimateCurrentYear" />
+          <ScalarProperty Name="EPSEstimateNextQuarter" ColumnName="EPSEstimateNextQuarter" />
+          <ScalarProperty Name="EPSEstimateNextYear" ColumnName="EPSEstimateNextYear" />
+          <ScalarProperty Name="ExDividendDate" ColumnName="ExDividendDate" />
+          <ScalarProperty Name="FloatShares" ColumnName="FloatShares" />
+          <ScalarProperty Name="HoldingsValue" ColumnName="HoldingsValue" />
+          <ScalarProperty Name="HoldingsValueRealtime" ColumnName="HoldingsValueRealtime" />
+          <ScalarProperty Name="LastTradeDate" ColumnName="LastTradeDate" />
+          <ScalarProperty Name="LastTradePriceOnly" ColumnName="LastTradePriceOnly" />
+          <ScalarProperty Name="LastTradeRealtimeWithTime" ColumnName="LastTradeRealtimeWithTime" />
+          <ScalarProperty Name="LastTradeSize" ColumnName="LastTradeSize" />
+          <ScalarProperty Name="MarketCapitalization" ColumnName="MarketCapitalization" />
+          <ScalarProperty Name="MarketCapRealtime" ColumnName="MarketCapRealtime" />
+          <ScalarProperty Name="OneyrTargetPrice" ColumnName="OneyrTargetPrice" />
+          <ScalarProperty Name="OrderBookRealtime" ColumnName="OrderBookRealtime" />
+          <ScalarProperty Name="PEGRatio" ColumnName="PEGRatio" />
+          <ScalarProperty Name="PERatio" ColumnName="PERatio" />
+          <ScalarProperty Name="PERatioRealtime" ColumnName="PERatioRealtime" />
+          <ScalarProperty Name="PriceBook" ColumnName="PriceBook" />
+          <ScalarProperty Name="PriceEPSEstimateCurrentYear" ColumnName="PriceEPSEstimateCurrentYear" />
+          <ScalarProperty Name="PriceEPSEstimateNextYear" ColumnName="PriceEPSEstimateNextYear" />
+          <ScalarProperty Name="PriceSales" ColumnName="PriceSales" />
+          <ScalarProperty Name="SharesOwned" ColumnName="SharesOwned" />
+          <ScalarProperty Name="ShortRatio" ColumnName="ShortRatio" />
+          <ScalarProperty Name="TickerTrend" ColumnName="TickerTrend" />
+          <ScalarProperty Name="RecordID" ColumnName="RecordID" />
+          <ScalarProperty Name="StockExchange" ColumnName="StockExchange" />
+          <ScalarProperty Name="DateUpdate" ColumnName="DateUpdate" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="Records">
+      <EntityTypeMapping TypeName="IsTypeOf(StockYahooData.Record)">
+        <MappingFragment StoreEntitySet="Records">
+          <ScalarProperty Name="ID" ColumnName="ID" />
+          <ScalarProperty Name="StockID" ColumnName="StockID" />
+          <ScalarProperty Name="DateDay" ColumnName="DateDay" />
+          <ScalarProperty Name="DateUpdate" ColumnName="DateUpdate" />
+          <ScalarProperty Name="DateLastTrade" ColumnName="DateLastTrade" />
+          <ScalarProperty Name="Open" ColumnName="Open" />
+          <ScalarProperty Name="Last" ColumnName="Last" />
+          <ScalarProperty Name="High" ColumnName="High" />
+          <ScalarProperty Name="Low" ColumnName="Low" />
+          <ScalarProperty Name="Vol" ColumnName="Vol" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="Reports">
+      <EntityTypeMapping TypeName="IsTypeOf(StockYahooData.Report)">
+        <MappingFragment StoreEntitySet="Reports">
+          <ScalarProperty Name="ID" ColumnName="ID" />
+          <ScalarProperty Name="Name" ColumnName="Name" />
+          <ScalarProperty Name="DateStart" ColumnName="DateStart" />
+          <ScalarProperty Name="DateStop" ColumnName="DateStop" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="Sectors">
+      <EntityTypeMapping TypeName="IsTypeOf(StockYahooData.Sector)">
+        <MappingFragment StoreEntitySet="Sectors">
+          <ScalarProperty Name="ID" ColumnName="ID" />
+          <ScalarProperty Name="Name" ColumnName="Name" />
+          <ScalarProperty Name="ReportID" ColumnName="ReportID" />
+          <ScalarProperty Name="DataSourceID" ColumnName="DataSourceID" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="SplitFactors">
+      <EntityTypeMapping TypeName="IsTypeOf(StockYahooData.SplitFactor)">
+        <MappingFragment StoreEntitySet="SplitFactors">
+          <ScalarProperty Name="ID" ColumnName="ID" />
+          <ScalarProperty Name="StockID" ColumnName="StockID" />
+          <ScalarProperty Name="DateDay" ColumnName="DateDay" />
+          <ScalarProperty Name="SharesLast" ColumnName="SharesLast" />
+          <ScalarProperty Name="SharesNew" ColumnName="SharesNew" />
+          <ScalarProperty Name="Ratio" ColumnName="Ratio" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="Stocks">
+      <EntityTypeMapping TypeName="IsTypeOf(StockYahooData.Stock)">
+        <MappingFragment StoreEntitySet="Stocks">
+          <ScalarProperty Name="ID" ColumnName="ID" />
+          <ScalarProperty Name="Symbol" ColumnName="Symbol" />
+          <ScalarProperty Name="Name" ColumnName="Name" />
+          <ScalarProperty Name="IndustryID" ColumnName="IndustryID" />
+          <ScalarProperty Name="SectorID" ColumnName="SectorID" />
+          <ScalarProperty Name="IsOption" ColumnName="IsOption" />
+          <ScalarProperty Name="DateStart" ColumnName="DateStart" />
+          <ScalarProperty Name="DateStop" ColumnName="DateStop" />
+          <ScalarProperty Name="IsSymbolError" ColumnName="IsSymbolError" />
+          <ScalarProperty Name="ReportID" ColumnName="ReportID" />
+          <ScalarProperty Name="Exchange" ColumnName="Exchange" />
+          <ScalarProperty Name="ErrorDescription" ColumnName="ErrorDescription" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="TradeInfoes">
+      <EntityTypeMapping TypeName="IsTypeOf(StockYahooData.TradeInfo)">
+        <MappingFragment StoreEntitySet="TradeInfoes">
+          <ScalarProperty Name="ID" ColumnName="ID" />
+          <ScalarProperty Name="AverageVolumeTenDaysInThousand" ColumnName="AverageVolumeTenDaysInThousand" />
+          <ScalarProperty Name="AverageVolumeThreeMonthInThousand" ColumnName="AverageVolumeThreeMonthInThousand" />
+          <ScalarProperty Name="Beta" ColumnName="Beta" />
+          <ScalarProperty Name="DividendDate" ColumnName="DividendDate" />
+          <ScalarProperty Name="ExDividendDate" ColumnName="ExDividendDate" />
+          <ScalarProperty Name="FiftyDayMovingAverage" ColumnName="FiftyDayMovingAverage" />
+          <ScalarProperty Name="FiveYearAverageDividendYieldPercent" ColumnName="FiveYearAverageDividendYieldPercent" />
+          <ScalarProperty Name="FloatInMillion" ColumnName="FloatInMillion" />
+          <ScalarProperty Name="ForwardAnnualDividendRate" ColumnName="ForwardAnnualDividendRate" />
+          <ScalarProperty Name="ForwardAnnualDividendYieldPercent" ColumnName="ForwardAnnualDividendYieldPercent" />
+          <ScalarProperty Name="LastSplitDate" ColumnName="LastSplitDate" />
+          <ScalarProperty Name="LastSplitFactor" ColumnName="LastSplitFactor" />
+          <ScalarProperty Name="OneYearChangePercent" ColumnName="OneYearChangePercent" />
+          <ScalarProperty Name="OneYearHigh" ColumnName="OneYearHigh" />
+          <ScalarProperty Name="OneYearLow" ColumnName="OneYearLow" />
+          <ScalarProperty Name="PayoutRatio" ColumnName="PayoutRatio" />
+          <ScalarProperty Name="PercentHeldByInsiders" ColumnName="PercentHeldByInsiders" />
+          <ScalarProperty Name="PercentHeldByInstitutions" ColumnName="PercentHeldByInstitutions" />
+          <ScalarProperty Name="SharesOutstandingInMillion" ColumnName="SharesOutstandingInMillion" />
+          <ScalarProperty Name="SharesShortInMillion" ColumnName="SharesShortInMillion" />
+          <ScalarProperty Name="SharesShortPriorMonthInMillion" ColumnName="SharesShortPriorMonthInMillion" />
+          <ScalarProperty Name="ShortPercentOfFloat" ColumnName="ShortPercentOfFloat" />
+          <ScalarProperty Name="ShortRatio" ColumnName="ShortRatio" />
+          <ScalarProperty Name="TrailingAnnualDividendYield" ColumnName="TrailingAnnualDividendYield" />
+          <ScalarProperty Name="TrailingAnnualDividendYieldPercent" ColumnName="TrailingAnnualDividendYieldPercent" />
+          <ScalarProperty Name="TwoHundredDayMovingAverage" ColumnName="TwoHundredDayMovingAverage" />
+          <ScalarProperty Name="RecordID" ColumnName="RecordID" />
+          <ScalarProperty Name="DateUpdate" ColumnName="DateUpdate" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="ValuationMeasures">
+      <EntityTypeMapping TypeName="IsTypeOf(StockYahooData.ValuationMeasure)">
+        <MappingFragment StoreEntitySet="ValuationMeasures">
+          <ScalarProperty Name="ID" ColumnName="ID" />
+          <ScalarProperty Name="EnterpriseValueInMillion" ColumnName="EnterpriseValueInMillion" />
+          <ScalarProperty Name="EnterpriseValueToEBITDA" ColumnName="EnterpriseValueToEBITDA" />
+          <ScalarProperty Name="EnterpriseValueToRevenue" ColumnName="EnterpriseValueToRevenue" />
+          <ScalarProperty Name="ForwardPE" ColumnName="ForwardPE" />
+          <ScalarProperty Name="MarketCapitalisationInMillion" ColumnName="MarketCapitalisationInMillion" />
+          <ScalarProperty Name="PEGRatio" ColumnName="PEGRatio" />
+          <ScalarProperty Name="PriceToBook" ColumnName="PriceToBook" />
+          <ScalarProperty Name="PriceToSales" ColumnName="PriceToSales" />
+          <ScalarProperty Name="TrailingPE" ColumnName="TrailingPE" />
+          <ScalarProperty Name="RecordID" ColumnName="RecordID" />
+          <ScalarProperty Name="DateUpdate" ColumnName="DateUpdate" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="SplitFactorFutures">
+      <EntityTypeMapping TypeName="IsTypeOf(StockYahooData.SplitFactorFuture)">
+        <MappingFragment StoreEntitySet="SplitFactorFutures">
+          <ScalarProperty Name="ID" ColumnName="ID" />
+          <ScalarProperty Name="ReportID" ColumnName="ReportID" />
+          <ScalarProperty Name="Symbol" ColumnName="Symbol" />
+          <ScalarProperty Name="Name" ColumnName="Name" />
+          <ScalarProperty Name="DateAnnounce" ColumnName="DateAnnounce" />
+          <ScalarProperty Name="DatePayable" ColumnName="DatePayable" />
+          <ScalarProperty Name="Exchange" ColumnName="Exchange" />
+          <ScalarProperty Name="DateEx" ColumnName="DateEx" />
+          <ScalarProperty Name="SharesLast" ColumnName="SharesLast" />
+          <ScalarProperty Name="SharesNew" ColumnName="SharesNew" />
+          <ScalarProperty Name="Ratio" ColumnName="Ratio" />
+          <ScalarProperty Name="DateUpdate" ColumnName="DateUpdate" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="BondRates">
+      <EntityTypeMapping TypeName="IsTypeOf(StockYahooData.BondRate)">
+        <MappingFragment StoreEntitySet="BondRates">
+          <ScalarProperty Name="ID" ColumnName="ID" />
+          <ScalarProperty Name="ReportID" ColumnName="ReportID" />
+          <ScalarProperty Name="Symbol" ColumnName="Symbol" />
+          <ScalarProperty Name="Name" ColumnName="Name" />
+          <ScalarProperty Name="Type" ColumnName="Type" />
+          <ScalarProperty Name="Security" ColumnName="Security" />
+          <ScalarProperty Name="Interest" ColumnName="Interest" />
+          <ScalarProperty Name="MaturityDays" ColumnName="MaturityDays" />
+          <ScalarProperty Name="DateUpdate" ColumnName="DateUpdate" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="StockSymbols">
+      <EntityTypeMapping TypeName="IsTypeOf(StockYahooData.StockSymbol)">
+        <MappingFragment StoreEntitySet="StockSymbols">
+          <ScalarProperty Name="ID" ColumnName="ID" />
+          <ScalarProperty Name="DateUpdate" ColumnName="DateUpdate" />
+          <ScalarProperty Name="Exchange" ColumnName="Exchange" />
+          <ScalarProperty Name="Name" ColumnName="Name" />
+          <ScalarProperty Name="IndustryID" ColumnName="IndustryID" />
+          <ScalarProperty Name="SectorID" ColumnName="SectorID" />
+          <ScalarProperty Name="Symbol" ColumnName="Symbol" />
+          <ScalarProperty Name="SymbolNew" ColumnName="SymbolNew" />
+          <ScalarProperty Name="StockID" ColumnName="StockID" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="StockErrors">
+      <EntityTypeMapping TypeName="IsTypeOf(StockYahooData.StockError)">
+        <MappingFragment StoreEntitySet="StockErrors">
+          <ScalarProperty Name="ID" ColumnName="ID" />
+          <ScalarProperty Name="DateUpdate" ColumnName="DateUpdate" />
+          <ScalarProperty Name="Symbol" ColumnName="Symbol" />
+          <ScalarProperty Name="Description" ColumnName="Description" />
+          <ScalarProperty Name="StockID" ColumnName="StockID" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+  </EntityContainerMapping>
+</Mapping></edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
+    <Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </Connection>
+    <Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="True" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="True" />
+        <DesignerProperty Name="CodeGenerationStrategy" Value="None" />
+        <DesignerProperty Name="DatabaseGenerationWorkflow" Value="$(VSEFTools)\DBGen\TablePerTypeStrategy.xaml" />
+      </DesignerInfoPropertySet>
+    </Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <Diagrams>
+      <Diagram Name="StockYahooEntity" ZoomLevel="64">
+        <EntityTypeShape EntityType="StockYahooData.FinancialHighlight" Width="2.375" PointX="11.875" PointY="6.125" Height="0.4" IsExpanded="false" />
+        <EntityTypeShape EntityType="StockYahooData.Industry" Width="1.5" PointX="3" PointY="20" Height="2.295797416766483" IsExpanded="true" />
+        <EntityTypeShape EntityType="StockYahooData.MarketQuoteData" Width="2" PointX="12" PointY="11.625" Height="2.9699510228633876" IsExpanded="true" />
+        <EntityTypeShape EntityType="StockYahooData.QuoteValue" Width="2.875" PointX="12" PointY="15.375" Height="8.5317182731628378" IsExpanded="true" />
+        <EntityTypeShape EntityType="StockYahooData.Record" Width="1.5" PointX="9.75" PointY="18.25" Height="3.6441046289602923" IsExpanded="true" />
+        <EntityTypeShape EntityType="StockYahooData.Report" Width="1.5" PointX="0.75" PointY="18.875" Height="2.6328742198149371" IsExpanded="true" />
+        <EntityTypeShape EntityType="StockYahooData.Sector" Width="1.5" PointX="3" PointY="23" Height="2.1272590152422595" IsExpanded="true" />
+        <EntityTypeShape EntityType="StockYahooData.SplitFactor" Width="1.5" PointX="7.625" PointY="23.875" Height="2.127259015242263" IsExpanded="true" />
+        <EntityTypeShape EntityType="StockYahooData.Stock" Width="1.5" PointX="7.5" PointY="19.5" Height="3.8126430304845194" IsExpanded="true" />
+        <EntityTypeShape EntityType="StockYahooData.TradeInfo" Width="1.5" PointX="12" PointY="24.625" Height="0.4" IsExpanded="false" />
+        <EntityTypeShape EntityType="StockYahooData.ValuationMeasure" Width="1.5" PointX="12" PointY="31.375" Height="0.4" IsExpanded="false" />
+        <AssociationConnector Association="StockYahooData.FK_RecordFinancialHighlights" ManuallyRouted="false">
+          <ConnectorPoint PointX="10.756471220703126" PointY="18.25" />
+          <ConnectorPoint PointX="10.756471220703126" PointY="6.325" />
+          <ConnectorPoint PointX="11.875" PointY="6.325" />
+        </AssociationConnector>
+        <AssociationConnector Association="StockYahooData.FK_IndustryStock" ManuallyRouted="false">
+          <ConnectorPoint PointX="4.5" PointY="21.013555055906377" />
+          <ConnectorPoint PointX="6.104166666666667" PointY="21.013555055906377" />
+          <ConnectorPoint PointX="6.270833333333333" PointY="21.013555055906377" />
+          <ConnectorPoint PointX="7.5" PointY="21.013555055906377" />
+        </AssociationConnector>
+        <AssociationConnector Association="StockYahooData.FK_ReportIndustry" ManuallyRouted="false">
+          <ConnectorPoint PointX="2.25" PointY="20.753937109907469" />
+          <ConnectorPoint PointX="3" PointY="20.753937109907469" />
+        </AssociationConnector>
+        <AssociationConnector Association="StockYahooData.FK_SectorIndustry" ManuallyRouted="false">
+          <ConnectorPoint PointX="3.75" PointY="23" />
+          <ConnectorPoint PointX="3.75" PointY="22.295797416766483" />
+        </AssociationConnector>
+        <AssociationConnector Association="StockYahooData.FK_RecordMarketQuoteData" ManuallyRouted="false">
+          <ConnectorPoint PointX="10.200437441406251" PointY="18.25" />
+          <ConnectorPoint PointX="10.200437441406251" PointY="13.109975511431694" />
+          <ConnectorPoint PointX="10.673137887369792" PointY="13.109975511431694" />
+          <ConnectorPoint PointX="10.83980455403646" PointY="13.109975511431694" />
+          <ConnectorPoint PointX="12" PointY="13.109975511431694" />
+        </AssociationConnector>
+        <AssociationConnector Association="StockYahooData.FK_RecordQuoteValue" ManuallyRouted="false">
+          <ConnectorPoint PointX="11.25" PointY="20.072052314480146" />
+          <ConnectorPoint PointX="12" PointY="20.072052314480146" />
+        </AssociationConnector>
+        <AssociationConnector Association="StockYahooData.FK_RecordTradeInfo" ManuallyRouted="false">
+          <ConnectorPoint PointX="10.233396796874999" PointY="21.894104628960292" />
+          <ConnectorPoint PointX="10.233396796874999" PointY="24.825" />
+          <ConnectorPoint PointX="10.689617565104166" PointY="24.825" />
+          <ConnectorPoint PointX="10.856284231770834" PointY="24.825" />
+          <ConnectorPoint PointX="12" PointY="24.825" />
+        </AssociationConnector>
+        <AssociationConnector Association="StockYahooData.FK_RecordValuationMeasure" ManuallyRouted="false">
+          <ConnectorPoint PointX="10.7729508984375" PointY="21.894104628960292" />
+          <ConnectorPoint PointX="10.7729508984375" PointY="31.575" />
+          <ConnectorPoint PointX="12" PointY="31.575" />
+        </AssociationConnector>
+        <AssociationConnector Association="StockYahooData.FK_StockRecord" ManuallyRouted="false">
+          <ConnectorPoint PointX="9" PointY="20.697052314480146" />
+          <ConnectorPoint PointX="9.75" PointY="20.697052314480146" />
+        </AssociationConnector>
+        <AssociationConnector Association="StockYahooData.FK_ReportSector" ManuallyRouted="false">
+          <ConnectorPoint PointX="1.5" PointY="21.507874219814937" />
+          <ConnectorPoint PointX="1.5" PointY="24.06362950762113" />
+          <ConnectorPoint PointX="3" PointY="24.06362950762113" />
+        </AssociationConnector>
+        <AssociationConnector Association="StockYahooData.FK_ReportStock" ManuallyRouted="false">
+          <ConnectorPoint PointX="2.25" PointY="19.71875" />
+          <ConnectorPoint PointX="6.104166666666667" PointY="19.71875" />
+          <ConnectorPoint PointX="6.270833333333333" PointY="19.71875" />
+          <ConnectorPoint PointX="7.5" PointY="19.71875" />
+        </AssociationConnector>
+        <AssociationConnector Association="StockYahooData.FK_SectorStock" ManuallyRouted="false">
+          <ConnectorPoint PointX="4.5" PointY="23.156321515242261" />
+          <ConnectorPoint PointX="7.5" PointY="23.156321515242261" />
+        </AssociationConnector>
+        <AssociationConnector Association="StockYahooData.FK_StockSplitFactor" ManuallyRouted="false">
+          <ConnectorPoint PointX="8.3125" PointY="23.312643030484519" />
+          <ConnectorPoint PointX="8.3125" PointY="23.875" />
+        </AssociationConnector>
+        <EntityTypeShape EntityType="StockYahooData.SplitFactorFuture" Width="1.875" PointX="2.25" PointY="14.75" Height="0.4" IsExpanded="false" />
+        <AssociationConnector Association="StockYahooData.ReportSplitFactorFuture">
+          <ConnectorPoint PointX="1.46875" PointY="18.875" />
+          <ConnectorPoint PointX="1.46875" PointY="14.95" />
+          <ConnectorPoint PointX="1.7760441666666667" PointY="14.95" />
+          <ConnectorPoint PointX="1.9427108333333332" PointY="14.95" />
+          <ConnectorPoint PointX="2.25" PointY="14.95" />
+        </AssociationConnector>
+        <EntityTypeShape EntityType="StockYahooData.BondRate" Width="1.75" PointX="2.25" PointY="14.125" Height="0.4" IsExpanded="false" />
+        <AssociationConnector Association="StockYahooData.ReportBondRate">
+          <ConnectorPoint PointX="1.8593775" PointY="18.875" />
+          <ConnectorPoint PointX="1.8593775" PointY="14.325" />
+          <ConnectorPoint PointX="2.25" PointY="14.325" />
+        </AssociationConnector>
+        <EntityTypeShape EntityType="StockYahooData.StockSymbol" Width="1.75" PointX="7.375" PointY="16.25" Height="2.2957974167664865" />
+        <EntityTypeShape EntityType="StockYahooData.StockError" Width="1.625" PointX="5.375" PointY="16.25" Height="1.6216438106695819" />
+        <AssociationConnector Association="StockYahooData.StockToStockError">
+          <ConnectorPoint PointX="7.5" PointY="22.127072885955375" />
+          <ConnectorPoint PointX="6.1875" PointY="22.127072885955375" />
+          <ConnectorPoint PointX="6.1875" PointY="18.208720613718036" />
+        </AssociationConnector>
+        <AssociationConnector Association="StockYahooData.StockToStockSymbol">
+          <ConnectorPoint PointX="8.25" PointY="19.5" />
+          <ConnectorPoint PointX="8.25" PointY="18.882874219814941" />
+        </AssociationConnector>
+      </Diagram>
+    </Diagrams>
+  </Designer>
+</edmx:Edmx>
