@@ -1,0 +1,131 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="YahooAccessData.Record" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="5.75" Y="0.5" Width="5.25" />
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>jogcrEGbK2WG8A8GngxjAmZBqaxiIZCAk5hDhCALWNo=</HashCode>
+      <FileName>Partial\Record.Partial.vb</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="YahooAccessData.RecordQuoteValue" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="4" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AiSIJAAYACUCsB4QCiVwBAIyCKliSGBAEEhCDgDcZAg=</HashCode>
+      <FileName>Partial\Record.Partial.vb</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="YahooAccessData.RecordPrices" Collapsed="true">
+    <Position X="2.25" Y="2.25" Width="1.25" />
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>xEEiAAggBAQAIsALQIAOUQIkGBArCAkIjOo+oiAAiAo=</HashCode>
+      <FileName>Partial\Record.Partial.vb</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YahooAccessData.PriceVolData" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="2.25" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAAAAAAAAEAaAAACgwwAAAAAAggAAAAgAACACAAAAA=</HashCode>
+      <FileName>Partial\Record.Partial.vb</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="YahooAccessData.PriceVolAsClass" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="0.5" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>jAAEQAIAAFES+CAmEg8QBAcCEIkiDHQpgEMSACCdBBA=</HashCode>
+      <FileName>Partial\Record.Partial.vb</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="YahooAccessData.PriceVolLargeAsClass" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="4" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>iAAEQAIAAFES+CAkAg8QBAECEIkiDGQpAEMSACAMBBA=</HashCode>
+      <FileName>Partial\Record.Partial.vb</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="YahooAccessData.EqualityComparerOfRecord" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="0.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAgAAAAAAAAAAAAIAAAAAAAAAAAAA=</HashCode>
+      <FileName>Partial\Record.Partial.vb</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="YahooAccessData.EqualityComparerOfRecordQuoteValue" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="2.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAgAAAAAAAAAAAAIAAAAAAAAAAAAA=</HashCode>
+      <FileName>Partial\Record.Partial.vb</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="YahooAccessData.FilterHoldFromZero" Collapsed="true">
+    <Position X="4" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAACIAAAAAAAAAEAAAAABAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Partial\Record.Partial.vb</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Struct Name="YahooAccessData.PriceVol" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="0.5" Y="3.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>jAoEQAIEQFES+CQmGg8RBAcCEYkiDHQpgEMSACCdBBA=</HashCode>
+      <FileName>Partial\Record.Partial.vb</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Struct>
+  <Struct Name="YahooAccessData.PriceVolLarge" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="2.25" Y="3.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>iAAEQAIAAFES+CAkAg8QBAECEIkiDGQpAEMSACAMBBA=</HashCode>
+      <FileName>Partial\Record.Partial.vb</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Struct>
+  <Interface Name="YahooAccessData.IRecordQuoteValue" Collapsed="true">
+    <Position X="2.25" Y="5.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AiSIAAAAAAUAsBAQCiEwBAIyAKliSGAAgEhCDADcJAA=</HashCode>
+      <FileName>Partial\Record.Partial.vb</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="YahooAccessData.IPriceVol" Collapsed="true">
+    <Position X="2.25" Y="5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAAAAAAAAEAaAAACgwwAAAAAAggAAAAgAACACAAAAA=</HashCode>
+      <FileName>Partial\Record.Partial.vb</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="YahooAccessData.IPriceVolLarge" Collapsed="true">
+    <Position X="0.5" Y="5.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAAAAAAAAEAaAAACg4wAAACAAggAAAAAAACACAAAAA=</HashCode>
+      <FileName>Partial\Record.Partial.vb</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="YahooAccessData.IPriceVol(Of T)" Collapsed="true">
+    <Position X="4" Y="5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gAAAAAAAAAEAaAAACg4wAAAAAAggAAAAgAACACAAAAA=</HashCode>
+      <FileName>Partial\Record.Partial.vb</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="YahooAccessData.IPricePivotPoint" Collapsed="true">
+    <Position X="0.5" Y="5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>IEAAAAAAAAAAEAAAAAAAAAAAAQAAAAgAAAAAAAAIAAA=</HashCode>
+      <FileName>Partial\Record.Partial.vb</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Font Name="Tahoma" Size="8.25" />
+</ClassDiagram>
