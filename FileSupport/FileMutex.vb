@@ -167,6 +167,18 @@ Namespace ExtensionService
       End Try
     End Sub
 
+    Public Sub FileDelete(ByVal FileName As String)
+      MyMutex.WaitOne()
+      Try
+        My.Computer.FileSystem.DeleteFile(FileName, FileIO.UIOption.OnlyErrorDialogs, FileIO.RecycleOption.DeletePermanently)
+      Catch ex As Exception
+        Throw ex
+      Finally
+        'always release
+        MyMutex.ReleaseMutex()
+      End Try
+    End Sub
+
     Public Function FileReadOfDictionary(Of TKey, TValue)(
       ByVal FileName As String,
       ByRef DataDefaultOnError As Dictionary(Of TKey, TValue),
