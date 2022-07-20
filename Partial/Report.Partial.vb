@@ -122,6 +122,27 @@ Partial Public Class Report
   End Sub
 #End Region
 #Region "Basic Function"
+  Public Function ToWeeklyIndex(ByVal DateValue As Date) As Integer
+    Dim ThisDateRefToPreviousMonday = ReportDate.DateToMondayPrevious(Me.DateStart)
+
+    Dim ThisDeltaDays = ReportDate.MarketTradingDeltaDays(ThisDateRefToPreviousMonday, DateValue)
+    Return ThisDeltaDays \ 5
+  End Function
+
+  Public Function ToIndex(ByVal DateValue As Date) As Integer
+    Return ReportDate.MarketTradingDeltaDays(Me.DateStart, DateValue)
+  End Function
+
+  Public Shared Function ToDate(ByVal DateStart As Date, ByVal Index As Integer) As Date
+    Dim ThisNumberOfTradingFullWeek As Integer = Index \ 5
+    Dim ThisNumberOfTradingDayLeft As Integer = Index Mod 5
+    Return DateStart.AddDays(7 * ThisNumberOfTradingFullWeek).AddDays(ThisNumberOfTradingDayLeft)
+  End Function
+
+  Public Function ToDate(ByVal Index As Integer) As Date
+    Return RecordPrices.ToDate(Me.DateStart, Index)
+  End Function
+
   Public Property Tag As String
 
   Public Overrides Function ToString() As String

@@ -23,6 +23,7 @@ Namespace ExtensionService
         Throw New InvalidProgramException("Error with Mutex creation...", ex)
       End Try
     End Sub
+
     Public Sub FileHeaderSave(ByVal FileName As String, ByRef HeaderInfo As List(Of HeaderInfo))
       MyMutex.WaitOne()
       Try

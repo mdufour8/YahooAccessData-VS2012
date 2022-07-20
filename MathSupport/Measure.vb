@@ -35,6 +35,8 @@ Namespace MathPlus
       Public Const GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA3_LABEL As String = "-σ3"
       Public Const GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA4_LABEL As String = "+σ4"
       Public Const GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA4_LABEL As String = "-σ4"
+      Public Const GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA5_LABEL As String = "+σ5"
+      Public Const GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA5_LABEL As String = "-σ5"
 
       Public Const TIME_TO_MARKET_FROM_OPEN_TO_CLOSE_IN_DAY As Double = (YahooAccessData.ReportDate.MARKET_OPEN_TO_CLOSE_PERIOD_HOUR_DEFAULT) / 24  'market open for 6.5 hours
       Public Const TIME_TO_MARKET_PREVIOUS_CLOSE_TO_OPEN_IN_DAY As Double = 1 - TIME_TO_MARKET_FROM_OPEN_TO_CLOSE_IN_DAY  'market open for 6.5 hours
