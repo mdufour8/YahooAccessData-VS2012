@@ -743,8 +743,7 @@ Namespace OptionValuation
     Public Property IsVolatilityStandardImpliedEnabled As Boolean Implements IStockOption.IsVolatilityStandardImpliedEnabled
 
     Public Shared Function CalculateVolatilityStandardImplied(ByVal PriceOfOption As Double) As Double
-
-
+      Throw New NotImplementedException
     End Function
 
 
@@ -895,25 +894,11 @@ Namespace OptionValuation
     End Function
 
     Public Shared Function VolatilityImpliedApproximatedEstimate(ByVal PriceOfOption As Double) As Double
-      Dim ThisResult As Double
-
-      'vbCancel 
-
-
-
-
-    End Function
+			Throw New NotImplementedException
+		End Function
 
     Public Shared Function VolatilityImpliedCloseEstimate(ByVal PriceOfOption As Double) As Double
-
-      Dim ThisResult As Double
-
-
-      'vbCancel 
-
-
-
-
+      Throw New NotImplementedException
     End Function
 
     Public Shared Function VolatilityFilterRate(VolatilityStandardYearlyType As IStockOption.enuVolatilityStandardYearlyType) As Integer
