@@ -1885,6 +1885,8 @@ Partial Public Class Stock
       .Add(New HeaderInfo With {.Name = "RankGain", .Title = .Name, .Format = "{0:n2}", .Visible = True, .IsSortable = True, .IsSortEnabled = True})
       .Add(New HeaderInfo With {.Name = "IsSymbolError", .Title = .Name, .Format = "{0}", .Visible = True, .IsSortable = True, .IsSortEnabled = True})
       .Add(New HeaderInfo With {.Name = "ErrorDescription", .Title = .Name, .Format = "{0}", .Visible = True, .IsSortable = True, .IsSortEnabled = True})
+      .Add(New HeaderInfo With {.Name = "SectorName", .Title = .Name, .Format = "{0}", .Visible = True, .IsSortable = True, .IsSortEnabled = True})
+      .Add(New HeaderInfo With {.Name = "IndustryName", .Title = .Name, .Format = "{0}", .Visible = True, .IsSortable = True, .IsSortEnabled = True})
     End With
     Return ThisListHeaderInfo
   End Function
@@ -2621,6 +2623,18 @@ Partial Public Class Stock
   Public Property ReportID As Integer
   Public Property Exchange As String
   Public Property ErrorDescription As String
+
+  Public ReadOnly Property SectorName As String
+    Get
+      Return Me.Sector.Name
+    End Get
+  End Property
+
+  Public ReadOnly Property IndustryName As String
+    Get
+      Return Me.Industry.Name
+    End Get
+  End Property
 
   Public Overridable Property Industry As Industry
   'Public Overridable Property Records As ICollection(Of Record) = New HashSet(Of Record)
