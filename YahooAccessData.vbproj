@@ -242,6 +242,7 @@
     <Compile Include="Partial\StockDividend.vb" />
     <Compile Include="Partial\StockError.Partial.vb" />
     <Compile Include="Partial\StockIndices.vb" />
+    <Compile Include="Partial\StockBasicInfo.vb" />
     <Compile Include="Partial\StockSymbol.Partial.vb" />
     <Compile Include="Partial\TradeInfo.Partial.vb" />
     <Compile Include="Partial\ValuationMeasure.Partial.vb" />

@@ -1864,6 +1864,11 @@ Partial Public Class Stock
   End Function
 #End Region
 #Region "IFormatData"
+  Public Function ToStockBasinInfo() As IStockBasicInfo
+    Dim ThisStockBasinInfo = New StockBasicInfo(Me)
+    Return ThisStockBasinInfo
+  End Function
+
   Public Function ToStingOfData() As String() Implements IFormatData.ToStingOfData
     Return Extensions.ToStingOfData(Of Stock)(Me)
   End Function
@@ -2427,7 +2432,7 @@ Partial Public Class Stock
 
   Private Property IStockInfo_FullTimeEmployees As Integer Implements IStockInfo.FullTimeEmployees
     Get
-
+      Return 0
     End Get
     Set(value As Integer)
       'not allowed at this level
@@ -2529,7 +2534,7 @@ End Interface
   End Interface
 #End Region
 #Region "IStockProcess"
-  Public Interface IStockProcess
+Public Interface IStockProcess
     ReadOnly Property AsStockProcess As IStockProcess
     'Function DetectBookEarningGlitch() As IEnumerable(Of Date)
     Function CalculateFiscalYearEnd(ByVal Year As Integer) As Date

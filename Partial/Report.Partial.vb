@@ -354,15 +354,17 @@ Partial Public Class Report
     End Set
   End Property
 
-  Public Function ToDictionaryOfStockFromExchange(ByVal Exchange As String) As Dictionary(Of String, Stock)
-    Dim ThisDictionaryOfExchanges As New Dictionary(Of String, Stock)
-
+  ''' <summary>
+  ''' Return a dictionary of all the stocks basic information copied locally 
+  ''' which make it independant of the full report implementation 
+  ''' </summary>
+  ''' <returns>The dictionary</returns>
+  Public Function ToDictionaryOfStockBasicInfo() As Dictionary(Of String, IStockBasicInfo)
+    Dim ThisDictionaryOfStock As New Dictionary(Of String, IStockBasicInfo)
     For Each ThisStock In Me.Stocks
-      If ThisStock.Exchange = Exchange Then
-        ThisDictionaryOfExchanges.Add(ThisStock.Symbol, ThisStock)
-      End If
+      ThisDictionaryOfStock.Add(ThisStock.Symbol, ThisStock.ToStockBasinInfo)
     Next
-    Return ThisDictionaryOfExchanges
+    Return ThisDictionaryOfStock
   End Function
 
   Public ReadOnly Property StockExchanges As IEnumerable(Of String)
