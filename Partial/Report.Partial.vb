@@ -354,6 +354,17 @@ Partial Public Class Report
     End Set
   End Property
 
+  Public Function ToDictionaryOfStockFromExchange(ByVal Exchange As String) As Dictionary(Of String, Stock)
+    Dim ThisDictionaryOfExchanges As New Dictionary(Of String, Stock)
+
+    For Each ThisStock In Me.Stocks
+      If ThisStock.Exchange = Exchange Then
+        ThisDictionaryOfExchanges.Add(ThisStock.Symbol, ThisStock)
+      End If
+    Next
+    Return ThisDictionaryOfExchanges
+  End Function
+
   Public ReadOnly Property StockExchanges As IEnumerable(Of String)
     Get
       Dim ThisDictionaryOfExchanges As New Dictionary(Of String, String)
@@ -512,9 +523,6 @@ Partial Public Class Report
     If SectorName Is Nothing Then SectorName = ""
     If IndustryName Is Nothing Then IndustryName = ""
 
-    If SectorName = "Indices" Then
-      SectorName = "Indices"
-    End If
     ThisSector = Me.Sectors.ToSearch.Find(SectorName)
     ThisIndustry = Me.Industries.ToSearch.Find(IndustryName)
     ThisStock = Me.Stocks.ToSearch.Find(StockSymbol)
@@ -526,6 +534,7 @@ Partial Public Class Report
       ThisIndustry = New YahooAccessData.Industry(Me, ThisSector, IndustryName)
     End If
     If ThisStock Is Nothing Then
+      'do not add a stock with no symbol 
       If StockSymbol.Length > 0 Then
         'note passing the reference 'Me' automatically add the stock in the base report collection
         ThisStock = New YahooAccessData.Stock(Me, ThisSector, ThisIndustry, Symbol:=StockSymbol)
