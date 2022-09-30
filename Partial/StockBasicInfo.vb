@@ -12,6 +12,28 @@
   Private MySectorName As String
   Private MyIndustryName As String
 
+  Public Sub New()
+    Me.New("", "")
+  End Sub
+
+  Public Sub New(ByVal Symbol As String)
+    Me.New(Symbol, "")
+  End Sub
+
+  Public Sub New(ByVal Symbol As String, ByVal Name As String)
+    MySymbol = Symbol
+    MyName = Name
+    IsOptionLocal = False
+    MyDateStart = Now
+    MyDateStop = Now
+    IsSymbolErrorLocal = False
+    MyExchange = ""
+    MyErrorDescription = ""
+    MySectorName = ""
+    MyIndustryName = ""
+  End Sub
+
+
   Public Sub New(ByVal Stock As Stock)
     'copy the basic information
     With Stock
