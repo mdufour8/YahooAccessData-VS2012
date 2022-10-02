@@ -379,10 +379,10 @@ Namespace ExtensionService
     Protected Overridable Sub Dispose(disposing As Boolean)
       If Not disposedValue Then
         If disposing Then
-          ' TODO: dispose managed state (managed objects)
+          ' dispose managed state (managed objects)
         End If
-        ' TODO: free unmanaged resources (unmanaged objects) and override finalizer
-        ' TODO: set large fields to null
+        ' free unmanaged resources (unmanaged objects) and override finalizer
+        ' set large fields to null
         If MyMutex IsNot Nothing Then
           MyMutex.Close()
           MyMutex.Dispose()
@@ -391,7 +391,7 @@ Namespace ExtensionService
       End If
     End Sub
 
-    ' ' TODO: override finalizer only if 'Dispose(disposing As Boolean)' has code to free unmanaged resources
+    ' ' override finalizer only if 'Dispose(disposing As Boolean)' has code to free unmanaged resources
     ' Protected Overrides Sub Finalize()
     '     ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method
     '     Dispose(disposing:=False)

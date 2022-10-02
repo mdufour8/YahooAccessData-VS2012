@@ -694,7 +694,7 @@ Public Class RecordIndex(Of T As {New, IRegisterKey(Of U), IDateUpdate, IMemoryS
   Protected Overridable Sub Dispose(disposing As Boolean)
     If Not Me.disposedValue Then
       If disposing Then
-        ' TODO: dispose managed state (managed objects).
+        ' dispose managed state (managed objects).
         If MyBinaryReaderOfRecordIndex IsNot Nothing Then
           MyBinaryReaderOfRecordIndex.Dispose()
         End If
@@ -705,13 +705,13 @@ Public Class RecordIndex(Of T As {New, IRegisterKey(Of U), IDateUpdate, IMemoryS
           MyFileStreamOfRecordIndex.Dispose()
         End If
       End If
-      ' TODO: free unmanaged resources (unmanaged objects) and override Finalize() below.
-      ' TODO: set large fields to null.
+      ' free unmanaged resources (unmanaged objects) and override Finalize() below.
+      ' set large fields to null.
     End If
     Me.disposedValue = True
   End Sub
 
-  'TODO: override Finalize() only if Dispose(ByVal disposing As Boolean) above has code to free unmanaged resources.
+  'override Finalize() only if Dispose(ByVal disposing As Boolean) above has code to free unmanaged resources.
   Protected Overrides Sub Finalize()
     ' Do not change this code.  Put cleanup code in Dispose(ByVal disposing As Boolean) above.
     Dispose(False)

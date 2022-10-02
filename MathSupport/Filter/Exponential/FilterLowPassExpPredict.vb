@@ -787,7 +787,6 @@ Namespace MathPlus.Filter
       Dim ThisFilterEstimate As IFilterEstimate
       Dim ThisFilterEstimateY As IFilterEstimate
       Dim ThisFilterResultLast As Double
-      Dim ThisValue As Double
       Dim ThisList As New List(Of IFilterEstimateResult)
 
       If (TypeOf MyFilter Is IFilterEstimate = False) Or (TypeOf MyFilterY Is IFilterEstimate = False) Then

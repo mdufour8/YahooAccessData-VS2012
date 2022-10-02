@@ -106,13 +106,13 @@
 
   Public ReadOnly Property SectorName As String Implements IStockBasicInfo.SectorName
     Get
-      Throw New NotImplementedException()
+      Return MySectorName
     End Get
   End Property
 
   Public ReadOnly Property IndustryName As String Implements IStockBasicInfo.IndustryName
     Get
-      Throw New NotImplementedException()
+      Return MyIndustryName
     End Get
   End Property
 End Class
