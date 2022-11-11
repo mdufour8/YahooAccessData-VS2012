@@ -72,6 +72,7 @@ Namespace MathPlus.Filter
       Else
         MyFilterRate = FilterHead.Rate
       End If
+      If MyFilterRate < 2 Then MyFilterRate = 2
       If (FilterBase Is Nothing) Then
         'create the default exp base filter use for the prediction
         FilterBase = New FilterLowPassExp(MyFilterRate, IsPredictionEnabled:=False)

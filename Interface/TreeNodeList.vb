@@ -305,17 +305,14 @@ Public Class TreeNodeList(Of T)
   End Function
 
   Public Function SearchPath(ByVal Path As String) As ITreeNode(Of T)
-    Dim ThisNode As ITreeNode(Of T) = Nothing
     If MyDictionaryOfFullPath Is Nothing Then
       MyDictionaryOfFullPath = New Dictionary(Of String, ITreeNode(Of T))
       Call BuildDictionaryOfFullPath(Me)
     End If
     If MyDictionaryOfFullPath.ContainsKey(Path) = True Then
-      ThisNode = MyDictionaryOfFullPath(Path)
-      Return ThisNode
+      Return MyDictionaryOfFullPath(Path)
     Else
-      'The node is nothing here
-      Return ThisNode
+      Return Nothing
     End If
   End Function
 
