@@ -416,6 +416,7 @@ Public Class LinkedHashSet(Of T As {New, Class, IRegisterKey(Of U),  IDateUpdate
 
   Public Function Find(Value As U) As T Implements ISearchKey(Of T, U).Find
     SyncLock ThisLock
+      If Value Is Nothing Then Return Nothing
       If MyDictionaryOfKey.ContainsKey(Value) Then
         Return MyDictionaryOfKey(Value)
       Else
