@@ -774,6 +774,9 @@ Namespace OptionValuation
         .DateExpiration = Me.DateExpiration
         .DateBuy = Me.DateBuy
         .DateClose = Me.DateClose
+        .PriceBuy = Me.PriceBuy
+        .PriceCLose = Me.PriceCLose
+        .NumberOptionContract = Me.NumberOptionContract
         .OptionType = Me.OptionType
         .OptionStyle = Me.OptionStyle
         .RateBase = Me.RateBase
@@ -810,6 +813,9 @@ Namespace OptionValuation
         .DateStart = StockOption.DateStart
         .DateBuy = StockOption.DateBuy
         .DateClose = StockOption.DateClose
+        .PriceBuy = StockOption.PriceBuy
+        .PriceCLose = StockOption.PriceCLose
+        .NumberOptionContract = StockOption.NumberOptionContract
         .DateExpiration = StockOption.DateExpiration
         .OptionType = StockOption.OptionType
         .OptionStyle = StockOption.OptionStyle
