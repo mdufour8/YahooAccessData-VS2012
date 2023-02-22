@@ -384,6 +384,53 @@ Namespace MathPlus
         End If
       End Function
 
+      Public Shared Function BlackScholesOptionProbabilityOfInTheMoney(
+        ByVal OptionType As enuOptionType,
+        ByVal StockPrice As Double,
+        ByVal OptionStrikePrice As Double,
+        ByVal TimeToExpirationInYear As Double,
+        ByVal RiskFreeRate As Double,
+        ByVal DividendRate As Double,
+        ByVal VolatilityPerYear As Double) As Double
+
+        Dim d1 As Double, d2 As Double
+        Dim ThisNormal = New MathNet.Numerics.Distributions.Normal(mean:=0, stddev:=1)
+        'DividendRate = 0
+
+
+        d1 = (Math.Log(StockPrice / OptionStrikePrice) + (RiskFreeRate - DividendRate + VolatilityPerYear ^ 2 / 2) * TimeToExpirationInYear) / (VolatilityPerYear * Math.Sqrt(TimeToExpirationInYear))
+        d2 = d1 - VolatilityPerYear * Math.Sqrt(TimeToExpirationInYear)
+
+        'd1 = (Log(S / x) + ( b + v ^ 2 / 2) * T) / (v * Sqr(T))
+        'd2 = d1 - v * Sqr(T)
+
+        'If CallPutFlag = "c" Then
+        '  GBlackScholes = S * Exp((b - r) * T) * CND(d1) - x * Exp(-r * T) * CND(d2)
+        'ElseIf CallPutFlag = "p" Then
+        '  GBlackScholes = x * Exp(-r * T) * CND(-d2) - S * Exp((b - r) * T) * CND(-d1)
+        'End If
+        'C = Se−qTN(d1)−Ke−rTN(d2)
+        'P = Ke−rTN(−d2)−Se−qTN(d1)
+        'Where q Is the known dividend yield And
+        'd1 = ln(SK) + T(r−q+σ22)σT−−√
+        'd2 = ln(SK) + T(r−q−σ22)σT−−√=d1−σT−−√
+        'One possible implementation (a rough And unoptimized 
+
+        'Note:  b = RiskFreeRate - DividendRate
+
+        Dim ThisCDFOf_d1 As Double = ThisNormal.CumulativeDistribution(d1)
+        Dim ThisCDFOf_Negd1 As Double = ThisNormal.CumulativeDistribution(-d1)
+        Dim ThisCDFOf_d2 As Double = ThisNormal.CumulativeDistribution(d2)
+        Dim ThisCDFOf_Negd2 As Double = ThisNormal.CumulativeDistribution(-d2)
+
+        If OptionType = enuOptionType._Call Then
+          Return ThisCDFOf_d1
+        Else
+          Return ThisCDFOf_Negd2
+        End If
+      End Function
+
+
       ''' <summary>
       ''' The option vega expresses the change in the price of the option 
       ''' for every 1% change in the volatility.

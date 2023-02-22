@@ -1,6 +1,8 @@
 ﻿Imports YahooAccessData.MathPlus.Measure
 Imports MathNet.Numerics
+Imports YahooAccessData.OptionValuation
 Imports System.Runtime.CompilerServices
+Imports YahooAccessData.MathPlus.Measure.Measure
 
 Namespace OptionValuation
   <Serializable()>
@@ -245,6 +247,11 @@ Namespace OptionValuation
         MyVolatility = value
       End Set
     End Property
+
+    Public Function Refresh(ByVal StockPrice As Double) As Double
+      Me.Price = StockPrice
+      Return Me.Refresh()
+    End Function
 
     Public Function Refresh(DateToday As Date) As Double Implements IStockOption.Refresh
       Me.DateStart = DateToday
@@ -504,6 +511,8 @@ Namespace OptionValuation
     Public Function AsIStockOption() As IStockOption Implements IStockOption.AsIStockOption
       Return Me
     End Function
+
+
 
     ''' <summary>
     ''' time to expiration in years
@@ -1516,6 +1525,69 @@ Namespace OptionValuation
       End If
       Return ThisVolatilityRatio
     End Function
+
+    Public Shared Function BlackScholesOptionProbabilityOfInTheMoney(
+        ByVal OptionType As enuOptionType,
+        ByVal StockPrice As Double,
+        ByVal OptionStrikePrice As Double,
+        ByVal TimeToExpirationInYear As Double,
+        ByVal RiskFreeRate As Double,
+        ByVal DividendRate As Double,
+        ByVal VolatilityPerYear As Double) As Double
+
+      Return Measure.BlackScholesOptionProbabilityOfInTheMoney(
+        OptionType,
+        StockPrice,
+        OptionStrikePrice,
+        TimeToExpirationInYear,
+        RiskFreeRate,
+        DividendRate,
+        VolatilityPerYear)
+
+
+    End Function
+
+    ''' <summary>
+    ''' Return the stock price for a given option price given the current option state. Note that the method
+    ''' use an iterative technique that can be time expensive and it should be use with caution.
+    ''' </summary>
+    ''' <param name="OptionPrice"></param>
+    ''' <returns></returns>
+    Public Function PriceOfOptionToPriceOfStock(ByVal OptionPrice As Double) As Double
+      'add some protection 
+      Dim I As Integer
+      Dim ThisCount As Integer = 0
+      If OptionPrice <= 0 Then Return 0.0
+      If MyOptionPriceDelta = 0 Then Return 0.0
+      If Double.IsNaN(MyValueOptionStandard) Then Return 0.0
+
+      'initialize the first iteration step
+      Dim ThisStockOption = Me.Copy
+      Dim ThisStockPrice As Double = Me.Price
+      Dim ThisValueOptionStandard = Me.AsIStockOptionPrice.ValueStandard
+      Dim ThisOptionPriceDelta = Me.AsIStockOptionPrice.ValueDelta
+      Dim ThisOptionPriceDeltaLarge = OptionPrice - ThisValueOptionStandard
+      Dim ThisStockPriceDeltaEstimate As Double = ThisOptionPriceDeltaLarge / ThisOptionPriceDelta
+
+      Do
+        ThisStockPrice = ThisStockPrice + ThisStockPriceDeltaEstimate
+        ThisStockOption.Refresh(ThisStockPrice)
+        ThisValueOptionStandard = ThisStockOption.AsIStockOptionPrice.ValueStandard
+        ThisOptionPriceDelta = ThisStockOption.AsIStockOptionPrice.ValueDelta
+        ThisOptionPriceDeltaLarge = OptionPrice - ThisValueOptionStandard
+        ThisStockPriceDeltaEstimate = ThisOptionPriceDeltaLarge / ThisOptionPriceDelta
+        ThisCount = ThisCount + 1
+        If ThisCount > 5 Then
+          Exit Do
+        End If
+      Loop Until math.Abs(ThisStockPriceDeltaEstimate) < 0.1
+      ThisStockPrice = ThisStockPrice + ThisStockPriceDeltaEstimate
+      Return ThisStockPrice
+    End Function
+
+
+
+
     Public Shared Function StockPricePredictionMedian(
                                                      ByVal NumberTradingDays As Double,
                                                      ByVal StockPrice As Double,
