@@ -515,7 +515,7 @@ Namespace OptionValuation
 
 
     ''' <summary>
-    ''' time to expiration in years
+    ''' Return by default the time to expiration in years
     ''' </summary>
     ''' <returns></returns>
     ''' <remarks></remarks>
@@ -1546,14 +1546,21 @@ Namespace OptionValuation
 
 
     End Function
-
     ''' <summary>
-    ''' Return the stock price for a given option price given the current option state. Note that the method
-    ''' use an iterative technique that can be time expensive and it should be use with caution.
+    '''   Return the stock price needed for a succesful trade given the option price paid. Note that the method
+    '''   use an iterative technique that can be time expensive and it should be use with caution. The TimeLimitInYear 
+    '''   take into account the decay of the option over the period of interest and should be less 
+    '''   than the expiration time of the option
     ''' </summary>
-    ''' <param name="OptionPrice"></param>
-    ''' <returns></returns>
-    Public Function PriceOfOptionToPriceOfStock(ByVal OptionPrice As Double) As Double
+    ''' <param name="OptionPrice">The price pay for the option</param>
+    ''' <param name="TimeLimitInYear">
+    '''   Use to take into account the decay of the option over the period of interest and should be less 
+    '''   than the expiration time of the option
+    ''' </param>
+    ''' <returns>
+    '''   The Stock Price required for an In The Money (ITM) succesful option trade
+    ''' </returns>
+    Public Function PriceOfOptionToPriceOfStock(ByVal OptionPrice As Double, ByVal TimeLimitInYear As Double) As Double
       'add some protection 
       Dim I As Integer
       Dim ThisCount As Integer = 0
@@ -1563,12 +1570,18 @@ Namespace OptionValuation
 
       'initialize the first iteration step
       Dim ThisStockOption = Me.Copy
+      Dim ThisTimeLimitInDays As Double = 365 * TimeLimitInYear
+
+      'If ThisTimeLimitInDays > 30 Then
+      '  ThisTimeLimitInDays = ThisTimeLimitInDays
+      'End If
+      ThisStockOption.DateExpiration = ThisStockOption.DateExpiration.AddDays(-ThisTimeLimitInDays)
+
       Dim ThisStockPrice As Double = Me.Price
       Dim ThisValueOptionStandard = Me.AsIStockOptionPrice.ValueStandard
       Dim ThisOptionPriceDelta = Me.AsIStockOptionPrice.ValueDelta
       Dim ThisOptionPriceDeltaLarge = OptionPrice - ThisValueOptionStandard
       Dim ThisStockPriceDeltaEstimate As Double = ThisOptionPriceDeltaLarge / ThisOptionPriceDelta
-
       Do
         ThisStockPrice = ThisStockPrice + ThisStockPriceDeltaEstimate
         ThisStockOption.Refresh(ThisStockPrice)
@@ -1580,7 +1593,7 @@ Namespace OptionValuation
         If ThisCount > 5 Then
           Exit Do
         End If
-      Loop Until math.Abs(ThisStockPriceDeltaEstimate) < 0.1
+      Loop Until Math.Abs(ThisStockPriceDeltaEstimate) < 0.1
       ThisStockPrice = ThisStockPrice + ThisStockPriceDeltaEstimate
       Return ThisStockPrice
     End Function
