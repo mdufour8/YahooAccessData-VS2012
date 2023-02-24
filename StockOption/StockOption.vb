@@ -984,6 +984,7 @@ Namespace OptionValuation
     Public Property DateStart As Date Implements IStockOption.DateStart
       Get
         If MyDateStart = Date.MinValue Then
+
           MyDateStart = Now.Date
         End If
         Return MyDateStart
