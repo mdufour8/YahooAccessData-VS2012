@@ -984,7 +984,6 @@ Namespace OptionValuation
     Public Property DateStart As Date Implements IStockOption.DateStart
       Get
         If MyDateStart = Date.MinValue Then
-
           MyDateStart = Now.Date
         End If
         Return MyDateStart
@@ -1573,13 +1572,12 @@ Namespace OptionValuation
       Dim ThisStockOption = Me.Copy
       Dim ThisTimeLimitInDays As Double = 365 * TimeLimitInYear
 
-      'If ThisTimeLimitInDays > 30 Then
-      '  ThisTimeLimitInDays = ThisTimeLimitInDays
-      'End If
+      'reduce the time to expiration to take into account the decay over that period
       ThisStockOption.DateExpiration = ThisStockOption.DateExpiration.AddDays(-ThisTimeLimitInDays)
-      If ThisStockOption.DateExpiration < ThisStockOption.DateBuy Then
-        'protection
-        ThisStockOption.DateExpiration = Now.Date
+      'for convergence check and make sure that DateStart is less than the DateExpiration by at least one day
+      If ThisStockOption.DateExpiration <= ThisStockOption.DateStart Then
+        'add 1 day to teh date expiration
+        ThisStockOption.DateExpiration = ThisStockOption.DateStart.AddDays(1)
       End If
       Dim ThisStockPrice As Double = Me.Price
       Dim ThisValueOptionStandard = Me.AsIStockOptionPrice.ValueStandard
