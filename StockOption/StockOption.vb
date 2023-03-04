@@ -1362,7 +1362,7 @@ Namespace OptionValuation
 
 
     ''' <summary>
-    ''' This Function calculate the CDF probability at the StockPriceEnd price bound
+    ''' Return the probability that the signal is lower than the StockPriceEnd value after the Number of trading days specified.
     ''' </summary>
     ''' <param name="NumberTradingDays"></param>
     ''' <param name="StockPriceStart"></param>
@@ -1396,6 +1396,9 @@ Namespace OptionValuation
       Return ThisResult
     End Function
 
+    ''' <summary>
+    ''' Return the probability that the signal is lower than the StockPriceEnd value after the Number of trading days specified.
+    ''' </summary>
     Public Shared Function StockPricePredictionInverse(
                                                       ByVal NumberTradingDays As Integer,
                                                       ByVal StockPriceStart As Double,
@@ -1407,7 +1410,7 @@ Namespace OptionValuation
     End Function
 
     ''' <summary>
-    ''' Return the probability that the signal reach and or exceed the StockPriceEnd value after the Number of trading days specified.
+    ''' Return the probability that the signal is lower than the StockPriceEnd value after the Number of trading days specified.
     ''' </summary>
     ''' <param name="NumberTradingDays"></param>
     ''' <param name="StockPriceStart"></param>
@@ -1447,7 +1450,7 @@ Namespace OptionValuation
     End Function
 
     ''' <summary>
-    ''' Return the probability that the signal reach and or exceed the StockPriceEnd value after the Number of trading days specified.
+    ''' Return the probability that the signal is lower than the StockPriceEnd value after the Number of trading days specified.
     ''' </summary>
     ''' <param name="NumberTradingDays"></param>
     ''' <param name="StockPriceStart"></param>

@@ -331,50 +331,55 @@ Public Class RecordPrices
     ByVal NumberOfDayForHolding As Integer,
     ByVal Optional IsRepeatBuying As Boolean = True) As Single
 
-    Dim ThisListOfPriceVolWeekly = MyPriceVols.ToWeekly
-    Dim ThisListOfPriceVolDailyForOption = New List(Of IPriceVol)
-    Dim ThisVolatilityStandard = New MathPlus.Filter.FilterVolatility()
-    Dim ThisWeeklyIndex As Integer
-    Dim ThisDailyIndex As Integer
-    Dim ThisDateStart As Date
-    Dim ThisValueOptionStandard As Double
-    Dim ThisTimeToExpiration As Double
-    Dim ThisTimeToExpirationInYear As Double
-    Dim ThisTimeToExpirationInYearDefault As Double
-    Dim ThisTimeToForHoldingInYear As Double
-    Dim ThisTimeToDailyInYear As Double
-    Dim ThisStrikePrice As Double
-    Dim ThisPriceVol As IPriceVol
-
-    If NumberOfDayForHolding > NumberOfDayToExpiration Then
-      NumberOfDayForHolding = NumberOfDayToExpiration
-    End If
-    'bring the datestart to Monday
-    ThisDateStart = ReportDate.DateToMondayPrevious(DateStart)
-    ThisDailyIndex = Me.ToIndex(ThisDateStart)
-    ThisTimeToExpirationInYearDefault = NumberOfDayToExpiration / 365
-    ThisTimeToForHoldingInYear = NumberOfDayForHolding / 365
-    ThisTimeToDailyInYear = 1 / 365
-
-    'calculate the monthly volatility over all the data
-    ThisStrikePrice = MyPriceVols(0).Last
-    ThisTimeToExpirationInYear = ThisTimeToExpirationInYearDefault
-    For I = 0 To Me.NumberPoint
-      ThisVolatilityStandard.Filter(MyPriceVols(I).Last)
-
-      ThisPriceVol = Measure.BSAmericanOption(
-        OptionType:=OptionType,
-        StockPrice:=MyPriceVols(I).AsIPriceVol,
-        OptionStrikePrice:=ThisStrikePrice,
-        TimeToExpirationInYear:=ThisTimeToExpiration,
-        RiskFreeRate:=0.0,
-        DividendRate:=0.0,
-        VolatilityPerYear:=ThisVolatilityStandard.FilterLast)
+    Throw New NotImplementedException
+    Return Nothing
 
 
 
-      ThisListOfPriceVolDailyForOption.Add(ThisPriceVol)
-    Next
+    'Dim ThisListOfPriceVolWeekly = MyPriceVols.ToWeekly
+    'Dim ThisListOfPriceVolDailyForOption = New List(Of IPriceVol)
+    'Dim ThisVolatilityStandard = New MathPlus.Filter.FilterVolatility()
+    'Dim ThisWeeklyIndex As Integer
+    'Dim ThisDailyIndex As Integer
+    'Dim ThisDateStart As Date
+    'Dim ThisValueOptionStandard As Double
+    'Dim ThisTimeToExpiration As Double
+    'Dim ThisTimeToExpirationInYear As Double
+    'Dim ThisTimeToExpirationInYearDefault As Double
+    'Dim ThisTimeToForHoldingInYear As Double
+    'Dim ThisTimeToDailyInYear As Double
+    'Dim ThisStrikePrice As Double
+    'Dim ThisPriceVol As IPriceVol
+
+    'If NumberOfDayForHolding > NumberOfDayToExpiration Then
+    '  NumberOfDayForHolding = NumberOfDayToExpiration
+    'End If
+    ''bring the datestart to Monday
+    'ThisDateStart = ReportDate.DateToMondayPrevious(DateStart)
+    'ThisDailyIndex = Me.ToIndex(ThisDateStart)
+    'ThisTimeToExpirationInYearDefault = NumberOfDayToExpiration / 365
+    'ThisTimeToForHoldingInYear = NumberOfDayForHolding / 365
+    'ThisTimeToDailyInYear = 1 / 365
+
+    ''calculate the monthly volatility over all the data
+    'ThisStrikePrice = MyPriceVols(0).Last
+    'ThisTimeToExpirationInYear = ThisTimeToExpirationInYearDefault
+    'For I = 0 To Me.NumberPoint
+    '  ThisVolatilityStandard.Filter(MyPriceVols(I).Last)
+
+    '  ThisPriceVol = Measure.BSAmericanOption(
+    '    OptionType:=OptionType,
+    '    StockPrice:=MyPriceVols(I).AsIPriceVol,
+    '    OptionStrikePrice:=ThisStrikePrice,
+    '    TimeToExpirationInYear:=ThisTimeToExpiration,
+    '    RiskFreeRate:=0.0,
+    '    DividendRate:=0.0,
+    '    VolatilityPerYear:=ThisVolatilityStandard.FilterLast)
+
+
+
+    '  ThisListOfPriceVolDailyForOption.Add(ThisPriceVol)
+    'Next
   End Function
 
   ''' <summary>
