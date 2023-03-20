@@ -1582,7 +1582,9 @@ Namespace OptionValuation
         'add 1 day to teh date expiration
         ThisStockOption.DateExpiration = ThisStockOption.DateStart.AddDays(1)
       End If
+      'the stock price is use as a seed value. The final result is not dependant on that value
       Dim ThisStockPrice As Double = Me.Price
+
       Dim ThisValueOptionStandard = Me.AsIStockOptionPrice.ValueStandard
       Dim ThisOptionPriceDelta = Me.AsIStockOptionPrice.ValueDelta
       Dim ThisOptionPriceDeltaLarge = OptionPrice - ThisValueOptionStandard
