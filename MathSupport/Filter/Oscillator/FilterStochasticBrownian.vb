@@ -285,6 +285,28 @@ Namespace MathPlus.Filter
       End With
     End Sub
 
+    ''' <summary>
+    ''' create a new  stochastic object with the same basic parameters than the reference object 
+    ''' except for the main FilterRate parameters that can be changed
+    ''' </summary>
+    ''' <param name="FilterRate"></param>
+    ''' <param name="StochasticParameterReference"></param>
+    Public Sub New(
+      ByVal FilterRate As Integer,
+      ByVal StochasticParameterReference As FilterStochasticBrownian)
+
+      Me.New(FilterRate:=FilterRate,
+             FilterOutputRate:=StochasticParameterReference.Rate(IStochastic.enuStochasticType.Slow),
+             IsFilterPeakEnabled:=StochasticParameterReference.IsFilterPeak,
+             FilterVolatilityRate:=StochasticParameterReference.Rate(IStochastic.enuStochasticType.PriceVolatilityRegulated))
+
+      With Me
+        .Tag = StochasticParameterReference.Tag
+        .IsFilterRange = StochasticParameterReference.IsFilterRange
+        .IsUseFeedbackRegulatedVolatility = StochasticParameterReference.IsUseFeedbackRegulatedVolatility
+        .IsUseFeedbackRegulatedVolatilityFastAttackEvent = StochasticParameterReference.IsUseFeedbackRegulatedVolatilityFastAttackEvent
+      End With
+    End Sub
 #End Region
 #Region "Private Functions"
     Private Function FilterLocal(ByRef Value As IPriceVol) As Double
@@ -381,20 +403,20 @@ Namespace MathPlus.Filter
           IsVolatilityJump = True
         End If
       End If
-#If DEBUG Then
-      'use to debug for a specific tag and point
-      If Me.Tag = "FB" Then
-        If Me.Count = 1843 Then
-          ThisFilterBasedVolatilityTotal = MyFilterVolatilityForBrownianStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
-        Else
-          ThisFilterBasedVolatilityTotal = MyFilterVolatilityForBrownianStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
-        End If
-      Else
-        ThisFilterBasedVolatilityTotal = MyFilterVolatilityForBrownianStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
-      End If
-#Else
+      '#If DEBUG Then
+      '      'use to debug for a specific tag and point
+      '      If Me.Tag = "FB" Then
+      '        If Me.Count = 1843 Then
+      '          ThisFilterBasedVolatilityTotal = MyFilterVolatilityForBrownianStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
+      '        Else
+      '          ThisFilterBasedVolatilityTotal = MyFilterVolatilityForBrownianStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
+      '        End If
+      '      Else
+      '        ThisFilterBasedVolatilityTotal = MyFilterVolatilityForBrownianStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
+      '      End If
+      '#Else
       ThisFilterBasedVolatilityTotal = MyFilterVolatilityForBrownianStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
-#End If
+      '#End If
       ThisFilterBasedVolatilityFromPreviousCloseToOpen = MyFilterVolatilityForBrownianStatistic.ToList(Type:=FilterVolatilityYangZhang.enuVolatilityDailyPeriodType.PreviousCloseToOpen).Last
       ThisFilterBasedVolatilityFromOpenToClose = MyFilterVolatilityForBrownianStatistic.ToList(Type:=FilterVolatilityYangZhang.enuVolatilityDailyPeriodType.OpenToClose).Last
       ThisFilterBasedVolatilityFromLastPointTrailing = MyFilterVolatilityForBrownianStatisticLastPointTrail.Filter(Value)
@@ -2118,7 +2140,15 @@ Namespace MathPlus.Filter
       End Set
     End Property
 
+    Private _Tag As String
     Public Property Tag As String Implements IStochastic.Tag
+      Get
+        Return _Tag
+      End Get
+      Set(value As String)
+        _Tag = value
+      End Set
+    End Property
 
     Private Function ToArray(MinValueInitial As Double, MaxValueInitial As Double, ScaleToMinValue As Double, ScaleToMaxValue As Double, Optional Type As IStochastic.enuStochasticType = IStochastic.enuStochasticType.FastSlow) As Double() Implements IStochastic.ToArray
       Throw New NotImplementedException

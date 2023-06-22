@@ -1,4 +1,6 @@
 ﻿Imports MathNet.Numerics
+Imports System.Security.Cryptography
+Imports System.Text
 Imports YahooAccessData.OptionValuation
 
 Namespace MathPlus
@@ -856,6 +858,13 @@ Namespace MathPlus
         Dim ThisNormalDist = New MathNet.Numerics.Distributions.Normal(Mean, StandardDeviation)
 
         Return ThisNormalDist.InverseCumulativeDistribution(Probability)
+      End Function
+
+      Public Shared Function CalculateHash(ByVal input As String) As Byte()
+        Using hashAlgorithm As SHA256 = SHA256.Create()
+          Dim inputBytes As Byte() = Encoding.UTF8.GetBytes(input)
+          Return hashAlgorithm.ComputeHash(inputBytes)
+        End Using
       End Function
 
       ' ''' <summary>
