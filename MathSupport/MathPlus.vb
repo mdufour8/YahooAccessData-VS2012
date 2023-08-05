@@ -15,18 +15,26 @@ Namespace MathPlus
       Return New List(Of T)(New T(0 To Length - 1) {})
     End Function
 
+
+    ''' <summary>
+    ''' Calculate the following equation:
+    ''' ValueSource(I) = ValueSource(I) + ((Weight * (Value(I) - Mean)))
+    ''' </summary>
+    ''' <param name="ValueSource"></param>
+    ''' <param name="Value"></param>
+    ''' <param name="Weight"></param>
+    ''' <param name="ValueOffset"></param>
     <Extension>
-    Public Sub VectorCorrelationAdd(
+    Public Sub VectorAdd(
       ByVal ValueSource As IList(Of Double),
       ByVal Value As IList(Of Double),
-      ByVal Correlation As Double,
-      ByVal Mean As Double)
+      ByVal Weight As Double,
+      ByVal ValueOffset As Double)
 
       Dim I As Integer
 
       For I = 0 To ValueSource.Count - 1
-        'ValueSource(I) = ValueSource(I) + ((Correlation * (Value(I) - Mean)))
-        ValueSource(I) = ValueSource(I) + (Correlation * Value(I))
+        ValueSource(I) = ValueSource(I) + (Weight * (Value(I) - ValueOffset))
       Next
     End Sub
 
