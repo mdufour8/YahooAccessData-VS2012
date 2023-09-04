@@ -14,6 +14,7 @@ Namespace MathPlus.Filter
   Public Class FilterStochasticBrownian
     Implements IStochastic
     Implements IStochastic1
+    Implements IStochastic2
 
     Implements IFilterRunAsync
     Implements IStochasticPriceGain
@@ -907,6 +908,7 @@ Namespace MathPlus.Filter
         ThisVolatilityRegulated,
         MyPLLErrorDetectorForPriceStochacticMedianWithGain.ToList.Last)
 
+      'main stochactic result
       MyListOfProbabilityOfStockMedian.Add(ThisProbOfStockMedian)
       MyFilterVolatilityForPositifNegatif.Filter(Value, IsVolatityHoldToLast:=False)
 
@@ -2150,6 +2152,16 @@ Namespace MathPlus.Filter
       End Set
     End Property
 
+    Private _Symbol As String
+    Public Property Symbol As String
+      Get
+        Return _Symbol
+      End Get
+      Set(value As String)
+        _Tag = _Symbol
+      End Set
+    End Property
+
     Private Function ToArray(MinValueInitial As Double, MaxValueInitial As Double, ScaleToMinValue As Double, ScaleToMaxValue As Double, Optional Type As IStochastic.enuStochasticType = IStochastic.enuStochasticType.FastSlow) As Double() Implements IStochastic.ToArray
       Throw New NotImplementedException
     End Function
@@ -2586,6 +2598,11 @@ Namespace MathPlus.Filter
       End Get
     End Property
 
+    Public ReadOnly Property AsIStochastic2 As IStochastic2 Implements IStochastic1.AsIStochastic2
+      Get
+        Return Me
+      End Get
+    End Property
     Private ReadOnly Property IStochasticPriceGain_AsIStochastic As IStochastic Implements IStochasticPriceGain.AsIStochastic
       Get
         Return Me
@@ -2608,6 +2625,15 @@ Namespace MathPlus.Filter
       Get
         Return Me
       End Get
+    End Property
+
+    Private Property IStochastic2_Symbol As String Implements IStochastic2.Symbol
+      Get
+        Return Me.Symbol
+      End Get
+      Set(value As String)
+        Me.Symbol = value
+      End Set
     End Property
 
     Private ReadOnly Property IsInit As Boolean Implements IStochasticPriceGain.IsInit
