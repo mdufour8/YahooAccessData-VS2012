@@ -716,6 +716,7 @@ Namespace MathPlus.Filter
         Probability:=GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA1)
 
 
+
       'ThisVolatilityRegulatedFromOpenToCloseWithGain
 
       Dim ThisRange As Double = (ThisPriceNextDailyHighWithGain - ThisPriceNextDailyLowWithGain) / (ThisPriceNextDailyHighWithGain + ThisPriceNextDailyLowWithGain)
@@ -881,8 +882,6 @@ Namespace MathPlus.Filter
         ThisVolatilityRegulated,
         ThisValueHigh)
 
-
-
       ThisProbLow = StockOption.StockPricePredictionInverse(
         ThisRate,
         Value.Last,
@@ -890,6 +889,24 @@ Namespace MathPlus.Filter
         ThisGainPerYearDerivative,
         ThisVolatilityRegulated,
         ThisValueLow)
+
+      'ThisProbHigh = 1 - StockOption.StockPricePredictionInverse(
+      '  10,
+      '  Value.Last,
+      '  ThisGainPerYear,
+      '  ThisGainPerYearDerivative,
+      '  ThisVolatilityRegulated,
+      '  ThisValueHigh)
+
+
+
+      'ThisProbLow = StockOption.StockPricePredictionInverse(
+      '  10,
+      '  Value.Last,
+      '  ThisGainPerYear,
+      '  ThisGainPerYearDerivative,
+      '  ThisVolatilityRegulated,
+      '  ThisValueLow)
 
       ThisProbHighHalfRate = 1 - StockOption.StockPricePredictionInverse(ThisRateHalf, Value.Last, ThisGainPerYear, ThisGainPerYearDerivative, ThisVolatilityRegulated, ThisValueHigh)
       ThisProbLowHalfRate = StockOption.StockPricePredictionInverse(ThisRateHalf, Value.Last, ThisGainPerYear, ThisGainPerYearDerivative, ThisVolatilityRegulated, ThisValueLow)
