@@ -302,6 +302,12 @@
   <ItemGroup>
     <Folder Include="Information\" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\WebEODData\WebEODData\WebEODData.vbproj">
+      <Project>{fec4af11-6db7-468b-bec5-36a60339374c}</Project>
+      <Name>WebEODData</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

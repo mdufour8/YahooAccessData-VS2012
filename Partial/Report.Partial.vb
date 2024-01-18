@@ -1,17 +1,18 @@
 ﻿#Region "Imports"
-Imports System
-Imports System.Collections.Generic
-  Imports System.Collections.Concurrent
-  Imports System.Runtime.CompilerServices
-  Imports System.Threading.Tasks
-  Imports System.Threading
-  Imports System.Net
-  Imports System.Runtime.Serialization.Formatters.Binary
-  Imports System.IO
-  Imports System.Text
+'Imports System
+'Imports System.Collections.Generic
+Imports WebEODData
+Imports System.Collections.Concurrent
+'Imports System.Runtime.CompilerServices
+Imports System.Threading.Tasks
+Imports System.Threading
+Imports System.Net
+Imports System.Runtime.Serialization.Formatters.Binary
+Imports System.IO
+Imports System.Text
 Imports YahooAccessData.ExtensionService
-  Imports System.Reflection
-  Imports Ionic.Zip
+'  Imports System.Reflection
+Imports Ionic.Zip
 #End Region
 
 <Serializable()>
@@ -63,10 +64,26 @@ Partial Public Class Report
   Private IsRecordCancel As Boolean
   Private MyLoadToCacheLatestTick As Integer
   Private _IsFileReadEndOfDayEnabled As Boolean
+  Private MyWebDataSource As WebEODData.IWebEODHistoricalData
 
   'Need to use these name to correctly capture the data from the net old object serialization
   'this object serialization is not use anymore but we may have old file
   'that require these variable for a succesful serialization load
+
+  'Unlike a List<> ...
+
+  'A HashSet Is a List With no duplicate members.
+  'Because a HashSet Is constrained To contain only unique entries, the internal Structure Is optimised For searching (compared With a list) - it Is considerably faster
+  'Adding to a HashSet returns a boolean - false if addition fails due to already existing in Set
+  'Can perform mathematical Set operations against a Set: Union/Intersection/IsSubsetOf etc.
+  'HashSet doesn't implement IList only ICollection
+  'You cannot use indices With a HashSet, only enumerators.
+  'The main reason To use a HashSet would be If you are interested In performing Set operations.
+  'Given 2 sets hashSet1 And hashSet2
+  ' //returns a list of distinct items in both sets
+  ' HashSet set3 = set1.Union(set2);
+  'flies in comparison with an equivalent operation using LINQ. It's also neater to write!
+
   Private _DateStart As Date
   Private _DateStop As Date
   Private _Industries As ICollection(Of Industry) = New HashSet(Of Industry)
@@ -80,10 +97,28 @@ Partial Public Class Report
 #End Region
 #Region "New"
   Public Sub New(ByVal Name As String)
-    Me.New(Name, Now)
+    Me.New(
+      Name:=Name,
+      DateStart:=Now,
+      WebDataSource:=Nothing)
   End Sub
 
   Public Sub New(ByVal Name As String, ByVal DateStart As Date)
+    Me.New(
+      Name:=Name,
+      DateStart:=DateStart,
+      WebDataSource:=Nothing)
+  End Sub
+
+  Public Sub New(ByVal WebDataSource As WebEODData.IWebEODHistoricalData)
+    Me.New(
+      Name:="",
+      DateStart:=Now,
+      WebDataSource:=WebDataSource)
+  End Sub
+  Public Sub New(ByVal Name As String, ByVal DateStart As Date, ByVal WebDataSource As WebEODData.IWebEODHistoricalData)
+    MyWebDataSource = WebDataSource
+
     MyDictionaryOfStockRecordLoaded = New Dictionary(Of String, String)
     MyStockRecordQueue = New Queue(Of String)
     MyStockRecordQueueCount = STOCK_RECORD_QUEUE_SIZE_DEFAULT
@@ -118,10 +153,20 @@ Partial Public Class Report
   End Sub
 
   Public Sub New()
-    Me.New("", Now)
+    Me.New(
+      Name:="",
+      DateStart:=Now,
+      WebDataSource:=Nothing)
   End Sub
 #End Region
 #Region "Basic Function"
+  Public ReadOnly Property WebDataSource As WebEODData.IWebEODHistoricalData
+    Get
+      Return MyWebDataSource
+    End Get
+  End Property
+
+
   Public Function ToWeeklyIndex(ByVal DateValue As Date) As Integer
     Dim ThisDateRefToPreviousMonday = ReportDate.DateToMondayPrevious(Me.DateStart)
 
@@ -362,7 +407,7 @@ Partial Public Class Report
   Public Function ToDictionaryOfStockBasicInfo() As Dictionary(Of String, IStockBasicInfo)
     Dim ThisDictionaryOfStock As New Dictionary(Of String, IStockBasicInfo)
     For Each ThisStock In Me.Stocks
-      ThisDictionaryOfStock.Add(ThisStock.Symbol, ThisStock.ToStockBasinInfo)
+      ThisDictionaryOfStock.Add(ThisStock.Symbol, ThisStock.ToStockBasicInfo)
     Next
     Return ThisDictionaryOfStock
   End Function
@@ -2036,6 +2081,168 @@ Partial Public Class Report
     Me.IsFileOpen = False
     IsFileAccessReadOnly = False
   End Sub
+
+
+  Public Sub WebEODLoadAsync(ByVal DateStart As Date)
+    Dim ThisStock As YahooAccessData.Stock
+    Dim MyDictionaryOfStockSymbol As Dictionary(Of String, IStockSymbol)
+    Dim MyDictionaryOfStockSymbolQuery As IResponseStatus(Of Dictionary(Of String, IStockSymbol))
+    Dim ThisCountryName As String
+    'Todo: Should an async be used for this function?
+
+    If MyWebDataSource Is Nothing Then
+      Throw New Exception("WebDataSource is not availaible!")
+    End If
+    ThisCountryName = MyWebDataSource.CountryName
+    '~~~~~~~~~~~~~~~~~~~~ Start Test Code ~~~~~~~~~~~~~~~~~~~
+    'this code need to execute inside it's own task
+    'this seem to prevent the execution in the caller async local thread
+    'the code did not work properly without this subterfuge
+    'Dim ThisTaskRun = New Task(Of Report)(
+    '     Function()
+    '       Return Report.WebEODCreateReportAsync(ThisCountryName, MyWebDataSource, DateStart).Result
+    '     End Function)
+    'ThisTaskRun.Start()
+    'Await ThisTaskRun
+    ''this code eecute as expected
+    'Dim ThisReport = ThisTaskRun.Result
+    '~~~~~~~~~~~~~~~~~~~~ Start Test End ~~~~~~~~~~~~~~~~~~~
+
+
+    'Throw New NotImplementedException
+    Try
+      'need to have the WebData object succesfully initiazed to continue
+      If MyWebDataSource.ConnectionStatus.IsSuccess Then
+        'get the exchange list by ThisCountryName
+        Dim ThisDictionaryOfExchangeByCountryName = MyWebDataSource.GetExchangeInfoByCountry
+        'check if the country exist in the database
+        If ThisDictionaryOfExchangeByCountryName.ContainsKey(ThisCountryName) Then
+          'the country exist
+          'the report is not cleared in case the user want to add more than one country in the same object
+          'start building the current report
+          Dim MyListOfExchangeInfo = ThisDictionaryOfExchangeByCountryName(ThisCountryName)
+          If MyListOfExchangeInfo.Count > 0 Then
+            'set the datestop to the datestart for now
+            Me.Name = $"EODHistoricalData({ThisCountryName})"
+            Me.DateStart = DateStart
+            Me.IDateRange_DateStop = DateStart
+            For Each ThisExchange In MyListOfExchangeInfo
+              'Dim ThisTaskOfDictionaryOfStockSymbolQuery As Task(Of IResponseStatus(Of Dictionary(Of String, IStockSymbol)))
+              'Dim MyDictionaryOfStockSymbolQuery = Await MyWebDataSource.LoadSymbolAsync(ExchangeCode:=ThisExchange.Code)
+              'this code need to execute inside it's own task
+              'this seem to prevent the execution in the caller async local thread
+              'the code did not work properly without this subterfuge
+              'Todo: this code should be changed to just MyWebDataSource.LoadSymbol which now support
+              ' a direct blocking call.
+              'Dim ThisTaskRun = New Task(Of IResponseStatus(Of Dictionary(Of String, IStockSymbol)))(
+              '      Function() As IResponseStatus(Of Dictionary(Of String, IStockSymbol))
+              '        Return MyWebDataSource.LoadSymbolAsync(ExchangeCode:=ThisExchange.Code).Result
+              '      End Function)
+              'ThisTaskRun.Start()
+              'ThisTaskRun.Wait()
+              'MyDictionaryOfStockSymbolQuery = ThisTaskRun.Result
+
+              MyDictionaryOfStockSymbol = MyWebDataSource.GetListOfSymbolByExchangeCode(ThisExchange.Code)
+              If MyDictionaryOfStockSymbolQuery.IsSuccess Then
+                MyDictionaryOfStockSymbol = MyDictionaryOfStockSymbolQuery.Result
+                For Each ThisStockSymbol As IStockSymbol In MyDictionaryOfStockSymbol.Values
+                  ThisStock = Me.StockAdd(StockSymbol:=ThisStockSymbol.Code, SectorName:="", IndustryName:="")
+                  With ThisStock
+                    '	'keep most of the information except a few item
+                    .Name = ThisStockSymbol.Name
+                    If ThisStockSymbol.Exchange Is Nothing Then
+                      'sometime the exchange is not availaible 
+                      .Exchange = ""
+                    Else
+                      .Exchange = ThisStockSymbol.Exchange
+                    End If
+                    .DateStart = Me.DateStart
+                    .DateStop = Me.DateStop
+                  End With
+                Next
+              Else
+                Me.Exception = New Exception($"Web connection error for {ThisExchange.Code} exchange Stock query: {MyDictionaryOfStockSymbolQuery.Message}")
+              End If
+            Next
+          Else
+            Me.Exception = New Exception($"no exchange found for country name: {ThisCountryName}")
+          End If
+        Else
+          Me.Exception = New Exception($"Invalid exchange country name for exchange query: {ThisCountryName}")
+        End If
+      Else
+          Me.Exception = New Exception($"Invalid web connection status: {MyWebDataSource.ConnectionStatus.Message}")
+      End If
+    Catch ex As Exception
+      Throw ex
+    End Try
+  End Sub
+
+
+  Public Shared Async Function WebEODCreateReportAsync(WebDataSource As WebEODData.IWebEODHistoricalData, ByVal DateStart As Date) As Task(Of Report)
+    Dim ThisReport As Report
+    Dim ThisStock As YahooAccessData.Stock
+    Dim MyDictionaryOfStockSymbol As Dictionary(Of String, IStockSymbol)
+    Dim ThisListOfCountryName As List(Of String)
+    Dim ThisCountryName As String
+
+    If WebDataSource Is Nothing Then
+      Throw New InvalidDataException("WebDataSource is nothing...")
+    End If
+
+    ThisReport = New Report(
+      Name:=$"EODHistoricalData({WebDataSource.CountryName})",
+      DateStart:=DateStart,
+      WebDataSource:=WebDataSource)
+
+    ThisReport.IDateRange_DateStop = DateStart
+
+    For Each ThisCountry In WebDataSource.ListOfCountryName
+      'get the exchange list by the country name
+      Dim ThisDictionaryOfExchangeByCountryName = WebDataSource.GetExchangeInfoByCountry
+      If ThisDictionaryOfExchangeByCountryName.ContainsKey(ThisCountry) Then
+        'get the list of exchange
+        Dim ThisListOfExchangeInfo = ThisDictionaryOfExchangeByCountryName(ThisCountry)
+        If ThisListOfExchangeInfo.Count > 0 Then
+          For Each ThisExchange In ThisListOfExchangeInfo
+            'get the list of stock contain in this exchange
+            WebDataSource.GetListOfSymbolByExchangeCode()
+            Dim MyDictionaryOfStockSymbolQuery = Await WebDataSource.LoadSymbolAsync(ExchangeCode:=ThisExchange.Code)
+            If MyDictionaryOfStockSymbolQuery.IsSuccess Then
+              MyDictionaryOfStockSymbol = MyDictionaryOfStockSymbolQuery.Result
+              For Each ThisStockSymbol As IStockSymbol In MyDictionaryOfStockSymbol.Values
+                ThisStock = ThisReport.StockAdd(StockSymbol:=ThisStockSymbol.Code, SectorName:="", IndustryName:="")
+                With ThisStock
+                  '	'keep most of the information except a few item
+                  .Name = ThisStockSymbol.Name
+                  If ThisStockSymbol.Exchange Is Nothing Then
+                    'sometime the exchange is not availaible 
+                    .Exchange = ""
+                  Else
+                    .Exchange = ThisStockSymbol.Exchange
+                  End If
+                  .DateStart = ThisReport.DateStart
+                  .DateStop = ThisReport.DateStop
+                End With
+              Next
+            Else
+              Throw New Exception($"Web connection error for {ThisExchange.Code} exchange Stock query: {MyDictionaryOfStockSymbolQuery.Message}")
+            End If
+          Next
+
+        End If
+      End If
+    Next
+
+
+    Else
+      Throw New Exception($"no exchange found for country name: {ThisCountryName}")
+      End If
+    Else
+      Throw New Exception($"Invalid exchange country name for exchange query: {ThisCountryName}")
+    End If
+    Return ThisReport
+  End Function
 
   Public Function FileLoad(ByVal FileName As String, ByVal IsRecordVirtual As Boolean, ByVal DateStart As Date, ByVal DateStop As Date) As YahooAccessData.Report
     Me.IDateRange_DateStart = DateStart

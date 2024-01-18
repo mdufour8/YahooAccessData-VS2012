@@ -1,9 +1,10 @@
 ﻿#Region "Imports"
-Imports System
-Imports System.Collections.Generic
+'Imports System
+'Imports System.Collections.Generic
 Imports YahooAccessData.ExtensionService
 Imports System.IO
 Imports System.Threading.Tasks
+Imports YahooAccessData.ExtensionService.Extensions
 #End Region
 
 <Serializable()>
@@ -194,6 +195,47 @@ Partial Public Class Stock
   End Sub
 #End Region
 #Region "Main Control Function"
+  ''' <summary>
+  '''   Use to refresh the data record via the buid-in web interface
+  ''' </summary>
+  ''' <param name="DateStop"></param>
+  ''' <returns>
+  '''   return the date for the last record after the update.
+  ''' </returns>
+  Public Async Function RefreshRecordAsync(ByVal RecordDateStop As Date) As Task(Of Date)
+    Dim ThisWebDataSource = Me.Report.WebDataSource
+    If ThisWebDataSource Is Nothing Then
+      Throw New NotSupportedException("Invalid web data source...")
+    End If
+    If Me.DateStop < RecordDateStop Then
+      'try the web update
+      'get just the data that is needed for an update
+      Dim ThisResponseQuery = Await ThisWebDataSource.LoadStockQuoteAsync(Me.Exchange, Me.Symbol, DateStart:=Me.DateStop.Date, RecordDateStop.Date)
+      If ThisResponseQuery.IsSuccess Then
+        Dim ThisDictionaryOfStockQuote = ThisResponseQuery.Result
+        If ThisDictionaryOfStockQuote.Count > 0 Then
+          Dim ThisListOfStockQuote As List(Of WebEODData.IStockQuote) = ThisDictionaryOfStockQuote(Me.Symbol)
+          If ThisListOfStockQuote.Count > 0 Then
+            'new data record availaible for this stock 
+            For Each ThisRecord In ThisListOfStockQuote.ToListOfRecord
+              If ThisRecord.DateDay > Me.DateStop Then
+                Me.Records.Add(ThisRecord)
+                Me.DateStop = ThisRecord.DateDay
+              End If
+            Next
+            If Me.DateStop > Me.Report.DateStop Then
+              Me.Report.DateStop = Me.DateStop
+            End If
+          End If
+        End If
+      End If
+    End If
+    Return Me.DateStop
+  End Function
+
+
+
+
   ''' <summary>
   ''' Use to modify the current stock with new parameters 
   ''' </summary>
@@ -1864,9 +1906,9 @@ Partial Public Class Stock
   End Function
 #End Region
 #Region "IFormatData"
-  Public Function ToStockBasinInfo() As IStockBasicInfo
-    Dim ThisStockBasinInfo = New StockBasicInfo(Me)
-    Return ThisStockBasinInfo
+  Public Function ToStockBasicInfo() As IStockBasicInfo
+    Dim ThisStockBasicInfo = New StockBasicInfo(Me)
+    Return ThisStockBasicInfo
   End Function
 
   Public Function ToStingOfData() As String() Implements IFormatData.ToStingOfData

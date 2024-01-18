@@ -1699,6 +1699,63 @@ Namespace ExtensionService
       Return True
     End Function
 #End Region
+#Region "IStockQuote"
+    <Extension()>
+    Public Function ToListOfRecord(colData As List(Of WebEODData.IStockQuote)) As List(Of YahooAccessData.Record)
+      Dim ThisList = New List(Of YahooAccessData.Record)
+      For Each ThisStockQuote In colData
+        Dim ThisRecord As YahooAccessData.Record
+        ThisRecord = New YahooAccessData.Record
+        With ThisRecord
+          .DateDay = ThisStockQuote.DateTime
+          .DateLastTrade = .DateDay
+          .DateUpdate = .DateDay
+          .High = ThisStockQuote.High.ToSingleSafe(RoundingDigit:=3)
+          .Open = ThisStockQuote.Open.ToSingleSafe(RoundingDigit:=3)
+          .Low = ThisStockQuote.Low.ToSingleSafe(RoundingDigit:=3)
+          .Last = ThisStockQuote.Close.ToSingleSafe(RoundingDigit:=3)
+          .Vol = ThisStockQuote.Volume.ToIntegerSafe
+        End With
+        ThisList.Add(ThisRecord)
+      Next
+      Return ThisList
+    End Function
+#End Region
+#Region "Support Function"
+    <Extension>
+    Private Function ToSingleSafe(ByVal Value As Double) As Single
+      If Value > Single.MaxValue Then
+        Return Single.MaxValue
+      ElseIf Value < Single.MinValue Then
+        Return Single.MinValue
+      Else
+        Return CSng(Value)
+      End If
+    End Function
+
+    <Extension>
+    Private Function ToSingleSafe(ByVal Value As Double, ByVal RoundingDigit As Integer) As Single
+      If Value > Single.MaxValue Then
+        Return Single.MaxValue
+      ElseIf Value < Single.MinValue Then
+        Return Single.MinValue
+      Else
+        Return CSng(Math.Round((Value), RoundingDigit))
+      End If
+    End Function
+
+    <Extension>
+    Private Function ToIntegerSafe(ByVal Value As Long) As Integer
+      If Value > Integer.MaxValue Then
+        Return Integer.MaxValue
+      ElseIf Value < Integer.MinValue Then
+        Return Integer.MinValue
+      Else
+        Return CInt(Value)
+      End If
+    End Function
+#End Region
+
 #Region "StockSymbols"
     <Extension()>
     Public Function ToSearch(
