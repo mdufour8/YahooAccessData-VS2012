@@ -198,11 +198,11 @@ Partial Public Class Stock
   ''' <summary>
   '''   Use to refresh the data record via the buid-in web interface
   ''' </summary>
-  ''' <param name="DateStop"></param>
+  ''' <param name="RecordDateStop"></param>
   ''' <returns>
   '''   return the date for the last record after the update.
   ''' </returns>
-  Public Async Function RefreshRecordAsync(ByVal RecordDateStop As Date) As Task(Of Date)
+  Public Async Function WebRefreshRecordAsync(ByVal RecordDateStop As Date) As Task(Of Date)
     Dim ThisWebDataSource = Me.Report.WebDataSource
     If ThisWebDataSource Is Nothing Then
       Throw New NotSupportedException("Invalid web data source...")
@@ -210,22 +210,38 @@ Partial Public Class Stock
     If Me.DateStop < RecordDateStop Then
       'try the web update
       'get just the data that is needed for an update
-      Dim ThisResponseQuery = Await ThisWebDataSource.LoadStockQuoteAsync(Me.Exchange, Me.Symbol, DateStart:=Me.DateStop.Date, RecordDateStop.Date)
+      Dim ThisWebStockInfo = New WebStockInfo(Me)
+      Dim ThisWebDateStart As Date
+      If Me.Records.Count = 0 Then
+        ThisWebDateStart = Me.DateStart
+      Else
+        ThisWebDateStart = Me.DateStop.AddDays(1)
+      End If
+      Dim ThisResponseQuery = Await ThisWebDataSource.LoadStockQuoteAsync(ThisWebStockInfo.ExchangeCode, ThisWebStockInfo.StockCode, DateStart:=Me.DateStop.Date, RecordDateStop.Date)
       If ThisResponseQuery.IsSuccess Then
         Dim ThisDictionaryOfStockQuote = ThisResponseQuery.Result
         If ThisDictionaryOfStockQuote.Count > 0 Then
-          Dim ThisListOfStockQuote As List(Of WebEODData.IStockQuote) = ThisDictionaryOfStockQuote(Me.Symbol)
+          'only one code at a time at with the content in element 0
+          Dim ThisListOfStockQuote As List(Of WebEODData.IStockQuote) = ThisDictionaryOfStockQuote.Values.First
           If ThisListOfStockQuote.Count > 0 Then
             'new data record availaible for this stock 
             For Each ThisRecord In ThisListOfStockQuote.ToListOfRecord
-              If ThisRecord.DateDay > Me.DateStop Then
+              ThisRecord.Stock = Me
+              ThisRecord.StockID = ThisRecord.Stock.ID
+              If Me.Records.Count > 0 Then
+                If ThisRecord.DateDay > Me.DateStop Then
+                  Me.Records.Add(ThisRecord)
+                  Me.DateStop = ThisRecord.DateDay
+                End If
+              Else
+                'special case for the first record
                 Me.Records.Add(ThisRecord)
                 Me.DateStop = ThisRecord.DateDay
               End If
             Next
-            If Me.DateStop > Me.Report.DateStop Then
-              Me.Report.DateStop = Me.DateStop
-            End If
+          End If
+          If Me.DateStop > Me.Report.DateStop Then
+            Me.Report.DateStop = Me.DateStop
           End If
         End If
       End If
@@ -2691,6 +2707,68 @@ Partial Public Class Stock
   'Public Overridable Property StockErrors As ICollection(Of StockError) = New HashSet(Of StockError)
   'Public Overridable Property StockSymbols As ICollection(Of StockSymbol) = New HashSet(Of StockSymbol)
 
+  '''' <summary>
+  '''' Class needed to split the exchange and symbol info in stock to a similar info but modified back 
+  '''' to be compatibale with WebEODHistorical web Interface
+  '''' </summary>
+  'Private Class StockWebEODInfo
+  '  Sub New(ByVal Stock As Stock)
+
+
+  '  End Sub
+  'End Class
+
+  Private Class WebStockInfo
+    Private MyWebStockCode As String
+    Private MyWebExchangeCode As String
+    Private MyWebExchangeName As String
+    Private MyWebExchangeCountry As String
+    Sub New(ByVal StockData As Stock)
+      Dim ThisResultOfSplit() As String = StockData.Exchange.Split(":"c)
+
+      MyWebExchangeCountry = ThisResultOfSplit(0)
+      MyWebExchangeCode = ThisResultOfSplit(1)
+      MyWebExchangeName = ThisResultOfSplit(2)
+
+      'for the symbol code
+      '
+      MyWebStockCode = StockData.Symbol
+      If MyWebExchangeCode <> "US" Then
+        'need to remove the exchange code added at the end of the symbol
+        'should work in all case but may be subject to problem if the exchange code 
+        Dim ThisLastIndexOfDot As Integer = MyWebExchangeCode.LastIndexOf("."c)
+
+        If ThisLastIndexOfDot > 0 Then
+          'replace from that position
+          MyWebExchangeCode = MyWebExchangeCode.Substring(0, ThisLastIndexOfDot + 1)
+        End If
+      End If
+    End Sub
+
+    Public ReadOnly Property StockCode As String
+      Get
+        Return MyWebStockCode
+      End Get
+    End Property
+
+    Public ReadOnly Property ExchangeCode As String
+      Get
+        Return MyWebExchangeCode
+      End Get
+    End Property
+
+    Public ReadOnly Property ExchangeName As String
+      Get
+        Return MyWebExchangeName
+      End Get
+    End Property
+
+    Public ReadOnly Property ExchangeCountry As String
+      Get
+        Return MyWebExchangeCountry
+      End Get
+    End Property
+  End Class
 End Class
 #End Region
 

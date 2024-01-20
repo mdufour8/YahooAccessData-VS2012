@@ -823,6 +823,10 @@ Partial Public Class Report
     Return ThisReport
   End Function
 
+  'Public Function StockSearch(ByVal Exchange As String, ByVal Symbol As String) As YahooAccessData.Stock
+
+  'End Function
+
   Public ReadOnly Property StockErrorList As IEnumerable(Of Stock)
     Get
       Try
@@ -2082,71 +2086,41 @@ Partial Public Class Report
     IsFileAccessReadOnly = False
   End Sub
 
-
-  Public Sub WebEODLoadAsync(ByVal DateStart As Date)
+  Public Sub WebEODLoad()
     Dim ThisStock As YahooAccessData.Stock
-    Dim MyDictionaryOfStockSymbol As Dictionary(Of String, IStockSymbol)
-    Dim MyDictionaryOfStockSymbolQuery As IResponseStatus(Of Dictionary(Of String, IStockSymbol))
+    Dim ThisListOfStockSymbol As List(Of IStockSymbol)
+    Dim ThisListOfCountryName As List(Of String)
     Dim ThisCountryName As String
-    'Todo: Should an async be used for this function?
 
     If MyWebDataSource Is Nothing Then
       Throw New Exception("WebDataSource is not availaible!")
     End If
     ThisCountryName = MyWebDataSource.CountryName
-    '~~~~~~~~~~~~~~~~~~~~ Start Test Code ~~~~~~~~~~~~~~~~~~~
-    'this code need to execute inside it's own task
-    'this seem to prevent the execution in the caller async local thread
-    'the code did not work properly without this subterfuge
-    'Dim ThisTaskRun = New Task(Of Report)(
-    '     Function()
-    '       Return Report.WebEODCreateReportAsync(ThisCountryName, MyWebDataSource, DateStart).Result
-    '     End Function)
-    'ThisTaskRun.Start()
-    'Await ThisTaskRun
-    ''this code eecute as expected
-    'Dim ThisReport = ThisTaskRun.Result
-    '~~~~~~~~~~~~~~~~~~~~ Start Test End ~~~~~~~~~~~~~~~~~~~
-
-
-    'Throw New NotImplementedException
-    Try
-      'need to have the WebData object succesfully initiazed to continue
-      If MyWebDataSource.ConnectionStatus.IsSuccess Then
-        'get the exchange list by ThisCountryName
-        Dim ThisDictionaryOfExchangeByCountryName = MyWebDataSource.GetExchangeInfoByCountry
-        'check if the country exist in the database
-        If ThisDictionaryOfExchangeByCountryName.ContainsKey(ThisCountryName) Then
-          'the country exist
-          'the report is not cleared in case the user want to add more than one country in the same object
-          'start building the current report
-          Dim MyListOfExchangeInfo = ThisDictionaryOfExchangeByCountryName(ThisCountryName)
-          If MyListOfExchangeInfo.Count > 0 Then
-            'set the datestop to the datestart for now
-            Me.Name = $"EODHistoricalData({ThisCountryName})"
-            Me.DateStart = DateStart
-            Me.IDateRange_DateStop = DateStart
-            For Each ThisExchange In MyListOfExchangeInfo
-              'Dim ThisTaskOfDictionaryOfStockSymbolQuery As Task(Of IResponseStatus(Of Dictionary(Of String, IStockSymbol)))
-              'Dim MyDictionaryOfStockSymbolQuery = Await MyWebDataSource.LoadSymbolAsync(ExchangeCode:=ThisExchange.Code)
-              'this code need to execute inside it's own task
-              'this seem to prevent the execution in the caller async local thread
-              'the code did not work properly without this subterfuge
-              'Todo: this code should be changed to just MyWebDataSource.LoadSymbol which now support
-              ' a direct blocking call.
-              'Dim ThisTaskRun = New Task(Of IResponseStatus(Of Dictionary(Of String, IStockSymbol)))(
-              '      Function() As IResponseStatus(Of Dictionary(Of String, IStockSymbol))
-              '        Return MyWebDataSource.LoadSymbolAsync(ExchangeCode:=ThisExchange.Code).Result
-              '      End Function)
-              'ThisTaskRun.Start()
-              'ThisTaskRun.Wait()
-              'MyDictionaryOfStockSymbolQuery = ThisTaskRun.Result
-
-              MyDictionaryOfStockSymbol = MyWebDataSource.GetListOfSymbolByExchangeCode(ThisExchange.Code)
-              If MyDictionaryOfStockSymbolQuery.IsSuccess Then
-                MyDictionaryOfStockSymbol = MyDictionaryOfStockSymbolQuery.Result
-                For Each ThisStockSymbol As IStockSymbol In MyDictionaryOfStockSymbol.Values
+    'need to have the WebData object succesfully initiazed to continue
+    If MyWebDataSource.ConnectionStatus.IsSuccess Then
+      Me.IDateRange_DateStop = DateStart
+      For Each ThisCountry In WebDataSource.ListOfCountryName
+        'get the exchange list by the country name
+        Dim ThisDictionaryOfExchangeByCountryName = WebDataSource.GetExchangeInfoByCountry
+        If ThisDictionaryOfExchangeByCountryName.ContainsKey(ThisCountry) Then
+          'get the list of exchange
+          Dim ThisListOfExchangeInfo = ThisDictionaryOfExchangeByCountryName(ThisCountry)
+          If ThisListOfExchangeInfo.Count > 0 Then
+            For Each ThisExchange In ThisListOfExchangeInfo
+              'get the list of stock contained in this exchange
+              ThisListOfStockSymbol = WebDataSource.GetListOfSymbolByExchangeCode(ThisExchange.Code)
+              'if we work with an exchange other than the US, append the exchange to the symbol
+              'to make sure there is no conflicting symbol. This is the method use by yahoo. However marketwatch use the
+              'country prefix code. In the past this software use the Yahoo method
+              For Each ThisStockSymbol As IStockSymbol In ThisListOfStockSymbol
+                If ThisExchange.Code <> "US" Then
+                  ThisStock = Me.StockAdd(StockSymbol:=$"{ThisStockSymbol.Code}.{ThisStockSymbol.Exchange}", SectorName:="", IndustryName:="")
+                Else
                   ThisStock = Me.StockAdd(StockSymbol:=ThisStockSymbol.Code, SectorName:="", IndustryName:="")
+                End If
+                'if ThisStock is nothing the stock could not be addded likely due conflicting Symbol
+                'in that case the stock is ignored
+                If ThisStock IsNot Nothing Then
                   With ThisStock
                     '	'keep most of the information except a few item
                     .Name = ThisStockSymbol.Name
@@ -2159,30 +2133,22 @@ Partial Public Class Report
                     .DateStart = Me.DateStart
                     .DateStop = Me.DateStop
                   End With
-                Next
-              Else
-                Me.Exception = New Exception($"Web connection error for {ThisExchange.Code} exchange Stock query: {MyDictionaryOfStockSymbolQuery.Message}")
-              End If
+                End If
+              Next
             Next
-          Else
-            Me.Exception = New Exception($"no exchange found for country name: {ThisCountryName}")
           End If
-        Else
-          Me.Exception = New Exception($"Invalid exchange country name for exchange query: {ThisCountryName}")
         End If
-      Else
-          Me.Exception = New Exception($"Invalid web connection status: {MyWebDataSource.ConnectionStatus.Message}")
-      End If
-    Catch ex As Exception
-      Throw ex
-    End Try
+      Next
+    Else
+      Me.Exception = New Exception($"Invalid web connection status: {MyWebDataSource.ConnectionStatus.Message}")
+    End If
   End Sub
 
 
-  Public Shared Async Function WebEODCreateReportAsync(WebDataSource As WebEODData.IWebEODHistoricalData, ByVal DateStart As Date) As Task(Of Report)
+  Public Shared Function WebEODCreateReport(WebDataSource As WebEODData.IWebEODHistoricalData, ByVal DateStart As Date) As Report
     Dim ThisReport As Report
     Dim ThisStock As YahooAccessData.Stock
-    Dim MyDictionaryOfStockSymbol As Dictionary(Of String, IStockSymbol)
+    Dim ThisListOfStockSymbol As List(Of IStockSymbol)
     Dim ThisListOfCountryName As List(Of String)
     Dim ThisCountryName As String
 
@@ -2196,7 +2162,6 @@ Partial Public Class Report
       WebDataSource:=WebDataSource)
 
     ThisReport.IDateRange_DateStop = DateStart
-
     For Each ThisCountry In WebDataSource.ListOfCountryName
       'get the exchange list by the country name
       Dim ThisDictionaryOfExchangeByCountryName = WebDataSource.GetExchangeInfoByCountry
@@ -2205,42 +2170,36 @@ Partial Public Class Report
         Dim ThisListOfExchangeInfo = ThisDictionaryOfExchangeByCountryName(ThisCountry)
         If ThisListOfExchangeInfo.Count > 0 Then
           For Each ThisExchange In ThisListOfExchangeInfo
-            'get the list of stock contain in this exchange
-            WebDataSource.GetListOfSymbolByExchangeCode()
-            Dim MyDictionaryOfStockSymbolQuery = Await WebDataSource.LoadSymbolAsync(ExchangeCode:=ThisExchange.Code)
-            If MyDictionaryOfStockSymbolQuery.IsSuccess Then
-              MyDictionaryOfStockSymbol = MyDictionaryOfStockSymbolQuery.Result
-              For Each ThisStockSymbol As IStockSymbol In MyDictionaryOfStockSymbol.Values
-                ThisStock = ThisReport.StockAdd(StockSymbol:=ThisStockSymbol.Code, SectorName:="", IndustryName:="")
+            'get the list of stock contained in this exchange
+            ThisListOfStockSymbol = WebDataSource.GetListOfSymbolByExchangeCode(ThisExchange.Code)
+            'if we work with an exchange other than the US, append the exchange to the symbol
+            'to make sure there is no conflicting symbol. This is the method use by yahoo. However marketwatch use the
+            'country prefix code. In the past this software use the Yahoo method
+            Dim ThisSymbol As String
+            For Each ThisStockSymbol As IStockSymbol In ThisListOfStockSymbol
+              If ThisExchange.Code = "US" Then
+                ThisSymbol = ThisStockSymbol.Code
+              Else
+                'for now use the yahoo standard for multiple exchange other than the US
+                ThisSymbol = $"{ThisStockSymbol.Code}.{ThisStockSymbol.Exchange}"
+              End If
+              ThisStock = ThisReport.StockAdd(StockSymbol:=ThisSymbol, SectorName:="", IndustryName:="")
+              'if ThisStock is nothing the stock could not be addded likely due conflicting Symbol
+              'in that case the stock is ignored
+              If ThisStock IsNot Nothing Then
                 With ThisStock
                   '	'keep most of the information except a few item
                   .Name = ThisStockSymbol.Name
-                  If ThisStockSymbol.Exchange Is Nothing Then
-                    'sometime the exchange is not availaible 
-                    .Exchange = ""
-                  Else
-                    .Exchange = ThisStockSymbol.Exchange
-                  End If
+                  .Exchange = $"{ThisExchange.Country}:{ThisExchange.Code}:{ThisStockSymbol.Exchange}"
                   .DateStart = ThisReport.DateStart
                   .DateStop = ThisReport.DateStop
                 End With
-              Next
-            Else
-              Throw New Exception($"Web connection error for {ThisExchange.Code} exchange Stock query: {MyDictionaryOfStockSymbolQuery.Message}")
-            End If
+              End If
+            Next
           Next
-
         End If
       End If
     Next
-
-
-    Else
-      Throw New Exception($"no exchange found for country name: {ThisCountryName}")
-      End If
-    Else
-      Throw New Exception($"Invalid exchange country name for exchange query: {ThisCountryName}")
-    End If
     Return ThisReport
   End Function
 
