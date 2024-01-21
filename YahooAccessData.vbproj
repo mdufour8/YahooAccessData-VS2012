@@ -149,7 +149,9 @@
     <Import Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Class1.vb" />
     <Compile Include="FileSupport\FileMutex.vb" />
+    <Compile Include="FileSupport\StockToWebEod.vb" />
     <Compile Include="GlobalSuppressions.vb" />
     <Compile Include="Interface\IStockDividendSinglePayout.vb" />
     <Compile Include="FileSupport\MemoryStreamProcessWatch.vb" />

@@ -1350,6 +1350,12 @@ Namespace ExtensionService
       Return ThisStock
     End Function
 
+    '<Extension()>
+    'Public Function Search(
+    '  colData As ICollection(Of YahooAccessData.Stock)) As YahooAccessData.ISearchKey(Of Stock, String)
+    '  Return TryCast(colData, YahooAccessData.ISearchKey(Of Stock, String))
+    'End Function
+
     <Extension()>
     Public Function ToSearch(
       colData As ICollection(Of YahooAccessData.Stock)) As YahooAccessData.ISearchKey(Of Stock, String)

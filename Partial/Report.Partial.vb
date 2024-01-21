@@ -2112,24 +2112,17 @@ Partial Public Class Report
               'if we work with an exchange other than the US, append the exchange to the symbol
               'to make sure there is no conflicting symbol. This is the method use by yahoo. However marketwatch use the
               'country prefix code. In the past this software use the Yahoo method
+              Dim ThisWebEODToStockKey As WebEODToStock
               For Each ThisStockSymbol As IStockSymbol In ThisListOfStockSymbol
-                If ThisExchange.Code <> "US" Then
-                  ThisStock = Me.StockAdd(StockSymbol:=$"{ThisStockSymbol.Code}.{ThisStockSymbol.Exchange}", SectorName:="", IndustryName:="")
-                Else
-                  ThisStock = Me.StockAdd(StockSymbol:=ThisStockSymbol.Code, SectorName:="", IndustryName:="")
-                End If
+                ThisWebEODToStockKey = New WebEODToStock(ThisExchange, ThisStockSymbol)
+                ThisStock = Me.StockAdd(StockSymbol:=ThisWebEODToStockKey.Symbol, SectorName:="", IndustryName:="")
                 'if ThisStock is nothing the stock could not be addded likely due conflicting Symbol
                 'in that case the stock is ignored
                 If ThisStock IsNot Nothing Then
                   With ThisStock
                     '	'keep most of the information except a few item
                     .Name = ThisStockSymbol.Name
-                    If ThisStockSymbol.Exchange Is Nothing Then
-                      'sometime the exchange is not availaible 
-                      .Exchange = ""
-                    Else
-                      .Exchange = ThisStockSymbol.Exchange
-                    End If
+                    .Exchange = ThisWebEODToStockKey.Exchange
                     .DateStart = Me.DateStart
                     .DateStop = Me.DateStop
                   End With
@@ -2176,21 +2169,17 @@ Partial Public Class Report
             'to make sure there is no conflicting symbol. This is the method use by yahoo. However marketwatch use the
             'country prefix code. In the past this software use the Yahoo method
             Dim ThisSymbol As String
+            Dim ThisWebEODToStockKey As WebEODToStock
             For Each ThisStockSymbol As IStockSymbol In ThisListOfStockSymbol
-              If ThisExchange.Code = "US" Then
-                ThisSymbol = ThisStockSymbol.Code
-              Else
-                'for now use the yahoo standard for multiple exchange other than the US
-                ThisSymbol = $"{ThisStockSymbol.Code}.{ThisStockSymbol.Exchange}"
-              End If
-              ThisStock = ThisReport.StockAdd(StockSymbol:=ThisSymbol, SectorName:="", IndustryName:="")
+              ThisWebEODToStockKey = New WebEODToStock(ThisExchange, ThisStockSymbol)
+              ThisStock = ThisReport.StockAdd(StockSymbol:=ThisWebEODToStockKey.Symbol, SectorName:="", IndustryName:="")
               'if ThisStock is nothing the stock could not be addded likely due conflicting Symbol
               'in that case the stock is ignored
               If ThisStock IsNot Nothing Then
                 With ThisStock
                   '	'keep most of the information except a few item
                   .Name = ThisStockSymbol.Name
-                  .Exchange = $"{ThisExchange.Country}:{ThisExchange.Code}:{ThisStockSymbol.Exchange}"
+                  .Exchange = ThisWebEODToStockKey.Exchange
                   .DateStart = ThisReport.DateStart
                   .DateStop = ThisReport.DateStop
                 End With
