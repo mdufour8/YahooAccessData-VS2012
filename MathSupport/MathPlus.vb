@@ -881,21 +881,21 @@ Namespace MathPlus
     ''' Not fully implemented yet
     ''' </summary>
     ''' <remarks></remarks>
-    Public Module FilterGenerate
-      Public Function CreateFilter(ByVal FilterType As IFilterType.enuFilterType) As IFilter
-        Select Case FilterType
-          Case IFilterType.enuFilterType.LowPassExp
-            Dim ThisDialog As New DialogFilterBasic("Filter Lowpass Exponential")
-            If ThisDialog.ShowDialog = Windows.Forms.DialogResult.OK Then
-              Return New FilterLowPassExp(ThisDialog.Rate)
-            Else
-              Return Nothing
-            End If
-          Case Else
-            Return Nothing
-        End Select
-      End Function
-    End Module
+    'Public Module FilterGenerate
+    '  Public Function CreateFilter(ByVal FilterType As IFilterType.enuFilterType) As IFilter
+    '    Select Case FilterType
+    '      Case IFilterType.enuFilterType.LowPassExp
+    '        Dim ThisDialog As New DialogFilterBasic("Filter Lowpass Exponential")
+    '        If ThisDialog.ShowDialog = Windows.Forms.DialogResult.OK Then
+    '          Return New FilterLowPassExp(ThisDialog.Rate)
+    '        Else
+    '          Return Nothing
+    '        End If
+    '      Case Else
+    '        Return Nothing
+    '    End Select
+    '  End Function
+    'End Module
 #End Region
 #Region "FilterHighPassExp"
     <Serializable()>

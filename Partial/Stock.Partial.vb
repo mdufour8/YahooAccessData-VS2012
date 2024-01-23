@@ -24,6 +24,8 @@ Partial Public Class Stock
   Implements IStockProcess
   Implements IStockInfo
   Implements IStockRank
+  Implements StockViewInterface.IWebYahooDescriptor
+
 
 #Region "Definition"
 #Const IsLogSavingAction = False
@@ -210,14 +212,15 @@ Partial Public Class Stock
     If Me.DateStop < RecordDateStop Then
       'try the web update
       'get just the data that is needed for an update
-      Dim ThisKeyStockToWeb = New StockToWebEod(Me)
+      Dim ThisWebEodStockDescriptor As StockViewInterface.IWebEodDescriptor
+      ThisWebEodStockDescriptor = New WebEODData.WebStockDescriptor(Me)
       Dim ThisWebDateStart As Date
       If Me.Records.Count = 0 Then
         ThisWebDateStart = Me.DateStart
       Else
         ThisWebDateStart = Me.DateStop.AddDays(1)
       End If
-      Dim ThisResponseQuery = Await ThisWebDataSource.LoadStockQuoteAsync(ThisKeyStockToWeb.ExchangeCode, ThisKeyStockToWeb.StockCode, DateStart:=Me.DateStop.Date, RecordDateStop.Date)
+      Dim ThisResponseQuery = Await ThisWebDataSource.LoadStockQuoteAsync(ThisWebEodStockDescriptor.ExchangeCode, ThisWebEodStockDescriptor.SymbolCode, DateStart:=Me.DateStop.Date, RecordDateStop.Date)
       If ThisResponseQuery.IsSuccess Then
         Dim ThisDictionaryOfStockQuote = ThisResponseQuery.Result
         If ThisDictionaryOfStockQuote.Count > 0 Then
@@ -1305,7 +1308,7 @@ Partial Public Class Stock
         Case IMemoryStream.enuFileType.RecordIndexed
           If ThisRecordCount > 0 Then
             If ThisTaskForRecordsEndOfDay IsNot Nothing Then
-              Await task.WhenAll(ThisTaskForRecords, ThisTaskForRecordsEndOfDay)
+              Await Task.WhenAll(ThisTaskForRecords, ThisTaskForRecordsEndOfDay)
             Else
               Await ThisTaskForRecords
             End If
@@ -1324,7 +1327,7 @@ Partial Public Class Stock
                 .MaximumID = ThisRecordIndexOfRecord.MaxID
               End With
             Else
-              Me.Report.RaiseMessage(String.Format("File saving error with {0}: {1}", Me.Symbol, Me.Exception.Message), IMessageInfoEvents.enuMessageType.Warning)
+              Me.Report.RaiseMessage(String.Format("File saving error with {0}: {1}", Me.Symbol, Me.Exception.Message), IMessageInfoEvents.EnuMessageType.Warning)
               Dim ThisRecordInfo = DirectCast(_Records, IRecordInfo)
               Dim ThisDateUpdate = DirectCast(_Records, IDateUpdate)
               .Write(ThisRecordInfo.CountTotal)
@@ -1610,7 +1613,7 @@ Partial Public Class Stock
             Try
               ThisRecordIndexOfRecord = New RecordIndex(Of Record, Date)(DirectCast(Stream, FileStream).Name(), FileMode.Open, Me.Report.AsDateRange, "Stock\Record", "_" & Me.Symbol, ".rec")
             Catch ex As Exception
-              Me.Report.RaiseMessage(String.Format("File saving error with stock {0}:{1}", Me.Symbol, ex.Message), IMessageInfoEvents.enuMessageType.Warning)
+              Me.Report.RaiseMessage(String.Format("File saving error with stock {0}:{1}", Me.Symbol, ex.Message), IMessageInfoEvents.EnuMessageType.Warning)
               ThisRecordIndexOfRecord = Nothing
             End Try
             If ThisRecordIndexOfRecord IsNot Nothing Then
@@ -2037,7 +2040,7 @@ Partial Public Class Stock
           End Try
         Next
       Else
-        Me.Report.RaiseMessage(String.Format("File SplitFactor reading error with stock {0}:{1}", Me.Symbol, ThisRecordIndexOfSplitFactor.Exception.Message), IMessageInfoEvents.enuMessageType.Warning)
+        Me.Report.RaiseMessage(String.Format("File SplitFactor reading error with stock {0}:{1}", Me.Symbol, ThisRecordIndexOfSplitFactor.Exception.Message), IMessageInfoEvents.EnuMessageType.Warning)
       End If
       ThisRecordIndexOfSplitFactor.Dispose()
       ThisRecordIndexOfSplitFactor = Nothing
@@ -2085,7 +2088,7 @@ Partial Public Class Stock
           End Try
         Next
       Else
-        Me.Report.RaiseMessage(String.Format("File StockSymbol reading error with stock {0}:{1}", Me.Symbol, ThisRecordIndexOfStockSymbol.Exception.Message), IMessageInfoEvents.enuMessageType.Warning)
+        Me.Report.RaiseMessage(String.Format("File StockSymbol reading error with stock {0}:{1}", Me.Symbol, ThisRecordIndexOfStockSymbol.Exception.Message), IMessageInfoEvents.EnuMessageType.Warning)
       End If
       ThisRecordIndexOfStockSymbol.Dispose()
       ThisRecordIndexOfStockSymbol = Nothing
@@ -2134,7 +2137,7 @@ Partial Public Class Stock
         ThisRecordIndexOfStockError.Dispose()
         ThisRecordIndexOfStockError = Nothing
       Else
-        Me.Report.RaiseMessage(String.Format("File StockError reading error with stock {0}:{1}", Me.Symbol, ThisRecordIndexOfStockError.Exception.Message), IMessageInfoEvents.enuMessageType.Warning)
+        Me.Report.RaiseMessage(String.Format("File StockError reading error with stock {0}:{1}", Me.Symbol, ThisRecordIndexOfStockError.Exception.Message), IMessageInfoEvents.EnuMessageType.Warning)
       End If
     End If
   End Sub
@@ -2226,7 +2229,7 @@ Partial Public Class Stock
           End If
         End If
       Else
-        Me.Report.RaiseMessage(String.Format("File record reading error with stock {0}:{1}", Me.Symbol, ThisRecordIndexOfRecord.Exception.Message), IMessageInfoEvents.enuMessageType.Warning)
+        Me.Report.RaiseMessage(String.Format("File record reading error with stock {0}:{1}", Me.Symbol, ThisRecordIndexOfRecord.Exception.Message), IMessageInfoEvents.EnuMessageType.Warning)
       End If
       ThisRecordIndexOfRecord.Dispose()
       ThisRecordIndexOfRecord = Nothing
@@ -2552,7 +2555,20 @@ Partial Public Class Stock
       Throw New NotSupportedException
     End Set
   End Property
+
+  Private ReadOnly Property IWebYahooDescriptor_Symbol As String Implements StockViewInterface.IWebYahooDescriptor.Symbol
+    Get
+      Return Me.Symbol
+    End Get
+  End Property
+
+  Private ReadOnly Property IWebYahooDescriptor_Exchange As String Implements StockViewInterface.IWebYahooDescriptor.Exchange
+    Get
+      Return Me.Exchange
+    End Get
+  End Property
 #End Region
+
 End Class
 
 #Region "IStockRank"

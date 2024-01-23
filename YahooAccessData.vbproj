@@ -13,7 +13,7 @@
     <AssemblyName>YahooAccessData</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <MyType>Windows</MyType>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
     <SccProjectName>
     </SccProjectName>
     <SccLocalPath>
@@ -119,6 +119,10 @@
     <Reference Include="Polenter.SharpSerializer">
       <HintPath>..\..\Commun Work\Sharp Serializer\sharp_serializer_dll\sharpSerializerDll\Polenter.SharpSerializer.dll</HintPath>
     </Reference>
+    <Reference Include="StockViewInterface, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\StockViewInterface\obj\Release\StockViewInterface.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Data.Linq" />
@@ -134,9 +138,6 @@
     <Reference Include="System.Xml" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
-    <Reference Include="TextBoxNumeric">
-      <HintPath>..\..\Commun Work\VBNET\TextBoxNumeric\bin\Release\TextBoxNumeric.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Import Include="Microsoft.VisualBasic" />
@@ -151,19 +152,12 @@
   <ItemGroup>
     <Compile Include="Class1.vb" />
     <Compile Include="FileSupport\FileMutex.vb" />
-    <Compile Include="FileSupport\StockToWebEod.vb" />
     <Compile Include="GlobalSuppressions.vb" />
     <Compile Include="Interface\IStockDividendSinglePayout.vb" />
     <Compile Include="FileSupport\MemoryStreamProcessWatch.vb" />
     <Compile Include="FileSupport\ProcessTimeMeasurement.vb" />
     <Compile Include="FileSupport\VBArray.vb" />
     <Compile Include="MathSupport\BinaryConverter\BinaryConverter.vb" />
-    <Compile Include="MathSupport\Dialog\DialogFilterBasic.Designer.vb">
-      <DependentUpon>DialogFilterBasic.vb</DependentUpon>
-    </Compile>
-    <Compile Include="MathSupport\Dialog\DialogFilterBasic.vb">
-      <SubType>Form</SubType>
-    </Compile>
     <Compile Include="FileSupport\CompareByName.vb" />
     <Compile Include="FileSupport\DictionaryKeyValuePair.vb" />
     <Compile Include="FileSupport\Extensions.vb" />
@@ -257,9 +251,6 @@
     <Compile Include="StockOption\StockPricePrediction.vb" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="MathSupport\Dialog\DialogFilterBasic.resx">
-      <DependentUpon>DialogFilterBasic.vb</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="My Project\Resources.resx">
       <Generator>VbMyResourcesResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.vb</LastGenOutput>

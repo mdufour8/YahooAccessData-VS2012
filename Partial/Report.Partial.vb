@@ -32,7 +32,6 @@ Partial Public Class Report
   Implements IRecordControlInfo
   Implements IStockRecordEvent
 
-
 #Region "Main"
   Public Enum enuTimeFormat
     Sample     'default raw data
@@ -1719,7 +1718,7 @@ Partial Public Class Report
           Try
             .CreateDirectory(ThisPath)
           Catch ex As Exception
-            Return New Exception(String.Format("Unable to create directory {0},ThisPath"), ex)
+            Return New Exception($"Unable to create directory {ThisPath}", ex)
           End Try
         End If
       End With
@@ -2112,17 +2111,17 @@ Partial Public Class Report
               'if we work with an exchange other than the US, append the exchange to the symbol
               'to make sure there is no conflicting symbol. This is the method use by yahoo. However marketwatch use the
               'country prefix code. In the past this software use the Yahoo method
-              Dim ThisWebEODToStockKey As WebEODToStock
+              Dim ThisWebYahooStockDescriptor As StockViewInterface.IWebYahooDescriptor
               For Each ThisStockSymbol As IStockSymbol In ThisListOfStockSymbol
-                ThisWebEODToStockKey = New WebEODToStock(ThisExchange, ThisStockSymbol)
-                ThisStock = Me.StockAdd(StockSymbol:=ThisWebEODToStockKey.Symbol, SectorName:="", IndustryName:="")
+                ThisWebYahooStockDescriptor = New WebStockDescriptor(ThisExchange, ThisStockSymbol)
+                ThisStock = Me.StockAdd(StockSymbol:=ThisWebYahooStockDescriptor.Symbol, SectorName:="", IndustryName:="")
                 'if ThisStock is nothing the stock could not be addded likely due conflicting Symbol
                 'in that case the stock is ignored
                 If ThisStock IsNot Nothing Then
                   With ThisStock
                     '	'keep most of the information except a few item
                     .Name = ThisStockSymbol.Name
-                    .Exchange = ThisWebEODToStockKey.Exchange
+                    .Exchange = ThisWebYahooStockDescriptor.Exchange
                     .DateStart = Me.DateStart
                     .DateStop = Me.DateStop
                   End With
@@ -2169,17 +2168,17 @@ Partial Public Class Report
             'to make sure there is no conflicting symbol. This is the method use by yahoo. However marketwatch use the
             'country prefix code. In the past this software use the Yahoo method
             Dim ThisSymbol As String
-            Dim ThisWebEODToStockKey As WebEODToStock
+            Dim ThisWebYahooStockDescriptor As StockViewInterface.IWebYahooDescriptor
             For Each ThisStockSymbol As IStockSymbol In ThisListOfStockSymbol
-              ThisWebEODToStockKey = New WebEODToStock(ThisExchange, ThisStockSymbol)
-              ThisStock = ThisReport.StockAdd(StockSymbol:=ThisWebEODToStockKey.Symbol, SectorName:="", IndustryName:="")
+              ThisWebYahooStockDescriptor = New WebStockDescriptor(ThisExchange, ThisStockSymbol)
+              ThisStock = ThisReport.StockAdd(StockSymbol:=ThisWebYahooStockDescriptor.Symbol, SectorName:="", IndustryName:="")
               'if ThisStock is nothing the stock could not be addded likely due conflicting Symbol
               'in that case the stock is ignored
               If ThisStock IsNot Nothing Then
                 With ThisStock
                   '	'keep most of the information except a few item
                   .Name = ThisStockSymbol.Name
-                  .Exchange = ThisWebEODToStockKey.Exchange
+                  .Exchange = ThisWebYahooStockDescriptor.Exchange
                   .DateStart = ThisReport.DateStart
                   .DateStop = ThisReport.DateStop
                 End With
