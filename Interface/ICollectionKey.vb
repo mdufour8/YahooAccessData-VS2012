@@ -466,6 +466,7 @@ End Interface
 #Region "IStockRecord"
 Public Enum enuStockRecordLoadType
   FixedCount
+  WebEodHistorical
 End Enum
 Public Interface IStockRecordEvent
   Sub LoadBefore(ByVal Symbol As String)

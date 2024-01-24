@@ -87,14 +87,17 @@ Partial Public Class Stock
       'even if IsRecordVirtual is false 
       'activate the sink event ISystemEvent to get the update for IRecordQuoteValue
       'the Me parameters will activate the automatic loading of the data when needed
-      .Records = New LinkedHashSet(Of Record, Date)(Me)
-      .RecordsDaily = New LinkedHashSet(Of RecordDaily, Date)(Me)
+      'note that for Web update this event should be turned off i.e. IsRecordVirtual==false
       If IsRecordVirtual Then
         'the Me parameters will activate the automatic loading of the data when needed
+        .Records = New LinkedHashSet(Of Record, Date)(Me)
+        .RecordsDaily = New LinkedHashSet(Of RecordDaily, Date)(Me)
         .SplitFactors = New LinkedHashSet(Of SplitFactor, Date)(Me)
         .StockErrors = New LinkedHashSet(Of StockError, Date)(Me)
         .StockSymbols = New LinkedHashSet(Of StockSymbol, Date)(Me)
       Else
+        .Records = New LinkedHashSet(Of Record, Date)
+        .RecordsDaily = New LinkedHashSet(Of RecordDaily, Date)
         .SplitFactors = New LinkedHashSet(Of SplitFactor, Date)
         .StockErrors = New LinkedHashSet(Of StockError, Date)
         .StockSymbols = New LinkedHashSet(Of StockSymbol, Date)
@@ -197,6 +200,21 @@ Partial Public Class Stock
   End Sub
 #End Region
 #Region "Main Control Function"
+  Public Function WebRefreshRecord(ByVal RecordDateStop As Date) As Date
+    Dim ThisTaskOfWebRefreshRecord = New Task(Of Date)(
+     Function()
+       Dim ThisTask = WebRefreshRecordAsync(Now)
+       Return ThisTask.Result
+     End Function)
+
+    ThisTaskOfWebRefreshRecord.Start()
+    ThisTaskOfWebRefreshRecord.Wait()
+
+    Return ThisTaskOfWebRefreshRecord.Result
+  End Function
+
+
+
   ''' <summary>
   '''   Use to refresh the data record via the buid-in web interface
   ''' </summary>
@@ -207,7 +225,7 @@ Partial Public Class Stock
   Public Async Function WebRefreshRecordAsync(ByVal RecordDateStop As Date) As Task(Of Date)
     Dim ThisWebDataSource = Me.Report.WebDataSource
     If ThisWebDataSource Is Nothing Then
-      Throw New NotSupportedException("Invalid web data source...")
+      Return Me.DateStop
     End If
     If Me.DateStop < RecordDateStop Then
       'try the web update
@@ -215,7 +233,9 @@ Partial Public Class Stock
       Dim ThisWebEodStockDescriptor As StockViewInterface.IWebEodDescriptor
       ThisWebEodStockDescriptor = New WebEODData.WebStockDescriptor(Me)
       Dim ThisWebDateStart As Date
-      If Me.Records.Count = 0 Then
+      'note this function work at very low level and should not call the .records interface directly
+      'to make sure ther is no issue call the object _Records directly
+      If _Records.Count = 0 Then
         ThisWebDateStart = Me.DateStart
       Else
         ThisWebDateStart = Me.DateStop.AddDays(1)
@@ -231,14 +251,14 @@ Partial Public Class Stock
             For Each ThisRecord In ThisListOfStockQuote.ToListOfRecord
               ThisRecord.Stock = Me
               ThisRecord.StockID = ThisRecord.Stock.ID
-              If Me.Records.Count > 0 Then
+              If _Records.Count > 0 Then
                 If ThisRecord.DateDay > Me.DateStop Then
-                  Me.Records.Add(ThisRecord)
+                  _Records.Add(ThisRecord)
                   Me.DateStop = ThisRecord.DateDay
                 End If
               Else
                 'special case for the first record
-                Me.Records.Add(ThisRecord)
+                _Records.Add(ThisRecord)
                 Me.DateStop = ThisRecord.DateDay
               End If
             Next
@@ -459,7 +479,6 @@ Partial Public Class Stock
   End Function
 
   ''' <summary>
-  ''' do not used at this time not completed
   ''' </summary>
   ''' <param name="TimeFormat"></param>
   ''' <returns></returns>
@@ -728,8 +747,13 @@ Partial Public Class Stock
 #Region "Collection Definition"
   Public Overridable Property Records As ICollection(Of Record)
     Get
-      Me.RecordLoad()
-      Return _Records
+      If Me.Report.WebDataSource Is Nothing Then
+        Me.RecordLoad()
+        Return _Records
+      Else
+        Me.WebRefreshRecord(Now)
+        Return _Records
+      End If
     End Get
     Set(value As ICollection(Of Record))
       _Records = value
@@ -2166,74 +2190,90 @@ Partial Public Class Stock
     Dim ThisTimePeriodOverlap = New TimePeriodOverlap(DirectCast(Me.Report, IDateRange))
 
     'SyncLock MySyncLockForRecordLoading
-    If ThisTimePeriodOverlap.IsOverlap(DirectCast(_Records, IDateUpdate)) Then
-      'Task.Delay(2000).Wait()   'just for testing a web delay
-      Dim ThisChildPath As String
-      If Me.Report.IsFileReadEndOfDayEnabled Then
-        ThisChildPath = "Stock\RecordEndOfDay"
-      Else
-        ThisChildPath = "Stock\Record"
-      End If
-      Dim ThisRecordIndexOfRecord As RecordIndex(Of Record, Date)
-      ThisRecordIndexOfRecord = New RecordIndex(Of Record, Date)(
-        DirectCast(Me.Report.ToStream, FileStream).Name(),
-        FileMode.Open,
-        Me.Report.AsDateRange,
-        ThisChildPath,
-        "_" & Me.Symbol,
-        ".rec",
-        Me.Report.IsReadOnly)
+    Select Case Me.Report.AsRecordControlInfo.ControlType
+      Case enuStockRecordLoadType.FixedCount
+        If ThisTimePeriodOverlap.IsOverlap(DirectCast(_Records, IDateUpdate)) Then
+          'Task.Delay(2000).Wait()   'just for testing a web delay
+          Dim ThisChildPath As String
+          If Me.Report.IsFileReadEndOfDayEnabled Then
+            ThisChildPath = "Stock\RecordEndOfDay"
+          Else
+            ThisChildPath = "Stock\Record"
+          End If
+          Dim ThisRecordIndexOfRecord As RecordIndex(Of Record, Date)
+          ThisRecordIndexOfRecord = New RecordIndex(Of Record, Date)(
+            DirectCast(Me.Report.ToStream, FileStream).Name(),
+            FileMode.Open,
+            Me.Report.AsDateRange,
+            ThisChildPath,
+            "_" & Me.Symbol,
+            ".rec",
+            Me.Report.IsReadOnly)
 
-      If ThisRecordIndexOfRecord.Exception Is Nothing Then
-        If Me.Report.AsRecordControlInfo.Enabled Then
-          DirectCast(Me.Report, IStockRecordEvent).LoadBefore(Me.Symbol)
-        End If
-        With DirectCast(_Records, IDateUpdate)
-          .DateStart = ThisRecordIndexOfRecord.DateStart
-          .DateStop = ThisRecordIndexOfRecord.DateStop
-        End With
-        With CType(_Records, IRecordInfo)
-          .CountTotal = ThisRecordIndexOfRecord.FileCount
-          .MaximumID = ThisRecordIndexOfRecord.MaxID
-        End With
-        Dim IsLoadCancelled As Boolean = False
-        If ThisRecordIndexOfRecord.ToListPosition.Count > 4 Then
-          'CType(_Records, LinkedHashSet(Of Record, Date)).Capacity = .ToListPosition.Count
-        End If
-        'Dim ThisRecordLast As Record = Nothing
-        For Each ThisPosition In ThisRecordIndexOfRecord.ToListPosition
-          Try
-            Dim ThisRecord = New Record(Me, ThisRecordIndexOfRecord.BaseStream(ThisPosition))
-            'If ThisRecordLast IsNot Nothing Then
-            '  If ThisRecord.QuoteValues(0).ExDividendDate < ThisRecordLast.QuoteValues(0).ExDividendDate Then
-            '    ThisRecordLast = ThisRecordLast
-            '  End If
-            'End If
-            'ThisRecordLast = ThisRecord
-          Catch ex As Exception
-            ThisRecordIndexOfRecord.Dispose()
-            ThisRecordIndexOfRecord = Nothing
-            Throw New Exception(String.Format("Record reading error with stock {0}", Me.Symbol))
-          End Try
-          IsLoadCancelled = DirectCast(Me.Report, IStockRecordEvent).IsLoadCancel
-          If IsLoadCancelled Then
-            'request to cancel the loading is activated
-            'clear the data currently accumulated in the records
-            DirectCast(_Records, IDataVirtual).Release()
-            Exit For
+          If ThisRecordIndexOfRecord.Exception Is Nothing Then
+            If Me.Report.AsRecordControlInfo.Enabled Then
+              DirectCast(Me.Report, IStockRecordEvent).LoadBefore(Me.Symbol)
+            End If
+            With DirectCast(_Records, IDateUpdate)
+              .DateStart = ThisRecordIndexOfRecord.DateStart
+              .DateStop = ThisRecordIndexOfRecord.DateStop
+            End With
+            With CType(_Records, IRecordInfo)
+              .CountTotal = ThisRecordIndexOfRecord.FileCount
+              .MaximumID = ThisRecordIndexOfRecord.MaxID
+            End With
+            Dim IsLoadCancelled As Boolean = False
+            If ThisRecordIndexOfRecord.ToListPosition.Count > 4 Then
+              'CType(_Records, LinkedHashSet(Of Record, Date)).Capacity = .ToListPosition.Count
+            End If
+            'Dim ThisRecordLast As Record = Nothing
+            For Each ThisPosition In ThisRecordIndexOfRecord.ToListPosition
+              Try
+                Dim ThisRecord = New Record(Me, ThisRecordIndexOfRecord.BaseStream(ThisPosition))
+                'If ThisRecordLast IsNot Nothing Then
+                '  If ThisRecord.QuoteValues(0).ExDividendDate < ThisRecordLast.QuoteValues(0).ExDividendDate Then
+                '    ThisRecordLast = ThisRecordLast
+                '  End If
+                'End If
+                'ThisRecordLast = ThisRecord
+              Catch ex As Exception
+                ThisRecordIndexOfRecord.Dispose()
+                ThisRecordIndexOfRecord = Nothing
+                Throw New Exception(String.Format("Record reading error with stock {0}", Me.Symbol))
+              End Try
+              IsLoadCancelled = DirectCast(Me.Report, IStockRecordEvent).IsLoadCancel
+              If IsLoadCancelled Then
+                'request to cancel the loading is activated
+                'clear the data currently accumulated in the records
+                DirectCast(_Records, IDataVirtual).Release()
+                Exit For
+              End If
+            Next
+            If Me.Report.AsRecordControlInfo.Enabled Then
+              If IsLoadCancelled = False Then
+                DirectCast(Me.Report, IStockRecordEvent).LoadAfter(Me.Symbol)
+              End If
+            End If
+          Else
+            Me.Report.RaiseMessage(String.Format("File record reading error with stock {0}:{1}", Me.Symbol, ThisRecordIndexOfRecord.Exception.Message), IMessageInfoEvents.EnuMessageType.Warning)
           End If
-        Next
-        If Me.Report.AsRecordControlInfo.Enabled Then
-          If IsLoadCancelled = False Then
-            DirectCast(Me.Report, IStockRecordEvent).LoadAfter(Me.Symbol)
-          End If
+          ThisRecordIndexOfRecord.Dispose()
+          ThisRecordIndexOfRecord = Nothing
         End If
-      Else
-        Me.Report.RaiseMessage(String.Format("File record reading error with stock {0}:{1}", Me.Symbol, ThisRecordIndexOfRecord.Exception.Message), IMessageInfoEvents.EnuMessageType.Warning)
-      End If
-      ThisRecordIndexOfRecord.Dispose()
-      ThisRecordIndexOfRecord = Nothing
-    End If
+      Case enuStockRecordLoadType.WebEodHistorical
+        'Dim ThisTaskRun = New Task(Of Date)(
+        '  Function()
+        '    Return WebRefreshRecordAsync(Now)
+        '  End Function)
+        'ThisTaskRun.Start()
+        'Await ThisTaskRun
+        'Dim ThisDate = ThisTaskRun.Result.Result
+        'Dim ThisDate = Await WebRefreshRecordAsync(Now)
+        'Dim ThisDate = Await WebRefreshRecordAsync(Now)
+        'Dim ThisnumberOfRecord = Me.Records.Count
+        'this interface will not work well since it is only fired one and only if the record has nort been loaded
+        'it does not expect to update every time we request a read
+    End Select
   End Sub
 #End Region
 #Region "ISystemEventOfRecordDaily"
