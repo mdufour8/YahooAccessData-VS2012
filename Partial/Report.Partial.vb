@@ -117,6 +117,7 @@ Partial Public Class Report
   End Sub
   Public Sub New(ByVal Name As String, ByVal DateStart As Date, ByVal WebDataSource As WebEODData.IWebEODHistoricalData)
     MyWebDataSource = WebDataSource
+    MyFileName = ""
 
     MyDictionaryOfStockRecordLoaded = New Dictionary(Of String, String)
     MyStockRecordQueue = New Queue(Of String)
@@ -471,7 +472,12 @@ Partial Public Class Report
 
   Public Property DateStop As Date
     Get
-      Return _DateStop
+      If MyWebDataSource Is Nothing Then
+        Return _DateStop
+      Else
+        'assume the Web database is always up to date
+        Return Now.Date
+      End If
     End Get
     Set(value As Date)
       _DateStop = value
@@ -1939,7 +1945,11 @@ Partial Public Class Report
   ''' <remarks></remarks>
   Public Property IsFileOpen As Boolean
     Get
-      Return _IsFileOpen
+      If MyWebDataSource Is Nothing Then
+        Return _IsFileOpen
+      Else
+        Return True
+      End If
     End Get
     Friend Set(value As Boolean)
       _IsFileOpen = value
@@ -1958,6 +1968,10 @@ Partial Public Class Report
       Return MyFileName
     End Get
   End Property
+
+  Public Sub SetFileName(ByVal FileName As String)
+    MyFileName = FileName
+  End Sub
 
   Public Async Function FileOpenAsync(ByVal FileName As String, Optional IsReadOnly As Boolean = False) As Task(Of Boolean)
     Dim ThisBinaryReader As BinaryReader = Nothing
@@ -2180,7 +2194,7 @@ Partial Public Class Report
                   .Name = ThisStockSymbol.Name
                   .Exchange = ThisWebYahooStockDescriptor.Exchange
                   .DateStart = ThisReport.DateStart
-                  .DateStop = ThisReport.DateStop
+                  .DateStop = .DateStart
                 End With
               End If
             Next

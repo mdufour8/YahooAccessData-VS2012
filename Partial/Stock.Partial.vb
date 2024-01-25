@@ -201,6 +201,7 @@ Partial Public Class Stock
 #End Region
 #Region "Main Control Function"
   Public Function WebRefreshRecord(ByVal RecordDateStop As Date) As Date
+
     Dim ThisTaskOfWebRefreshRecord = New Task(Of Date)(
      Function()
        Dim ThisTask = WebRefreshRecordAsync(Now)
@@ -210,6 +211,7 @@ Partial Public Class Stock
     ThisTaskOfWebRefreshRecord.Start()
     ThisTaskOfWebRefreshRecord.Wait()
 
+    Debug.Print($"WebRefreshRecord: {Me.Symbol}")
     Return ThisTaskOfWebRefreshRecord.Result
   End Function
 
@@ -234,9 +236,11 @@ Partial Public Class Stock
       ThisWebEodStockDescriptor = New WebEODData.WebStockDescriptor(Me)
       Dim ThisWebDateStart As Date
       'note this function work at very low level and should not call the .records interface directly
-      'to make sure ther is no issue call the object _Records directly
+      'to make sure there is no issue of stack overflow call the object _Records instead
       If _Records.Count = 0 Then
         ThisWebDateStart = Me.DateStart
+        'make sure there is nothing in the MyRecordQuoteValues
+        MyRecordQuoteValues.Clear()
       Else
         ThisWebDateStart = Me.DateStop.AddDays(1)
       End If
@@ -254,11 +258,13 @@ Partial Public Class Stock
               If _Records.Count > 0 Then
                 If ThisRecord.DateDay > Me.DateStop Then
                   _Records.Add(ThisRecord)
+                  MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
                   Me.DateStop = ThisRecord.DateDay
                 End If
               Else
                 'special case for the first record
                 _Records.Add(ThisRecord)
+                MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
                 Me.DateStop = ThisRecord.DateDay
               End If
             Next
@@ -612,20 +618,25 @@ Partial Public Class Stock
   Public Function RecordLoad() As Boolean
     Dim IsLoaded As Boolean
     SyncLock MySyncLockForStockRecordLoadingAll
-      With DirectCast(_Records, IDataVirtual)
-        IsLoaded = .IsLoaded
-        If IsLoaded = False Then
-          'always read one at the time to support FTP web reading
-          Try
-            .Load()
-            IsLoaded = .IsLoaded
-          Catch ex As Exception
-            'how to fix because this may be a problem on a thread
-            Me.Report.Exception = ex
-            IsLoaded = False
-          End Try
-        End If
-      End With
+      If Me.Report.WebDataSource Is Nothing Then
+        With DirectCast(_Records, IDataVirtual)
+          IsLoaded = .IsLoaded
+          If IsLoaded = False Then
+            'always read one at the time to support FTP web reading
+            Try
+              .Load()
+              IsLoaded = .IsLoaded
+            Catch ex As Exception
+              'how to fix because this may be a problem on a thread
+              Me.Report.Exception = ex
+              IsLoaded = False
+            End Try
+          End If
+        End With
+      Else
+        Me.WebRefreshRecord(Now)
+        IsLoaded = True
+      End If
     End SyncLock
     Return IsLoaded
   End Function
