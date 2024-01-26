@@ -229,6 +229,10 @@ Partial Public Class Stock
     If ThisWebDataSource Is Nothing Then
       Return Me.DateStop
     End If
+    'always remove the automatic splitting adjustment
+    'when connected to teh web.
+    'the data is already adjusted to reflect the share splitting
+    Me.IsSplitEnabled = False
     If Me.DateStop < RecordDateStop Then
       'try the web update
       'get just the data that is needed for an update

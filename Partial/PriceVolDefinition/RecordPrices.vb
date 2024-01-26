@@ -34,8 +34,6 @@ Public Class RecordPrices
   Private MyDictionaryOfStockDividendSinglePayout As Dictionary(Of String, List(Of StockDividendSinglePayout))
   Private MyDictionaryOfStockPriceDataError As Dictionary(Of String, IList(Of IPriceVol))
 
-
-
 #End Region
 #Region "New"
   Public Sub New(
