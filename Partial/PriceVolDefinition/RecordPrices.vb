@@ -1051,7 +1051,7 @@ Public Class RecordPrices
           .EPSEstimateNextYear = MyPriceVolLast.EPSEstimateNextYear
           .OneyrPEG = MyPriceVolLast.OneyrPEG
         Else
-          .Open = Record.Open
+          .Open = Record.Last
           .DividendYield = Record.DividendYield
           .DividendShare = Record.DividendShare
           .DividendPayDate = Record.DividendPayDate
