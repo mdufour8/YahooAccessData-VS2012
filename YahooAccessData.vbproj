@@ -261,10 +261,6 @@
     <None Include="App.Config">
       <SubType>Designer</SubType>
     </None>
-    <None Include="ClassDiagram1.cd" />
-    <None Include="ClassDiagram2.cd" />
-    <None Include="ClassDiagram3.cd" />
-    <None Include="ClassDiagram4.cd" />
     <None Include="MathSupport\Filter\Volatility\Yang Drift-Independent Volatility .pdf" />
     <None Include="MathSupport\Info\erf-approx.pdf" />
     <None Include="MathSupport\Info\Geometric Brownian Motion Option Pricing and Simulation.pdf" />
