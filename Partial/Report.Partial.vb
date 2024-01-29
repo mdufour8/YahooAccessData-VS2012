@@ -64,6 +64,7 @@ Partial Public Class Report
   Private MyLoadToCacheLatestTick As Integer
   Private _IsFileReadEndOfDayEnabled As Boolean
   Private MyWebDataSource As WebEODData.IWebEODHistoricalData
+  'Private MyDictionaryOfStockSymbol As Dictionary(Of String, List(Of IStockSymbol))
 
   'Need to use these name to correctly capture the data from the net old object serialization
   'this object serialization is not use anymore but we may have old file
@@ -1607,7 +1608,12 @@ Partial Public Class Report
   Public Sub FileSave()
     'save to the attached file in append mode
     If Me.IsFileOpen Then
-      Me.SerializeSaveTo(MyStream, YahooAccessData.IMemoryStream.enuFileType.RecordIndexed)
+      If MyWebDataSource Is Nothing Then
+        Me.SerializeSaveTo(MyStream, YahooAccessData.IMemoryStream.enuFileType.RecordIndexed)
+      Else
+        'this is a special file running from the web
+        Me.FileSave(MyFileName)
+      End If
     End If
   End Sub
 
@@ -2181,7 +2187,6 @@ Partial Public Class Report
             'if we work with an exchange other than the US, append the exchange to the symbol
             'to make sure there is no conflicting symbol. This is the method use by yahoo. However marketwatch use the
             'country prefix code. In the past this software use the Yahoo method
-            Dim ThisSymbol As String
             Dim ThisWebYahooStockDescriptor As StockViewInterface.IWebYahooDescriptor
             For Each ThisStockSymbol As IStockSymbol In ThisListOfStockSymbol
               ThisWebYahooStockDescriptor = New WebStockDescriptor(ThisExchange, ThisStockSymbol)

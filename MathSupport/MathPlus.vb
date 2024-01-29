@@ -4916,47 +4916,36 @@ Namespace MathPlus
     '''    HH. For bars with the high price greater than the previous high (otherwise 0):
     '''    HH = (Hc - Hl)/(Hh-Hl),
     '''
-    ''' where Hc is the current bar’s high price, Hl and Hh are the lowest and the highest high prices over a certain period.
+    ''' where Hc is the current bar’s high price, Hl and Hh are the lowest and the highest high prices over
+    '''a certain period.
     '''
     ''' LL. For bars with the low price less than the previous low (otherwise 0):
     '''
     '''   LL = (Lh - Lc)/(Lh-Ll),
-    '''where Lc is the current low price, Ll and Lh are the lowest and the highest low prices over a certain period.
+    '''where Lc is the current low price, Ll and Lh are the lowest and the highest low prices over
+    '''	a certain period. Both variables are then smoothed with a moving average, resulting in two main 
+    ''' plots HHS and LLS. 
+    '''	The values of these plots range from zero to 100, rarely reaching either boundary. 
+    '''	Thus, by default, overbought and oversold levels are set at 60 and 10, respectively.
     '''
-    '''Both variables are then smoothed with a moving average, resulting in two main plots HHS and LLS. 
-    '''The values of these plots range from zero to 100, rarely reaching either boundary. 
-    '''Thus, by default, overbought and oversold levels are set at 60 and 10, respectively.
-    '''
-    '''The divergence between the price and HHLLS plots might prove useful in recognition of trend reversals or corrections. 
-    '''A bearish divergence is indicated when the price is trending up but HHS fails to confirm this move. Conversely, price making a new low when LLS goes up can be considered a bullish divergence. Divergence of either type may need additional confirmation: a signal may prove stronger when one of the lines forms the divergence and the other crosses above the level of 50.
+    '''The divergence between the price and HHLLS plots might prove useful in recognition of trend 
+    '''reversals or corrections. 
+    '''A bearish divergence is indicated when the price is trending up but HHS fails to confirm this move. 
+    '''Conversely, price making a new low when LLS goes up can be considered a bullish divergence. 
+    '''Divergence of either type may need additional confirmation: a signal may prove stronger 
+    '''when one of the lines forms the divergence and the other crosses above the level of 50.
     '''
     '''Another technique of using HHLLS is analyzing the behavior of the main plots in relation to each other. 
-    '''When HHS is rising while the LLS is making new lows, the price may be entering an uptrend. The opposite situation may lead
-    '''to emergence of a downtrend. 
+    '''When HHS is rising while the LLS is making new lows, the price may be entering an uptrend. 
+    '''The opposite situation may lead to emergence of a downtrend. 
     '''The crossovers of the two lines may also indicate important trading signals.
     ''' 
     ''' Speudo implementation:
     ''' 
-    ''' 'HIGHER HIGHS AND LOWER LOWS
-    ''' 'Author: Vitali Aprine, TASC Feb 2016
-    ''' 'Coded by: Richard Denning, 12/10/2015
-    ''' 'TradersEdgeSystems com
-    ''' Function HHSLLS_Stoch(stochLen, ByRef LLS)
-    '''    Dim LH, HH, HS, HHS
-    '''      LH = Lowest(H, stochLen)
-    '''      HH = Highest(H, stochLen)
-    ''' If (HH-LH) <> 0 Then HS = IIF(H>H[1],(H-LH)/(HH-LH),0) 
-    '''    Dim LL, HL, LS
-    '''      LL = Lowest(L, stochLen)
-    '''      HL = Highest(L, stochLen)
-    '''' If (HL-LL)<>0 Then LS = IIF(L<L[1],(HL-L)/(HL-LL),0) 
-    ''''
-    ''''      HHS = XAverage(HS, stochLen) * 100
-    ''''      LLS = XAverage(LS, stochLen) * 100
-    ''''      HHSLLS_Stoch = HHS
-    ''''    End Function
-    ''' 
-    ''' 
+    ''' HIGHER HIGHS AND LOWER LOWS
+    ''' Author: Vitali Aprine, TASC Feb 2016
+    ''' Coded by: Richard Denning, 12/10/2015
+    ''' TradersEdgeSystems com
     ''' 
     ''' </summary>
     <Serializable()>
