@@ -203,16 +203,19 @@ Partial Public Class Stock
 #Region "Main Control Function"
 	Public Function WebRefreshRecord(ByVal RecordDateStop As Date) As Date
 
+
 		Dim ThisTaskOfWebRefreshRecord = New Task(Of Date)(
 		 Function()
-			 Dim ThisTask = WebRefreshRecordAsync(Now)
+			 Dim ThisTask = Me.WebRefreshRecordAsync(Now)
 			 Return ThisTask.Result
 		 End Function)
 
+		Dim ThisStockWatch As New Stopwatch
+		ThisStockWatch.Restart()
 		ThisTaskOfWebRefreshRecord.Start()
 		ThisTaskOfWebRefreshRecord.Wait()
-
-		Debug.Print($"WebRefreshRecord: {Me.Symbol}")
+		ThisStockWatch.Stop()
+		Debug.Print($"WebRefreshRecord: {Me.Symbol} executed in {ThisStockWatch.ElapsedMilliseconds} ms")
 		Return ThisTaskOfWebRefreshRecord.Result
 	End Function
 
