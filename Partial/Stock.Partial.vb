@@ -206,7 +206,7 @@ Partial Public Class Stock
 
 		Dim ThisTaskOfWebRefreshRecord = New Task(Of Date)(
 		 Function()
-			 Dim ThisTask = Me.WebRefreshRecordAsync(Now)
+			 Dim ThisTask = Me.WebRefreshRecordAsync(RecordDateStop)
 			 Return ThisTask.Result
 		 End Function)
 
@@ -256,11 +256,12 @@ Partial Public Class Stock
 			Else
 				ThisWebDateStart = Me.DateStop.Date.AddDays(1)
 			End If
+
 			Dim ThisResponseQuery = Await ThisWebDataSource.LoadStockQuoteAsync(
 				ThisWebEodStockDescriptor.ExchangeCode,
 				ThisWebEodStockDescriptor.SymbolCode,
 				DateStart:=Me.DateStop.Date,
-				RecordDateStop.Date)
+				RecordDateStop)
 
 			If ThisResponseQuery.IsSuccess Then
 				Dim ThisDictionaryOfStockQuote = ThisResponseQuery.Result
