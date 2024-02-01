@@ -239,10 +239,9 @@ Partial Public Class Stock
 		Me.IsSplitEnabled = False
 		Dim ThisWebEodStockDescriptor As IWebEodDescriptor = New WebEODData.WebStockDescriptor(Me)
 		Dim ThisExchangeCode = ThisWebEodStockDescriptor.ExchangeCode
-		Dim ThisLastTradingDay = ThisWebDataSource.DayTimeOfLastTrading(ThisExchangeCode)
-		If RecordDateStop > ThisLastTradingDay Then
-			RecordDateStop = ThisLastTradingDay
-		End If
+
+		RecordDateStop = ThisWebDataSource.DayTimeOfCloseTrading(ThisExchangeCode)
+
 		If Me.DateStop < RecordDateStop Then
 			'try the web update
 			'get just the data that is needed for an update
