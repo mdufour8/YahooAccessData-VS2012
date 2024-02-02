@@ -6,6 +6,10 @@ Imports System.IO
 Imports System.Threading.Tasks
 Imports YahooAccessData.ExtensionService.Extensions
 Imports StockViewInterface
+Imports WebEODData
+Imports System.Threading
+
+
 #End Region
 
 <Serializable()>
@@ -52,8 +56,10 @@ Partial Public Class Stock
 	Private _SplitFactors As ICollection(Of SplitFactor) = New HashSet(Of SplitFactor)
 	Private _StockErrors As ICollection(Of StockError) = New HashSet(Of StockError)
 	Private _StockSymbols As ICollection(Of StockSymbol) = New HashSet(Of StockSymbol)
-	Dim MyFiscalYearEnd As Date = YahooAccessData.ReportDate.DateNullValue
-	Dim MyFiscalYearEndMeasured As Date = YahooAccessData.ReportDate.DateNullValue
+	Private MyFiscalYearEnd As Date = YahooAccessData.ReportDate.DateNullValue
+	Private MyFiscalYearEndMeasured As Date = YahooAccessData.ReportDate.DateNullValue
+	Private Shared MySemaphoreSlimWebStockReading As SemaphoreSlim
+
 #End Region
 #Region "New"
 	Public Sub New(ByRef Parent As YahooAccessData.Report, ByVal Symbol As String, ByVal Name As String, ByVal Exchange As String)
@@ -78,6 +84,7 @@ Partial Public Class Stock
 		ByRef Stream As Stream,
 		ByVal IsRecordVirtual As Boolean)
 
+		MySemaphoreSlimWebStockReading = New SemaphoreSlim(initialCount:=1)
 		With Me
 			.DateStart = Now
 			.DateStop = Me.DateStart
@@ -203,6 +210,7 @@ Partial Public Class Stock
 #Region "Main Control Function"
 	Public Function WebRefreshRecord(ByVal RecordDateStop As Date) As Date
 
+		If Me.Report.WebDataSource Is Nothing Then Return Now
 
 		Dim ThisTaskOfWebRefreshRecord = New Task(Of Date)(
 		 Function()
@@ -211,10 +219,12 @@ Partial Public Class Stock
 		 End Function)
 
 		Dim ThisStockWatch As New Stopwatch
+		MySemaphoreSlimWebStockReading.Wait()
 		ThisStockWatch.Restart()
 		ThisTaskOfWebRefreshRecord.Start()
 		ThisTaskOfWebRefreshRecord.Wait()
 		ThisStockWatch.Stop()
+		MySemaphoreSlimWebStockReading.Release()
 		Debug.Print($"WebRefreshRecord: {Me.Symbol} executed in {ThisStockWatch.ElapsedMilliseconds} ms")
 		Return ThisTaskOfWebRefreshRecord.Result
 	End Function
@@ -237,7 +247,15 @@ Partial Public Class Stock
 		'when connected to teh web.
 		'the data is already adjusted to reflect the share splitting
 		Me.IsSplitEnabled = False
-		Dim ThisWebEodStockDescriptor As IWebEodDescriptor = New WebEODData.WebStockDescriptor(Me)
+		Dim ThisWebEodStockDescriptor As IWebEodDescriptor = Nothing
+		'If WebEODData.WebStockDescriptor.IsWebStockDescriptorValid(Me) Then
+
+		'End If
+		Try
+			ThisWebEodStockDescriptor = New WebEODData.WebStockDescriptor(Me)
+		Catch ex As Exception
+			Throw ex
+		End Try
 		Dim ThisExchangeCode = ThisWebEodStockDescriptor.ExchangeCode
 
 		RecordDateStop = ThisWebDataSource.DayTimeOfCloseTrading(ThisExchangeCode)
@@ -255,13 +273,37 @@ Partial Public Class Stock
 			Else
 				ThisWebDateStart = Me.DateStop.Date.AddDays(1)
 			End If
-
-			Dim ThisResponseQuery = Await ThisWebDataSource.LoadStockQuoteAsync(
-				ThisWebEodStockDescriptor.ExchangeCode,
-				ThisWebEodStockDescriptor.SymbolCode,
-				DateStart:=Me.DateStop.Date,
-				RecordDateStop)
-
+			Dim ThisResponseQuery As IResponseStatus(Of Dictionary(Of String, List(Of IStockQuote))) = Nothing
+			'check if the symvol exit
+			If ThisWebDataSource.GetDictionaryOfStockSymbolBySymbol(ThisWebEodStockDescriptor.ExchangeCode).ContainsKey(ThisWebEodStockDescriptor.SymbolCode) Then
+				ThisResponseQuery = Await ThisWebDataSource.LoadStockQuoteAsync(
+					ThisWebEodStockDescriptor.ExchangeCode,
+					ThisWebEodStockDescriptor.SymbolCode,
+					DateStart:=Me.DateStop.Date,
+					RecordDateStop)
+			Else
+				'do not flag an error for this 
+				'just ignore the result and leave everything as is in the data
+				'test if this date come from a local calculation. the exchange name should 
+				'be called local
+				If Me.Exchange.Contains("Local") Then
+					'however MyRecordQuoteValues may still need to be updated
+					If MyRecordQuoteValues.Count = 0 Then
+						For Each ThisRecord In _Records
+							MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
+						Next
+						Return Me.DateStop
+					End If
+					Return Me.DateStop
+				Else
+					Debug.Print($"Symbol {Me.Symbol} not found on web database...")
+					Return Me.DateStop
+				End If
+				'otherwise the data is valid. keep going
+			End If
+			If ThisResponseQuery Is Nothing Then
+				ThisResponseQuery = ThisResponseQuery
+			End If
 			If ThisResponseQuery.IsSuccess Then
 				Dim ThisDictionaryOfStockQuote = ThisResponseQuery.Result
 				If ThisDictionaryOfStockQuote.Count > 0 Then
@@ -386,29 +428,32 @@ Partial Public Class Stock
 		End If
 	End Sub
 
-	Friend Function CopyDeep(ByRef Parent As Report, Optional ByVal IsIgnoreID As Boolean = False) As Stock
+	Friend Function CopyDeep(ByRef Report As Report, Optional ByVal IsIgnoreID As Boolean = False) As Stock
+		Dim ReportToAdd = Report
+		Dim StockSource = Me
+
 		Dim ThisStock As Stock
-		If Parent.FileType = IMemoryStream.enuFileType.RecordIndexed Then
+		If ReportToAdd.FileType = IMemoryStream.enuFileType.RecordIndexed Then
 			ThisStock = New Stock(Nothing, IsRecordVirtual:=True)
 		Else
 			ThisStock = New Stock(Nothing, IsRecordVirtual:=False)
 		End If
 		With ThisStock
-			If IsIgnoreID = False Then .ID = Me.ID
-			.Symbol = Me.Symbol
-			.Name = Me.Name
-			.IsOption = Me.IsOption
-			.DateStart = Me.DateStart
-			.DateStop = Me.DateStop
-			.IsSymbolError = Me.IsSymbolError
-			.RankGain = Me.RankGain
-			.Exchange = Me.Exchange
-			.ErrorDescription = Me.ErrorDescription
-			.Report = Parent
+			If IsIgnoreID = False Then .ID = StockSource.ID
+			.Symbol = StockSource.Symbol
+			.Name = StockSource.Name
+			.IsOption = StockSource.IsOption
+			.DateStart = StockSource.DateStart
+			.DateStop = StockSource.DateStop
+			.IsSymbolError = StockSource.IsSymbolError
+			.RankGain = StockSource.RankGain
+			.Exchange = StockSource.Exchange
+			.ErrorDescription = StockSource.ErrorDescription
+			.Report = ReportToAdd
 			.ReportID = .Report.ID
 			.Report.Stocks.Add(ThisStock)
-			If Me.Sector IsNot Nothing Then
-				.Sector = .Report.Sectors.ToSearch.Find(Me.Sector.KeyValue)
+			If StockSource.Sector IsNot Nothing Then
+				.Sector = .Report.Sectors.ToSearch.Find(StockSource.Sector.KeyValue)
 			End If
 			If .Sector Is Nothing Then
 				.Exception = New Exception("Invalid sector...", .Exception)
@@ -416,8 +461,8 @@ Partial Public Class Stock
 				.SectorID = .Sector.ID
 				.Sector.Stocks.Add(ThisStock)
 			End If
-			If Me.Industry IsNot Nothing Then
-				.Industry = .Report.Industries.ToSearch.Find(Me.Industry.KeyValue)
+			If StockSource.Industry IsNot Nothing Then
+				.Industry = .Report.Industries.ToSearch.Find(StockSource.Industry.KeyValue)
 			End If
 			If .Industry Is Nothing Then
 				.Exception = New Exception("Invalid industry...", .Exception)
@@ -426,10 +471,15 @@ Partial Public Class Stock
 				.Industry.Stocks.Add(ThisStock)
 			End If
 			'ThisStopWatch.Restart()
-			Me.Records.CopyDeep(ThisStock, IsIgnoreID)
-			Me.StockErrors.CopyDeep(ThisStock, IsIgnoreID)
-			Me.StockSymbols.CopyDeep(ThisStock, IsIgnoreID)
-			Me.SplitFactors.CopyDeep(ThisStock, IsIgnoreID)
+			'If StockSource.Report.WebDataSource Is Nothing Then
+			StockSource.Records.CopyDeep(ThisStock, IsIgnoreID)
+			'Else
+			'	'this is lower level
+			'	_Records.CopyDeep(ThisStock, IsIgnoreID)
+			'End If
+			StockSource.StockErrors.CopyDeep(ThisStock, IsIgnoreID)
+			StockSource.StockSymbols.CopyDeep(ThisStock, IsIgnoreID)
+			StockSource.SplitFactors.CopyDeep(ThisStock, IsIgnoreID)
 			'ThisStopWatch.Stop()
 		End With
 		Return ThisStock
@@ -652,10 +702,14 @@ Partial Public Class Stock
 					End If
 				End With
 			Else
-				Me.WebRefreshRecord(Now)
+				If Me.Report.WebDataSource IsNot Nothing Then
+					If Me.Report.WebDataSource.IsWebAccessEnable Then
+						Me.WebRefreshRecord(Now)
+					End If
+				End If
 				IsLoaded = True
 			End If
-		End SyncLock
+    End SyncLock
 		Return IsLoaded
 	End Function
 
@@ -780,7 +834,11 @@ Partial Public Class Stock
 				Me.RecordLoad()
 				Return _Records
 			Else
-				Me.WebRefreshRecord(Now)
+				If Me.Report.WebDataSource IsNot Nothing Then
+					If Me.Report.WebDataSource.IsWebAccessEnable Then
+						Me.WebRefreshRecord(Now)
+					End If
+				End If
 				Return _Records
 			End If
 		End Get

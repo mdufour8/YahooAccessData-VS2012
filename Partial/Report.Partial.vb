@@ -500,58 +500,69 @@ Partial Public Class Report
     Dim ThisSplitFactorFutureLocal As YahooAccessData.SplitFactorFuture
     Dim ThisBondRateLocal As YahooAccessData.BondRate
     Dim ThisResult As Boolean = False
+    Dim IsWebAccessEnabled As Boolean
 
+    'this involve copying all the data including the record
+    'for this case make sure the web access is disabled. Important not to try to change the data 
+    'while the record date data is being copied
+    If MyWebDataSource IsNot Nothing Then
+      IsWebAccessEnabled = MyWebDataSource.IsWebAccessEnable
+      MyWebDataSource.IsWebAccessEnable = False
+    End If
+
+    Dim ReportToAdd = Me
     Try
       With Report
-        'If Me.BondRates.Count = 0 Then Return True
+        'If ReportToAdd.BondRates.Count = 0 Then Return True
         'do not add report that contain an error
         If .Exception IsNot Nothing Then
-          'Throw New Exception(String.Format("Unable to add a report with error:{0}{1}", vbCr, .Exception.MessageAll))
+          'Throw New Exception(String.Format("Unable to add a report with error:{0}{1}", vbCr, .Exception.ReportToAddssageAll))
           Return ThisResult
         End If
         'make sure we can add only newer data
-        If Me.DateStart = Me.DateStop Then
-          'first time the date are initialized
-          Me.DateStart = .DateStart.Date    'this set the date a the beginnning of the day
-          Me.DateStop = .DateStop
+        If ReportToAdd.DateStart = ReportToAdd.DateStop Then
+          'first tiReportToAdd the date are initialized
+          ReportToAdd.DateStart = .DateStart.Date    'this set the date a the beginnning of the day
+          ReportToAdd.DateStop = .DateStop
         End If
-        If .DateStart < Me.DateStart Then
-          Me.DateStart = .DateStart
+        If .DateStart < ReportToAdd.DateStart Then
+          ReportToAdd.DateStart = .DateStart
         End If
-        If .DateStop > Me.DateStop Then
-          Me.DateStop = .DateStop
+        If .DateStop > ReportToAdd.DateStop Then
+          ReportToAdd.DateStop = .DateStop
         End If
         'check the sector list
         For Each ThisSector In .Sectors
-          ThisSectorLocal = Me.Sectors.ToSearch.Find(ThisSector.KeyValue)
+          ThisSectorLocal = ReportToAdd.Sectors.ToSearch.Find(ThisSector.KeyValue)
           If ThisSectorLocal Is Nothing Then
-            ThisSectorLocal = ThisSector.CopyDeep(Me, IsIgnoreID:=True)
+            ThisSectorLocal = ThisSector.CopyDeep(ReportToAdd, IsIgnoreID:=True)
           End If
         Next
         'check the Industry list
         For Each ThisIndustry In .Industries
-          ThisIndustryLocal = Me.Industries.ToSearch.Find(ThisIndustry.KeyValue)
+          ThisIndustryLocal = ReportToAdd.Industries.ToSearch.Find(ThisIndustry.KeyValue)
           If ThisIndustryLocal Is Nothing Then
-            ThisIndustryLocal = ThisIndustry.CopyDeep(Me, IsIgnoreID:=True)
+            ThisIndustryLocal = ThisIndustry.CopyDeep(ReportToAdd, IsIgnoreID:=True)
           End If
         Next
         For Each ThisSplitFactorFuture In .SplitFactorFutures
-          ThisSplitFactorFutureLocal = Me.SplitFactorFutures.ToSearch.Find(ThisSplitFactorFuture.KeyValue)
+          ThisSplitFactorFutureLocal = ReportToAdd.SplitFactorFutures.ToSearch.Find(ThisSplitFactorFuture.KeyValue)
           If ThisSplitFactorFutureLocal Is Nothing Then
-            ThisSplitFactorFutureLocal = ThisSplitFactorFuture.CopyDeep(Me, IsIgnoreID:=True)
+            ThisSplitFactorFutureLocal = ThisSplitFactorFuture.CopyDeep(ReportToAdd, IsIgnoreID:=True)
           End If
         Next
         For Each ThisBondRate In .BondRates
-          ThisBondRateLocal = Me.BondRates.ToSearch.Find(ThisBondRate.KeyValue)
+          ThisBondRateLocal = ReportToAdd.BondRates.ToSearch.Find(ThisBondRate.KeyValue)
           If ThisBondRateLocal Is Nothing Then
-            ThisBondRateLocal = ThisBondRate.CopyDeep(Me, IsIgnoreID:=True)
+            ThisBondRateLocal = ThisBondRate.CopyDeep(ReportToAdd, IsIgnoreID:=True)
           End If
         Next
         For Each ThisStockNew In .Stocks
-          ThisStockLocal = Me.Stocks.ToSearch.Find(ThisStockNew.Symbol)
+          ThisStockLocal = ReportToAdd.Stocks.ToSearch.Find(ThisStockNew.Symbol)
+
           If ThisStockLocal Is Nothing Then
             'this stock does not exist yet
-            ThisStockLocal = ThisStockNew.CopyDeep(Me, IsIgnoreID:=True)
+            ThisStockLocal = ThisStockNew.CopyDeep(ReportToAdd, IsIgnoreID:=True)
           Else
             'stock already exist
             ThisStockLocal.Add(ThisStockNew)
@@ -560,9 +571,12 @@ Partial Public Class Report
       End With
       ThisResult = True
     Catch ex As Exception
-      Me.Exception = New Exception(String.Format("Error adding report..."), ex)
+      ReportToAdd.Exception = New Exception(String.Format("Error adding report..."), ex)
       ThisResult = False
     End Try
+    If MyWebDataSource IsNot Nothing Then
+      MyWebDataSource.IsWebAccessEnable = IsWebAccessEnabled
+    End If
     Return ThisResult
   End Function
 
