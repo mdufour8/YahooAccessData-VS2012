@@ -258,29 +258,36 @@ Partial Public Class Stock
 		End Try
 		Dim ThisExchangeCode = ThisWebEodStockDescriptor.ExchangeCode
 
-		RecordDateStop = ThisWebDataSource.DayTimeOfCloseTrading(ThisExchangeCode)
+		RecordDateStop = Now
+		Dim ThisDateOfLastTrading = ThisWebDataSource.DayTimeOfLastTrading(ThisWebEodStockDescriptor.ExchangeCode, DateValue:=RecordDateStop)
+		Dim ThisDateOfNextTrading = ThisWebDataSource.DayTimeOfNextTrading(ThisWebEodStockDescriptor.ExchangeCode, DateValue:=RecordDateStop)
 
-		If Me.DateStop < RecordDateStop Then
+		If Me.DateStop < ThisDateOfLastTrading.Date Then
 			'try the web update
 			'get just the data that is needed for an update
 			Dim ThisWebDateStart As Date
 			'note this function work at very low level and should not call the .records interface directly
 			'to make sure there is no issue of stack overflow call the object _Records instead
+			'Todo: Test ThisWebDataSource.IsWebAccessEnable=false for this brief period of
+			'update to see is it fixed the direct record access issue 
+
 			If _Records.Count = 0 Then
 				ThisWebDateStart = Me.DateStart
+				Me.DateStop = Me.DateStart
 				'make sure there is nothing in the MyRecordQuoteValues
 				MyRecordQuoteValues.Clear()
 			Else
-				ThisWebDateStart = Me.DateStop.Date.AddDays(1)
+				ThisWebDateStart = Me.DateStop.AddDays(1)
 			End If
+
 			Dim ThisResponseQuery As IResponseStatus(Of Dictionary(Of String, List(Of IStockQuote))) = Nothing
-			'check if the symvol exit
+			'check if the symbol exit
 			If ThisWebDataSource.GetDictionaryOfStockSymbolBySymbol(ThisWebEodStockDescriptor.ExchangeCode).ContainsKey(ThisWebEodStockDescriptor.SymbolCode) Then
 				ThisResponseQuery = Await ThisWebDataSource.LoadStockQuoteAsync(
 					ThisWebEodStockDescriptor.ExchangeCode,
 					ThisWebEodStockDescriptor.SymbolCode,
-					DateStart:=Me.DateStop.Date,
-					RecordDateStop)
+					DateStart:=ThisWebDateStart,
+					DateStop:=ThisDateOfNextTrading)
 			Else
 				'do not flag an error for this 
 				'just ignore the result and leave everything as is in the data
@@ -316,7 +323,7 @@ Partial Public Class Stock
 							ThisRecord.StockID = ThisRecord.Stock.ID
 							If _Records.Count > 0 Then
 								If ThisRecord.DateDay > Me.DateStop Then
-									'work diectly with the collection
+									'work directly with the collection
 									_Records.Add(ThisRecord)
 									MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
 									Me.DateStop = ThisRecord.DateDay
