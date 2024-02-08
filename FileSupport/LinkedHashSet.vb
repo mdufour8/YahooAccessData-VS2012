@@ -277,6 +277,24 @@ Public Class LinkedHashSet(Of T As {New, Class, IRegisterKey(Of U),  IDateUpdate
   End Property
 #End Region
 #Region "ICollection"
+  ''' <summary>
+  ''' This function will try to add the the item to the collection. 
+  ''' If it fail the function return false otherwise true for success
+  ''' The failure to add may indicate a duplicated key in the list
+  ''' </summary>
+  ''' <param name="item"></param>
+  ''' <returns>True for success</returns>
+  Public Function TryAdd(item As T) As Boolean
+    SyncLock ThisLock
+      If MyDictionaryOfKey.ContainsKey(item.KeyValue) Then
+        'item already in collection 
+        Return False
+      End If
+    End SyncLock
+    Me.Add(item)
+    Return True
+  End Function
+
   Public Sub Add(item As T) Implements System.Collections.Generic.ICollection(Of T).Add
     SyncLock ThisLock
       'Dim ThisIdentity As IRegisterKey(Of U) = Nothing
@@ -374,6 +392,43 @@ Public Class LinkedHashSet(Of T As {New, Class, IRegisterKey(Of U),  IDateUpdate
     End Get
   End Property
 
+  Public Function AsSearchKey() As ISearchKey(Of T, U)
+    Return Me
+  End Function
+
+  Public Function ContainKey(ByVal KeyValue As U) As Boolean
+    Return MyDictionaryOfKey.ContainsKey(KeyValue)
+  End Function
+
+  ''' <summary>
+  ''' the ICollection does not support this removal by index
+  ''' </summary>
+  ''' <param name="index"></param>
+  ''' <returns>true if successful</returns>
+  Public Function RemoveAt(ByVal index As Integer) As Boolean
+    'use directly the MyList for item removal the ICollection
+    SyncLock ThisLock
+      If index >= 0 And index < Me.Count Then
+        'When you call RemoveAt to remove an item, the remaining items in the list are
+        'renumbered to replace the removed item. For example, if you remove the item
+        'at index 3, the item at index 4 Is moved to the 3 position.
+        'In addition, the number of items in the list (as represented by the Count property is
+        'reduced by 1.
+        'This method Is an O(n) operation, where n Is (Count - index).
+        'i.e. removing the top item is very fast
+        Dim ThisItemToRemove = MyList(index)
+        MyList.RemoveAt(index)
+        MyDictionaryOfID.Remove(ThisItemToRemove.KeyID)
+        MyDictionaryOfKey.Remove(ThisItemToRemove.KeyValue)
+        If MySinkEvent IsNot Nothing Then
+          MySinkEvent.Remove(ThisItemToRemove)
+        End If
+        Return True
+      Else
+        Return False
+      End If
+    End SyncLock
+  End Function
   Public Function Remove(item As T) As Boolean Implements System.Collections.Generic.ICollection(Of T).Remove
     SyncLock ThisLock
       If MyList.Remove(item) = True Then
@@ -383,6 +438,7 @@ Public Class LinkedHashSet(Of T As {New, Class, IRegisterKey(Of U),  IDateUpdate
         If MySinkEvent IsNot Nothing Then
           MySinkEvent.Remove(item)
         End If
+        'Todo: datestop should also be updated because it would change if the last record is changed
         Return True
       Else
         Return False
@@ -704,7 +760,7 @@ Public Class LinkedHashSet(Of T As {New, Class, IRegisterKey(Of U),  IDateUpdate
   Private Property IDateUpdate_DateStart As Date Implements IDateUpdate.DateStart
     Get
       If MyDateUpdateStart.HasValue Then
-        Return CDate(MyDateUpdateStart)
+        Return MyDateUpdateStart.Value
       Else
         If MyList.Count > 0 Then
           Return MyList.First.DateStart
@@ -722,7 +778,7 @@ Public Class LinkedHashSet(Of T As {New, Class, IRegisterKey(Of U),  IDateUpdate
   Private Property IDateUpdate_DateStop As Date Implements IDateUpdate.DateStop
     Get
       If MyDateUpdateStop.HasValue Then
-        Return CDate(MyDateUpdateStop)
+        Return MyDateUpdateStop.Value
       Else
         If MyList.Count > 0 Then
           Return MyList.Last.DateStop

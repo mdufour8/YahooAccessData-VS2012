@@ -159,7 +159,7 @@ Namespace MathProcess
     Public Function SampleAsDailyTrade() As IPriceVol
       Dim ThisPriceVol As PriceVol
 
-
+      Throw New NotImplementedException
       With ThisPriceVol
         MyStochasticProcessLast = MyStochasticProcessLast * Math.Exp(MyMuSigma * TIME_DAILY_PERIOD_IN_YEAR + MyVolatility * MySquareRootOfTimeDailyPeriod * MyGaussian.Sample)
 
@@ -174,6 +174,7 @@ Namespace MathProcess
       Dim ThisTemp As Single
       Const TIME_OF_MARKET_TRADING_IN_DAY As Double = 1 / 3
 
+      Throw New NotImplementedException
       With ThisPriceVol
         'get a random variation over hour
         .Last = CSng(Me.Sample(TIME_OF_MARKET_TRADING_IN_DAY, Value))

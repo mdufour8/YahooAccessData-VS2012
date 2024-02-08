@@ -7,8 +7,8 @@
 ' </auto-generated>
 '------------------------------------------------------------------------------
 
-Imports System
-Imports System.Collections.Generic
+'Imports System
+'Imports System.Collections.Generic
 
 Partial Public Class Record
   'Public Property ID As Integer

@@ -122,8 +122,8 @@ Namespace MathPlus
 
 #Region "Friend Local function"
     ''' <summary>
-    ''' note to test speudo log
-    ''' pseudoLog10 <- function(x) { asinh(x/2)/log(10) }
+    ''' note to test pseudo log
+    ''' pseudoLog10  function(x) { asinh(x/2)/log(10) }
     ''' </summary>
     ''' <param name="Value"></param>
     ''' <param name="ValueRef"></param>
@@ -877,7 +877,10 @@ Namespace MathPlus
 #Region "Filter"
   Namespace Filter
 #Region "FilterModule"
-    ''' <summary>
+    
+#Disable Warning BC42300 ' XML comment block must immediately precede the language element to which it applies
+#Disable Warning BC42300 ' XML comment block must immediately precede the language element to which it applies
+''' <summary>
     ''' Not fully implemented yet
     ''' </summary>
     ''' <remarks></remarks>
@@ -900,6 +903,8 @@ Namespace MathPlus
 #Region "FilterHighPassExp"
     <Serializable()>
     Public Class FilterHighPassExp
+#Enable Warning BC42300 ' XML comment block must immediately precede the language element to which it applies
+#Enable Warning BC42300 ' XML comment block must immediately precede the language element to which it applies
       Private MyFilterLast As Double
       Private MyFilterLP As FilterLowPassExp
       Private IsValueInitial As Boolean
@@ -3107,7 +3112,7 @@ Namespace MathPlus
       End Function
 
       Public Function Filter(Value As IPriceVol) As Double Implements IFilter.Filter
-
+        Throw New NotImplementedException
         'ThisProbability = StockOption.StockPricePredictionInverse(I - ThisPositionForPrediction, ThisStockPrice, ThisGainValue, ThisVolatilityForBrownianStatistic, ThisFilterLPForPricePLLBrownianProbability.ToList(I))
         'ThisProbabilityInverseInSigmaOfThirdRatio = ((Measure.InverseCDFGaussian(0.5, 0.5 / 3, ThisProbability)))
         'ThisFilterPLLProbabilitySlow.Filter(ThisProbabilityInverseInSigmaOfThirdRatio)
@@ -3736,13 +3741,13 @@ Namespace MathPlus
 
       Public ReadOnly Property Mean As Double Implements IStatisticalDistribution.Mean
         Get
-
+          Throw New NotImplementedException
         End Get
       End Property
 
       Private ReadOnly Property MeanOfSquare As Double Implements IStatisticalDistribution.MeanOfSquare
         Get
-
+          Throw New NotImplementedException
         End Get
       End Property
 
@@ -3760,7 +3765,7 @@ Namespace MathPlus
 
       Public ReadOnly Property StandardDeviation As Double Implements IStatisticalDistribution.StandardDeviation
         Get
-
+          Throw New NotImplementedException
         End Get
       End Property
 
@@ -3790,7 +3795,7 @@ Namespace MathPlus
 
       Public ReadOnly Property Variance As Double Implements IStatisticalDistribution.Variance
         Get
-
+          Throw New NotImplementedException
         End Get
       End Property
 

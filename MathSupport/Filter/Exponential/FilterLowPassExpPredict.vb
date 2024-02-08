@@ -789,7 +789,7 @@ Namespace MathPlus.Filter
       Dim ThisFilterEstimateY As IFilterEstimate
       Dim ThisFilterResultLast As Double
       Dim ThisList As New List(Of IFilterEstimateResult)
-
+      Throw New NotImplementedException
       If (TypeOf MyFilter Is IFilterEstimate = False) Or (TypeOf MyFilterY Is IFilterEstimate = False) Then
         Throw New NotSupportedException("The Filter does not support the required interface!")
       Else

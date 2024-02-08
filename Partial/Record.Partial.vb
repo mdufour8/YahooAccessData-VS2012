@@ -16,8 +16,10 @@ Partial Public Class Record
   Implements IDateUpdate
   Implements IDateTrade
   Implements IPriceVol
+  Implements IRecordType
 
 #Region "Main"
+  Private _RecordType As IRecordType.enuRecordType
   Private MyPriceRange As Single
   Private MyPriceLastPrevious As Single
   Private MyException As Exception
@@ -45,6 +47,9 @@ Partial Public Class Record
       Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.xml"
       MyListHeaderInfo = FileHeaderRead(ThisFile, ListOfHeader, Me.Exception)
     End If
+    _RecordType = IRecordType.enuRecordType.EndOfDay  'by default
+    'the record is nor considered changed on initialization
+    _IsRecordChanged = False
   End Sub
 
   Public Sub New()
@@ -1043,6 +1048,10 @@ Partial Public Class Record
     End If
   End Sub
 
+  Public Function AsIRecordType() As IRecordType Implements IRecordType.AsIRecordType
+    Return Me
+  End Function
+
   'Private ReadOnly Property IRecordQuoteValue_FiscalYearEnd As Date Implements IRecordQuoteValue.FiscalYearEnd
   '  Get
 
@@ -1264,6 +1273,25 @@ Partial Public Class Record
   Public Property VolPlus As Integer Implements IPriceVol.VolPlus
   Public Property IsSpecialDividendPayout As Boolean Implements IPriceVol.IsSpecialDividendPayout
   Public Property SpecialDividendPayoutValue As Single Implements IPriceVol.SpecialDividendPayoutValue
+
+  Public Property RecordType As IRecordType.enuRecordType Implements IRecordType.RecordType
+    Get
+      Return _RecordType
+    End Get
+    Set(value As IRecordType.enuRecordType)
+      _RecordType = value
+    End Set
+  End Property
+
+  Private _IsRecordChanged As Boolean
+  Public Property IsRecordChanged As Boolean Implements IRecordType.IsRecordChanged
+    Get
+      Return _IsRecordChanged
+    End Get
+    Set(value As Boolean)
+      _IsRecordChanged = value
+    End Set
+  End Property
 #End Region
 End Class    'Record
 #End Region
@@ -1989,4 +2017,18 @@ Partial Public Class Record
   Public Overridable Property ValuationMeasures As ICollection(Of ValuationMeasure) = New HashSet(Of ValuationMeasure)
   Public Overridable Property Stock As Stock
 End Class
+#End Region
+
+#Region "IRecordType"
+'provide some information on the type of Record 
+Public Interface IRecordType
+  Enum enuRecordType
+    EndOfDay
+    LiveUpdate
+  End Enum
+
+  Function AsIRecordType() As IRecordType
+  Property RecordType As enuRecordType
+  Property IsRecordChanged As Boolean
+End Interface
 #End Region

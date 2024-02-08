@@ -400,19 +400,19 @@ Namespace MathPlus.Filter
 
     Private ReadOnly Property ToListOfVolatility As IList(Of Double) Implements IFilterPLLDetector.ToListOfVolatility
       Get
-
+        Throw New NotImplementedException
       End Get
     End Property
 
     Private ReadOnly Property ToListOfPriceMedianNextDayHigh As IList(Of Double) Implements IFilterPLLDetector.ToListOfPriceMedianNextDayHigh
       Get
-
+        Throw New NotImplementedException
       End Get
     End Property
 
     Private ReadOnly Property ToListOfPriceMedianNextDayLow As IList(Of Double) Implements IFilterPLLDetector.ToListOfPriceMedianNextDayLow
       Get
-
+        Throw New NotImplementedException
       End Get
     End Property
   End Class

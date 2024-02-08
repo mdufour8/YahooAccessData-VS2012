@@ -8,6 +8,8 @@ Imports YahooAccessData.ExtensionService.Extensions
 Imports StockViewInterface
 Imports WebEODData
 Imports System.Threading
+Imports WebEODData.com
+
 
 
 #End Region
@@ -44,9 +46,9 @@ Partial Public Class Stock
 	Private MyFileNumberRecord As Integer = 0
 	'Private MyRecordIndexOfSplitFactor As RecordIndex(Of SplitFactor, Date)
 	Private MyRecordIndexOfRecordDaily As RecordIndex(Of RecordDaily, Date)
-	Private MySyncLockForRecordLoading As Object = New Object
-	Private MySyncLockForRecordDailyLoading As Object = New Object
-	Private Shared MySyncLockForStockRecordLoadingAll As Object = New Object
+	Private MySyncLockForRecordLoading As New Object
+	Private MySyncLockForRecordDailyLoading As New Object
+	Private Shared MySyncLockForStockRecordLoadingAll As New Object
 	Private Shared MyLastTimeOfRecordQuoteValuesAsync As Integer
 	Private Shared MyLastTimeOfRecordLoadAsync As Integer
 	'Private Shared MyStockSymbol
@@ -218,8 +220,11 @@ Partial Public Class Stock
 			 Return ThisTask.Result
 		 End Function)
 
-		Dim ThisStockWatch As New Stopwatch
+		'Todo: Investigate: Is this the same than the code above above? It seem that is is! NO
+		'Dim ThisTaskOfWebRefreshRecord As Task(Of Date) = Task.Run(Function() Me.WebRefreshRecordAsync(RecordDateStop))
+
 		MySemaphoreSlimWebStockReading.Wait()
+		Dim ThisStockWatch As New Stopwatch
 		ThisStockWatch.Restart()
 		ThisTaskOfWebRefreshRecord.Start()
 		ThisTaskOfWebRefreshRecord.Wait()
@@ -259,80 +264,110 @@ Partial Public Class Stock
 		Dim ThisExchangeCode = ThisWebEodStockDescriptor.ExchangeCode
 
 		RecordDateStop = Now
+
 		Dim ThisDateOfLastTrading = ThisWebDataSource.DayTimeOfLastTrading(ThisWebEodStockDescriptor.ExchangeCode, DateValue:=RecordDateStop)
 		Dim ThisDateOfNextTrading = ThisWebDataSource.DayTimeOfNextTrading(ThisWebEodStockDescriptor.ExchangeCode, DateValue:=RecordDateStop)
-
-		If Me.DateStop < ThisDateOfLastTrading.Date Then
-			'try the web update
-			'get just the data that is needed for an update
-			Dim ThisWebDateStart As Date
-			'note this function work at very low level and should not call the .records interface directly
-			'to make sure there is no issue of stack overflow call the object _Records instead
-			'Todo: Test ThisWebDataSource.IsWebAccessEnable=false for this brief period of
-			'update to see is it fixed the direct record access issue 
-
-			If _Records.Count = 0 Then
-				ThisWebDateStart = Me.DateStart
-				Me.DateStop = Me.DateStart
-				'make sure there is nothing in the MyRecordQuoteValues
-				MyRecordQuoteValues.Clear()
-			Else
-				ThisWebDateStart = Me.DateStop.AddDays(1)
+		'ThisDateOfNextTrading = ThisDateOfNextTrading.Date.AddDays(-1).AddHours(16).AddMinutes(15)
+		Dim IsLiveUpdateReady = ThisWebDataSource.IsLiveUpdateReady(ThisWebEodStockDescriptor.ExchangeCode, DateValue:=RecordDateStop)
+		'IsLiveUpdateReady = True
+		'RecordDateStop = ThisDateOfNextTrading
+		Dim ThisWebDateStart As Date
+		If _Records.Count = 0 Then
+			'reset the date
+			ThisWebDateStart = Me.DateStart
+			Me.DateStop = Me.DateStart
+			'make sure there is nothing in the MyRecordQuoteValues
+			MyRecordQuoteValues.Clear()
+		Else
+			'should be corrected to the next trading day
+			'however that date start in some case may be too far from the current date (+- 6 mois). But
+			'at least it will correct for the week end effect
+			ThisWebDateStart = ThisWebDataSource.DayTimeOfNextTrading(ThisWebEodStockDescriptor.ExchangeCode, DateValue:=RecordDateStop)
+			'check if the exchange is open
+			If ThisWebDataSource.IsExchangeOpen(ThisWebEodStockDescriptor.ExchangeCode, RecordDateStop) = False Then
+				'Debug.Print($"Data is updated but there is no live update available at this time")
+				Return Me.DateStop
 			End If
+		End If
 
-			Dim ThisResponseQuery As IResponseStatus(Of Dictionary(Of String, List(Of IStockQuote))) = Nothing
-			'check if the symbol exit
-			If ThisWebDataSource.GetDictionaryOfStockSymbolBySymbol(ThisWebEodStockDescriptor.ExchangeCode).ContainsKey(ThisWebEodStockDescriptor.SymbolCode) Then
+		Dim ThisResponseQuery As IResponseStatus(Of Dictionary(Of String, List(Of IStockQuote))) = Nothing
+		Dim ThisResponseLiveQuery As IResponseStatus(Of IStockQuote) = Nothing
+		'check if the symbol exit
+		If ThisWebDataSource.GetDictionaryOfStockSymbolBySymbol(ThisWebEodStockDescriptor.ExchangeCode).ContainsKey(ThisWebEodStockDescriptor.SymbolCode) Then
+			If ThisWebDateStart = RecordDateStop Then
+				'we should ask for the data from te update live
+				If ThisWebDateStart.Date = Now.Date Then
+					ThisResponseLiveQuery = Await ThisWebDataSource.LoadStockQuoteLiveAsync(
+						ExchangeCode:=ThisWebEodStockDescriptor.ExchangeCode,
+						Symbol:=ThisWebEodStockDescriptor.SymbolCode)
+				Else
+					Return Me.DateStop
+				End If
+			Else
 				ThisResponseQuery = Await ThisWebDataSource.LoadStockQuoteAsync(
 					ThisWebEodStockDescriptor.ExchangeCode,
 					ThisWebEodStockDescriptor.SymbolCode,
 					DateStart:=ThisWebDateStart,
-					DateStop:=ThisDateOfNextTrading)
-			Else
-				'do not flag an error for this 
-				'just ignore the result and leave everything as is in the data
-				'test if this date come from a local calculation. the exchange name should 
-				'be called local
-				If Me.Exchange.Contains("Local") Then
-					'however MyRecordQuoteValues may still need to be updated
-					If MyRecordQuoteValues.Count = 0 Then
-						For Each ThisRecord In _Records
-							MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
-						Next
-						Return Me.DateStop
-					End If
-					Return Me.DateStop
-				Else
-					Debug.Print($"Symbol {Me.Symbol} not found on web database...")
-					Return Me.DateStop
+					DateStop:=RecordDateStop)
+				'use just a test
+				If ThisResponseQuery Is Nothing Then
+					ThisResponseQuery = ThisResponseQuery
+					Debugger.Break()
 				End If
-				'otherwise the data is valid. keep going
 			End If
-			If ThisResponseQuery Is Nothing Then
-				ThisResponseQuery = ThisResponseQuery
+		Else
+			'do not flag an error for this 
+			'just ignore the result and leave everything as is in the data  because
+			'this symbol is very likely the result of a local calculation for indices measurements
+			'if that case le exchange name should be called Local
+			If Me.Exchange.Contains("Local") Then
+				'however MyRecordQuoteValues may still need to be updated
+				If MyRecordQuoteValues.Count = 0 Then
+					For Each ThisRecord In _Records
+						MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
+					Next
+				End If
+				Return Me.DateStop
+			Else
+				Debug.Print($"Symbol {Me.Symbol} not found on web database...")
+				Return Me.DateStop
 			End If
+			'otherwise here the data is valid. keep going with further download
+		End If
+		If ThisResponseQuery IsNot Nothing Then
+			'process the 'end of day' data
 			If ThisResponseQuery.IsSuccess Then
 				Dim ThisDictionaryOfStockQuote = ThisResponseQuery.Result
 				If ThisDictionaryOfStockQuote.Count > 0 Then
 					'only one stock at a time and it content is element 0 of the dictionary
 					Dim ThisListOfStockQuote As List(Of WebEODData.IStockQuote) = ThisDictionaryOfStockQuote.Values.First
 					If ThisListOfStockQuote.Count > 0 Then
-						'new data record availaible for this stock 
-						For Each ThisRecord In ThisListOfStockQuote.ToListOfRecord
+						'new data record available for this stock 
+						Dim ThisListOfRecord = ThisListOfStockQuote.ToListOfRecord
+						For Each ThisRecord In ThisListOfRecord
+							'set the record parameters
 							ThisRecord.Stock = Me
 							ThisRecord.StockID = ThisRecord.Stock.ID
 							If _Records.Count > 0 Then
 								If ThisRecord.DateDay > Me.DateStop Then
 									'work directly with the collection
-									_Records.Add(ThisRecord)
-									MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
-									Me.DateStop = ThisRecord.DateDay
+									If _Records.TryAdd(ThisRecord) = True Then
+										MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
+										Me.DateStop = ThisRecord.DateDay
+									Else
+										'should never happen but just in case
+										MsgBox($"Unable to add a record for stock {Me.Symbol} for date {ThisRecord.DateDay}")
+									End If
 								End If
 							Else
 								'special case for the first record
-								_Records.Add(ThisRecord)
-								MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
-								Me.DateStop = ThisRecord.DateDay
+								If _Records.TryAdd(ThisRecord) = True Then
+									MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
+									Me.DateStop = ThisRecord.DateDay
+								Else
+									'should never happen but just in case
+									MsgBox($"Unable to add a record for stock {Me.Symbol} for date {ThisRecord.DateDay}")
+								End If
 							End If
 						Next
 					End If
@@ -341,11 +376,62 @@ Partial Public Class Stock
 					End If
 				End If
 			End If
+		ElseIf ThisResponseLiveQuery IsNot Nothing Then
+			'process the live data
+			If ThisResponseLiveQuery.IsSuccess Then
+				Dim ThisStockQuote = ThisResponseLiveQuery.Result
+				Dim ThisRecordLive = ThisStockQuote.ToRecord(IsLiveUpdate:=True)
+				'adjust the record details
+				'set the record parameters
+				ThisRecordLive.Stock = Me
+				ThisRecordLive.StockID = ThisRecordLive.Stock.ID
+				Dim ThisRecordLast = _Records.Last
+				'_Records.delete
+				If ThisRecordLast.AsIRecordType.RecordType = IRecordType.enuRecordType.EndOfDay Then
+					'just need to add the live update
+					If _Records.TryAdd(ThisRecordLive) = True Then
+						Debug.Print($"Live update at: {ThisRecordLive.DateUpdate.ToString} with a delay of {(Now - ThisRecordLive.DateUpdate).TotalMinutes:0.0}")
+						MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecordLive))
+						Me.DateStop = ThisRecordLive.DateDay
+					Else
+						MsgBox($"Live Update failure from EOD record for {Me.Symbol}!{vbCr} Update is ignored... ")
+					End If
+				ElseIf ThisRecordLast.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
+					With DirectCast(_Records, LinkedHashSet(Of Record, Date))
+						'check if the key exist in the data list
+						'the key may be the same indicating that the data has not yet been updated
+						'to a new timeframe
+						'in that case we ignore the record
+						Debug.Print($"Live update at: {ThisRecordLive.DateUpdate.ToString} with a delay of {(Now - ThisRecordLive.DateUpdate).TotalMinutes:0.0}")
+						If .ContainKey(ThisRecordLive.DateUpdate) = False Then
+							'the record to remove is located in the last position
+							If .RemoveAt(_Records.Count - 1) = True Then
+								If .ContainKey(ThisRecordLive.DateUpdate) = True Then
+									'should have been removed!!!
+									Debugger.Break()
+									Me.DateStop = Me.DateStop
+								End If
+								MyRecordQuoteValues.RemoveAt(MyRecordQuoteValues.Count - 1)
+								If _Records.TryAdd(ThisRecordLive) = True Then
+									MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecordLive))
+									Me.DateStop = ThisRecordLive.DateDay
+								Else
+									MsgBox($"Live Update failure from EOD record for {Me.Symbol}!{vbCr} Update is ignored... ")
+								End If
+							End If
+						Else
+							Debug.Print($"The new live record is the same than the current one and is ignred...")
+						End If
+					End With
+				End If
+			Else
+				'It is not possible to go from an EOF type record to a live record
+				'flag this as an error
+				MsgBox($"Live Update failure from EOD record for {Me.Symbol}!{vbCr}Update is ignored... ")
+			End If
 		End If
 		Return Me.DateStop
 	End Function
-
-
 
 
 	''' <summary>
@@ -508,7 +594,7 @@ Partial Public Class Stock
 		'save to the attached file in append mode
 
 		Try
-			Dim ThisMemoryStream As MemoryStream = New MemoryStream
+			Dim ThisMemoryStream As New MemoryStream
 			Await SerializeSaveToAsync(ThisMemoryStream, YahooAccessData.IMemoryStream.enuFileType.RecordIndexed, StreamBaseName, IsSingleThread)
 			Return ThisMemoryStream
 		Catch ex As Exception
@@ -520,7 +606,7 @@ Partial Public Class Stock
 		'save to the attached file in append mode
 		Dim ThisTimer As New Stopwatch
 		Try
-			Dim ThisMemoryStream As MemoryStreamWatch = New MemoryStreamWatch With {.KeyValue = Me.KeyValue}
+			Dim ThisMemoryStream As New MemoryStreamWatch With {.KeyValue = Me.KeyValue}
 			ThisTimer.Restart()
 			Await SerializeSaveToAsync(ThisMemoryStream, YahooAccessData.IMemoryStream.enuFileType.RecordIndexed, StreamBaseName, IsSingleThread)
 			ThisTimer.Stop()
@@ -806,10 +892,14 @@ Partial Public Class Stock
 	End Property
 
 	Public Overrides Function ToString() As String
-		Dim ThisRecordsCountTotal As Integer = DirectCast(_Records, IRecordInfo).CountTotal
-		Dim ThisRecordsDailyCountTotal As Integer = DirectCast(_RecordsDaily, IRecordInfo).CountTotal
+		'Dim ThisRecordsCountTotal As Integer = DirectCast(_Records, IRecordInfo).CountTotal
+		'Dim ThisRecordsDailyCountTotal As Integer = DirectCast(_RecordsDaily, IRecordInfo).CountTotal
 
-		Return String.Format("{0},ID:{1},Key:{2},Record:{3} of {4},RecordDaily:{5} of {6}", TypeName(Me), Me.KeyID, Me.KeyValue.ToString, Me.Records.Count, ThisRecordsCountTotal, Me.RecordsDaily.Count, ThisRecordsDailyCountTotal)
+		Return String.Format("{0},ID:{1},Key:{2},Record:{3}",
+			TypeName(Me),
+			Me.KeyID,
+			Me.KeyValue.ToString,
+			Me.Records.Count)
 	End Function
 #End Region
 #Region "IStockGain"
@@ -2166,7 +2256,7 @@ Partial Public Class Stock
 	End Sub
 
 	Private Function ISystemEvent_Remove(item As SplitFactor) As Boolean Implements ISystemEvent(Of SplitFactor).Remove
-
+		Throw New NotImplementedException
 	End Function
 #End Region
 #Region "ISystemEventOfStockSymbol"
@@ -2214,7 +2304,7 @@ Partial Public Class Stock
 	End Sub
 
 	Private Function ISystemEventOfStockSymbol_Remove(item As StockSymbol) As Boolean Implements ISystemEvent(Of StockSymbol).Remove
-
+		Throw New NotImplementedException
 	End Function
 #End Region
 #Region "ISystemEventOfStockError"
@@ -2261,7 +2351,7 @@ Partial Public Class Stock
 	End Sub
 
 	Private Function ISystemEventOfStockError_Remove(item As StockError) As Boolean Implements ISystemEvent(Of StockError).Remove
-
+		Throw New NotImplementedException
 	End Function
 #End Region
 #Region "ISystemEventOfRecord"
@@ -2566,15 +2656,15 @@ Partial Public Class Stock
 	End Function
 
 	Private Function IStockProcess_CalculateFiscalQuarterEnd(Year As Integer) As IEnumerable(Of Date) Implements IStockProcess.CalculateFiscalQuarterEnd
-
+		Throw New NotImplementedException
 	End Function
 
 	Private Function IStockProcess_CalculateFiscalQuarterEndLast(DateValue As Date) As Date Implements IStockProcess.CalculateFiscalQuarterEndLast
-
+		Throw New NotImplementedException
 	End Function
 
 	Private Function IStockProcess_CalculateFiscalQuarterEndLast(DateValue As Date, NumberOfQuarter As Integer) As IEnumerable(Of Date) Implements IStockProcess.CalculateFiscalQuarterEndLast
-
+		Throw New NotImplementedException
 	End Function
 
 	Private Function IStockProcess_CalculateFiscalQuarterEndLast(NumberOfQuarter As Integer) As IEnumerable(Of Date) Implements IStockProcess.CalculateFiscalQuarterEndLast

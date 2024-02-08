@@ -322,85 +322,85 @@ Namespace MathPlus.Filter
 
 #Region "Private function"
     Private Function FilterBackTo(ByRef Value As Double) As Double Implements IFilter.FilterBackTo
-
+      Throw New NotImplementedException
     End Function
 
     Private Function FilterErrorLast() As Double Implements IFilter.FilterErrorLast
-
+      Throw New NotImplementedException
     End Function
 
     Private ReadOnly Property ToListOfError As IList(Of Double) Implements IFilter.ToListOfError
       Get
-
+        Throw New NotImplementedException
       End Get
     End Property
 
     Private ReadOnly Property ToListScaled As ListScaled Implements IFilter.ToListScaled
       Get
-
+        Throw New NotImplementedException
       End Get
     End Property
 
 
     Private Function Filter(ByRef Value() As Double) As Double() Implements IFilter.Filter
-
+      Throw New NotImplementedException
     End Function
 
     Private Function Filter(ByRef Value() As Double, DelayRemovedToItem As Integer) As Double() Implements IFilter.Filter
-
+      Throw New NotImplementedException
     End Function
 
     Private Function Filter(Value As Double) As Double Implements IFilter.Filter
-
+      Throw New NotImplementedException
     End Function
 
     Private Function Filter(Value As Single) As Double Implements IFilter.Filter
-
+      Throw New NotImplementedException
     End Function
 
     Private Function ToArray(ScaleToMinValue As Double, ScaleToMaxValue As Double) As Double() Implements IFilter.ToArray
-
+      Throw New NotImplementedException
     End Function
 
     Private Function ToArray(MinValueInitial As Double, MaxValueInitial As Double, ScaleToMinValue As Double, ScaleToMaxValue As Double) As Double() Implements IFilter.ToArray
-
+      Throw New NotImplementedException
     End Function
 
     Private Function FilterLastToPriceVol() As IPriceVol Implements IFilter.FilterLastToPriceVol
-
+      Throw New NotImplementedException
     End Function
 
     Private Function FilterPredictionNext(Value As Double) As Double Implements IFilter.FilterPredictionNext
-
+      Throw New NotImplementedException
     End Function
 
     Private Function FilterPredictionNext(Value As Single) As Double Implements IFilter.FilterPredictionNext
-
+      Throw New NotImplementedException
     End Function
 
     Private Function Last() As Double Implements IFilter.Last
-
+      Throw New NotImplementedException
     End Function
 
     Private Function LastToPriceVol() As IPriceVol Implements IFilter.LastToPriceVol
-
+      Throw New NotImplementedException
     End Function
 
     Private ReadOnly Property Max As Double Implements IFilter.Max
       Get
-
+        Throw New NotImplementedException
       End Get
     End Property
 
     Private ReadOnly Property Min As Double Implements IFilter.Min
       Get
-
+        Throw New NotImplementedException
       End Get
     End Property
 
     Private ReadOnly Property Rate As Integer Implements IFilter.Rate
       Get
-
+        Throw New NotImplementedException
       End Get
     End Property
 

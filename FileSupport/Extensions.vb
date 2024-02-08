@@ -1709,8 +1709,8 @@ Namespace ExtensionService
     <Extension()>
     Public Function ToListOfRecord(colData As List(Of WebEODData.IStockQuote)) As List(Of YahooAccessData.Record)
       Dim ThisList = New List(Of YahooAccessData.Record)
+      Dim ThisRecord As YahooAccessData.Record
       For Each ThisStockQuote In colData
-        Dim ThisRecord As YahooAccessData.Record
         ThisRecord = New YahooAccessData.Record
         With ThisRecord
           .DateDay = ThisStockQuote.DateTime
@@ -1725,6 +1725,27 @@ Namespace ExtensionService
         ThisList.Add(ThisRecord)
       Next
       Return ThisList
+    End Function
+
+    <Extension()>
+    Public Function ToRecord(StockQuote As WebEODData.IStockQuote, IsLiveUpdate As Boolean) As Record
+      Dim ThisRecord As New Record
+      With ThisRecord
+        .DateDay = StockQuote.DateTime
+        .DateLastTrade = .DateDay
+        .DateUpdate = .DateDay
+        .High = StockQuote.High.ToSingleSafe(RoundingDigit:=3)
+        .Open = StockQuote.Open.ToSingleSafe(RoundingDigit:=3)
+        .Low = StockQuote.Low.ToSingleSafe(RoundingDigit:=3)
+        .Last = StockQuote.Close.ToSingleSafe(RoundingDigit:=3)
+        .Vol = StockQuote.Volume.ToIntegerSafe
+        If IsLiveUpdate Then
+          .AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate
+        Else
+          .AsIRecordType.RecordType = IRecordType.enuRecordType.EndOfDay
+        End If
+      End With
+      Return ThisRecord
     End Function
 #End Region
 #Region "Support Function"
@@ -2114,6 +2135,17 @@ Namespace ExtensionService
     End Function
 #End Region
 #Region "Records"
+
+    <Extension()>
+    Public Function RemoveAt(colData As ICollection(Of Record), Index As Integer) As Boolean
+      Return DirectCast(colData, LinkedHashSet(Of Record, Date)).RemoveAt(Index)
+    End Function
+
+    <Extension()>
+    Public Function TryAdd(colData As ICollection(Of Record), Item As Record) As Boolean
+      Return DirectCast(colData, LinkedHashSet(Of Record, Date)).TryAdd(Item)
+    End Function
+
     <Extension()>
     Public Function AsDateUpdate(Of T As {IDateUpdate})(colData As ICollection(Of T)) As YahooAccessData.IDateUpdate
       Return DirectCast(colData, YahooAccessData.IDateUpdate)

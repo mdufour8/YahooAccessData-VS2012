@@ -89,56 +89,56 @@ Public Class FilterStochasticBrownianModulated
 
   Public ReadOnly Property Count As Integer Implements IStochastic.Count
     Get
-
+      Throw New NotImplementedException
     End Get
   End Property
 
   Public Function Filter(ByRef Value As Double) As Double Implements IStochastic.Filter
-
+    Throw New NotImplementedException
   End Function
 
   Public Function Filter(ByRef Value() As Double) As Double() Implements IStochastic.Filter
-
+    Throw New NotImplementedException
   End Function
 
   Public Function Filter(Value As Single) As Double Implements IStochastic.Filter
-
+    Throw New NotImplementedException
   End Function
 
   Public Function Filter(ByRef Value As IPriceVol) As Double Implements IStochastic.Filter
-
+    Throw New NotImplementedException
   End Function
 
   Public Function Filter(ByRef Value As IPriceVol, ValueExpectedMin As Double, ValueExpectedMax As Double) As Double Implements IStochastic.Filter
-
+    Throw New NotImplementedException
   End Function
 
   Public Function Filter(ByRef Value As IPriceVol, FilterRate As Integer) As Double Implements IStochastic.Filter
-
+    Throw New NotImplementedException
   End Function
 
   Public Function FilterBackTo(ByRef Value As Double, Optional IsPreFilter As Boolean = True) As Double Implements IStochastic.FilterBackTo
-
+    Throw New NotImplementedException
   End Function
 
   Public Function FilterLast() As Double Implements IStochastic.FilterLast
-
+    Throw New NotImplementedException
   End Function
 
   Public Function FilterLast(Type As IStochastic.enuStochasticType) As Double Implements IStochastic.FilterLast
-
+    Throw New NotImplementedException
   End Function
 
   Public Function FilterPredictionNext(ByRef Value As Double) As Double Implements IStochastic.FilterPredictionNext
-
+    Throw New NotImplementedException
   End Function
 
   Public Function FilterPriceBandHigh() As Double Implements IStochastic.FilterPriceBandHigh
-
+    Throw New NotImplementedException
   End Function
 
   Public Function FilterPriceBandLow() As Double Implements IStochastic.FilterPriceBandLow
-
+    Throw New NotImplementedException
   End Function
 
   Public Property IsFilterPeak As Boolean Implements IStochastic.IsFilterPeak
@@ -146,24 +146,24 @@ Public Class FilterStochasticBrownianModulated
   Public Property IsFilterRange As Boolean Implements IStochastic.IsFilterRange
 
   Public Function Last() As Double Implements IStochastic.Last
-
+    Throw New NotImplementedException
   End Function
 
   Public ReadOnly Property Max(Optional Type As IStochastic.enuStochasticType = MathPlus.Filter.IStochastic.enuStochasticType.FastSlow) As Double Implements IStochastic.Max
     Get
-
+      Throw New NotImplementedException
     End Get
   End Property
 
   Public ReadOnly Property Min(Optional Type As IStochastic.enuStochasticType = MathPlus.Filter.IStochastic.enuStochasticType.FastSlow) As Double Implements IStochastic.Min
     Get
-
+      Throw New NotImplementedException
     End Get
   End Property
 
   Public Property Rate(Optional Type As IStochastic.enuStochasticType = MathPlus.Filter.IStochastic.enuStochasticType.FastSlow) As Integer Implements IStochastic.Rate
     Get
-
+      Throw New NotImplementedException
     End Get
     Set(value As Integer)
 
@@ -173,30 +173,30 @@ Public Class FilterStochasticBrownianModulated
   Public Property Tag As String Implements IStochastic.Tag
 
   Public Function ToArray(MinValueInitial As Double, MaxValueInitial As Double, ScaleToMinValue As Double, ScaleToMaxValue As Double, Optional Type As IStochastic.enuStochasticType = MathPlus.Filter.IStochastic.enuStochasticType.FastSlow) As Double() Implements IStochastic.ToArray
-
+    Throw New NotImplementedException
   End Function
 
   Public Function ToArray(ScaleToMinValue As Double, ScaleToMaxValue As Double, Optional Type As IStochastic.enuStochasticType = MathPlus.Filter.IStochastic.enuStochasticType.FastSlow) As Double() Implements IStochastic.ToArray
-
+    Throw New NotImplementedException
   End Function
 
   Public Function ToArray(Optional Type As IStochastic.enuStochasticType = MathPlus.Filter.IStochastic.enuStochasticType.FastSlow) As Double() Implements IStochastic.ToArray
-
+    Throw New NotImplementedException
   End Function
 
   Public ReadOnly Property ToList As IList(Of Double) Implements IStochastic.ToList
     Get
-
+      Throw New NotImplementedException
     End Get
   End Property
 
   Public ReadOnly Property ToList(Type As IStochastic.enuStochasticType) As IList(Of Double) Implements IStochastic.ToList
     Get
-
+      Throw New NotImplementedException
     End Get
   End Property
 
   Public Function ToString1() As String Implements IStochastic.ToString
-
+    Throw New NotImplementedException
   End Function
 End Class

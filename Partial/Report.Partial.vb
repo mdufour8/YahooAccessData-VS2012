@@ -3249,7 +3249,9 @@ Partial Public Class Report
 
   Private Function ISystemEventOfBondRate1_Remove(item As BondRate1) As Boolean Implements ISystemEvent(Of BondRate1).Remove
 
+#Disable Warning BC42353 ' Function doesn't return a value on all code paths
   End Function
+#Enable Warning BC42353 ' Function doesn't return a value on all code paths
 #End Region
 #Region "ISystemEventOfBondRate"
   Private Sub ISystemEventOfBondRate_Add(item As BondRate) Implements ISystemEvent(Of BondRate).Add
@@ -3375,7 +3377,7 @@ Partial Public Class Report
   End Sub
 
   Private Function ISystemEventOfSplitFactorFuture_Remove(item As SplitFactorFuture) As Boolean Implements ISystemEvent(Of SplitFactorFuture).Remove
-
+    Throw New NotSupportedException
   End Function
 #End Region
 #Region "IStockRecordEvent"

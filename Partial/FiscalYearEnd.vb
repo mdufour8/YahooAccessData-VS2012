@@ -5,10 +5,13 @@
   Imports System.Collections.Generic
 #End Region
 
+#Disable Warning BC42312 ' XML documentation comments must precede member or type declarations
 ''' <summary>
 ''' Not Completed yet
 ''' </summary>
 ''' <remarks></remarks>
+
+#Enable Warning BC42312 ' XML documentation comments must precede member or type declarations
 '<Serializable()>
 'Public Class FiscalYearEnd
 '  Implements IEquatable(Of FiscalYearEnd)
