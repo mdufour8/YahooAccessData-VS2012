@@ -447,22 +447,32 @@ Public Class RecordPrices
     Dim ThisPriceForSplitInMiddle As Single
     Dim ThisTargetPriceStockSplit As Single
     Dim IsTargetPriceSplitInSync As Boolean
+    Dim IsLiveUpdate As Boolean
     Dim ThisTemp As Double
-
+    'Dim ThisDateStopEndOfDay As Date = DateStopValue.Date.AddHours(24).AddSeconds(-1)
     'set the default value
     'adjust the date for the constraint of always starting on Monday and ignore the weekend 
     Me.DateStart = ReportDate.DateToMondayPrevious(DateStartValue.Date)
     'DateStop should not fall on a weekend 
     'if it does move it back to the previous friday
+
     Me.DateStop = ReportDate.DateToWeekEndRemovePrevious(DateStopValue.Date)
     If Me.DateStop < Me.DateStart Then
       Me.DateStop = Me.DateStart
     End If
-    Me.NumberPoint = ReportDate.MarketTradingDeltaDays(Me.DateStart, Me.DateStop) + 1
-    ReDim MyPriceVols(0 To Me.NumberPoint - 1)
 
+    'need one more point to include the Datestop 
+    Me.NumberPoint = ReportDate.MarketTradingDeltaDays(Me.DateStart, Me.DateStop) + 1
+    If colData.Last.Record.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
+      IsLiveUpdate = True
+      'Me.NumberPoint = Me.NumberPoint + 1
+    Else
+      IsLiveUpdate = False
+    End If
+    ReDim MyPriceVols(0 To Me.NumberPoint - 1)
+    'array declaration
     MyPriceVolsIntraDay = New PriceVol(0 To Me.NumberPoint - 1)() {}
-    colDataDailyIntraDay = colData.ToDailyIntraDay(Me.DateStart, Me.DateStop)
+    colDataDailyIntraDay = colData.ToDailyIntraDay(Me.DateStart, Me.DateStop.AddHours(24).AddSeconds(-1))
     'colDataDaily = colDataDailyIntraDay.ToDaily
 
     MyPriceVolsIntraDay = New PriceVol(0 To Me.NumberPoint - 1)() {}
@@ -560,6 +570,7 @@ Public Class RecordPrices
     'note the intraday date here may also contain only one element per day for the full day i.e. eodData
     'ThisRecordIntraDay is a list of record in a day
     'Essentially proceed many items in a day if necessary
+    I = 0
     For Each ThisRecordIntraDay In colDataDailyIntraDay
       If ThisRecordIntraDay.Count > 1 Then
         'flag indicating that there is more than one item per day
@@ -632,7 +643,9 @@ Public Class RecordPrices
         ThisListOfSSpecialDividendPayout.Add(I)
       End If
       'adjust the PriceVol array to the current date before we start the real processing of the record stream
-      Do Until ThisDateCurrent >= ThisRecord.DateDay
+      'important to remove the time information in this test
+      'the last record may contain the time information if it is a live type of record
+      Do Until ThisDateCurrent >= ThisRecord.DateDay.Date
         MyPriceVols(I) = PriceVolUpdateToNull(ThisRecord, ThisDateCurrent)
         MyPriceVols(I).LastAdjusted = 1.0
         If ThisStartPointForTargetPrice < 0 Then
@@ -667,6 +680,9 @@ Public Class RecordPrices
       'start the real update
       'note ThisRecord ias the last record in the day and include with it the full daily price variation
       'so no need to scan all the price update record in the day to capture the full daily range
+      If I = 14 Then
+        I = I
+      End If
       MyPriceVols(I) = PriceVolUpdate(ThisRecord, ThisDateCurrent)
       If ThisStartPointForTargetPrice < 0 Then
         If MyPriceVols(I).OneyrTargetPrice <> 0 Then
@@ -909,13 +925,15 @@ Public Class RecordPrices
     Else
       For I = 0 To Me.NumberPoint - 1
         'process the intraday data
-        Call ProcessSplitAdjustForIntraDay(PriceVolsDataIntraDay(I), MyPriceVols(I))
-        If Me.IsPriceTarget Then
-          With MyPriceVols(I)
-            If I < ThisStartPointForTargetPrice Then
-              .OneyrTargetPrice = MyPriceVols(ThisStartPointForTargetPrice).OneyrTargetPrice
-            End If
-          End With
+        If PriceVolsDataIntraDay(I) IsNot Nothing Then
+          Call ProcessSplitAdjustForIntraDay(PriceVolsDataIntraDay(I), MyPriceVols(I))
+          If Me.IsPriceTarget Then
+            With MyPriceVols(I)
+              If I < ThisStartPointForTargetPrice Then
+                .OneyrTargetPrice = MyPriceVols(ThisStartPointForTargetPrice).OneyrTargetPrice
+              End If
+            End With
+          End If
         End If
       Next
     End If
@@ -1138,21 +1156,26 @@ Public Class RecordPrices
   End Function
 
   Private Function PriceVolUpdate(
-    ByRef Record As YahooAccessData.RecordQuoteValue,
+    ByRef RecordQuote As YahooAccessData.RecordQuoteValue,
     ByRef DateValue As Date) As PriceVol
 
     Dim ThisPriceVol As New PriceVol
     With ThisPriceVol
-      .DateLastTrade = DateValue
+      If RecordQuote.Record.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
+        'use the live update time in this specia; case when the day is not finished
+        .DateLastTrade = RecordQuote.Record.DateUpdate
+      Else
+        .DateLastTrade = DateValue
+      End If
       .LastPrevious = MyPriceVolLast.Last
       If .LastPrevious = 0 Then
-        .LastPrevious = Record.Open
+        .LastPrevious = RecordQuote.Open
       End If
-      .Open = Record.Open
-      .High = Record.High
-      .Low = Record.Low
-      .Last = Record.Last
-      If Record.OneyrTargetPrice = 0 Then
+      .Open = RecordQuote.Open
+      .High = RecordQuote.High
+      .Low = RecordQuote.Low
+      .Last = RecordQuote.Last
+      If RecordQuote.OneyrTargetPrice = 0 Then
         .OneyrTargetPrice = MyPriceVolLast.OneyrTargetPrice
         .EarningsShare = MyPriceVolLast.EarningsShare
         .EPSEstimateCurrentYear = MyPriceVolLast.EPSEstimateCurrentYear
@@ -1162,11 +1185,11 @@ Public Class RecordPrices
         .OneyrTargetEarningGrow = MyPriceVolLast.OneyrTargetEarningGrow
         .OneyrPEG = MyPriceVolLast.OneyrPEG
       Else
-        .OneyrTargetPrice = Record.OneyrTargetPrice
-        .EarningsShare = Record.EarningsShare
-        .EPSEstimateCurrentYear = Record.EPSEstimateCurrentYear
-        .EPSEstimateNextQuarter = Record.EPSEstimateNextQuarter
-        .EPSEstimateNextYear = Record.EPSEstimateNextYear
+        .OneyrTargetPrice = RecordQuote.OneyrTargetPrice
+        .EarningsShare = RecordQuote.EarningsShare
+        .EPSEstimateCurrentYear = RecordQuote.EPSEstimateCurrentYear
+        .EPSEstimateNextQuarter = RecordQuote.EPSEstimateNextQuarter
+        .EPSEstimateNextYear = RecordQuote.EPSEstimateNextYear
 
         'filter for zero yahoo anomalies
         .EarningsShare = MyFilterForEarningsShare.Filter(.EarningsShare)
@@ -1174,8 +1197,8 @@ Public Class RecordPrices
         .EPSEstimateNextQuarter = MyFilterForEPSEstimateNextQuarter.Filter(.EPSEstimateNextQuarter)
         .EPSEstimateNextYear = MyFilterForEPSEstimateNextYear.Filter(.EPSEstimateNextYear)
 
-        .OneyrTargetEarning = (Record.EPSEstimateNextYear + .EPSEstimateCurrentYear) / 2
-        .OneyrPEG = Record.PEGRatio
+        .OneyrTargetEarning = (RecordQuote.EPSEstimateNextYear + .EPSEstimateCurrentYear) / 2
+        .OneyrPEG = RecordQuote.PEGRatio
         If .EarningsShare > 0 Then
           .OneyrTargetEarningGrow = CSng(Math.Log(.OneyrTargetEarning / .EarningsShare))
         Else
@@ -1185,10 +1208,10 @@ Public Class RecordPrices
           .OneyrPEG = MyPriceVolLast.OneyrPEG
         End If
         .FiveyrPEG = .OneyrPEG
-        .DividendYield = Record.DividendYield
-        .DividendShare = Record.DividendShare
-        .DividendPayDate = Record.DividendPayDate
-        .ExDividendDate = Record.ExDividendDate
+        .DividendYield = RecordQuote.DividendYield
+        .DividendShare = RecordQuote.DividendShare
+        .DividendPayDate = RecordQuote.DividendPayDate
+        .ExDividendDate = RecordQuote.ExDividendDate
         If .ExDividendDate > ReportDate.DateNullValue Then
           If MyPriceVolLast.ExDividendDate > ReportDate.DateNullValue Then
             If .ExDividendDate <> MyPriceVolLast.ExDividendDate Then
@@ -1241,8 +1264,8 @@ Public Class RecordPrices
         .FiveyrTargetEarningGrow = (.Last / .EPSEstimateCurrentYear) / .OneyrPEG
       End If
 
-      .FiveyrPEG = Record.PEGRatio
-      .Vol = Record.Vol
+      .FiveyrPEG = RecordQuote.PEGRatio
+      .Vol = RecordQuote.Vol
       If .DividendShare = 0 Then
         .DividendShare = MyPriceVolLast.DividendShare
       End If
@@ -1292,7 +1315,7 @@ Public Class RecordPrices
       If .Last > 0 Then
         .DividendYield = 100 * .DividendShare / .Last
       End If
-      .RecordQuoteValue = Record
+      .RecordQuoteValue = RecordQuote
     End With
     Return ThisPriceVol
   End Function

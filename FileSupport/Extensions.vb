@@ -377,6 +377,8 @@ Namespace ExtensionService
       If colData.Count > 0 Then
         'record data is expected to always be by increasing date
         colDataForOneDay = New LinkedHashSet(Of T, Date)
+        Dim ThisDataLastItem = colData.Last
+        Dim ThisDataLastItemPrevious = colData.ElementAt(colData.Count - 2)
         For Each ThisData In colData
           If ThisData.DateDay >= DateStart Then
             If ThisData.DateDay <= DateStop Then
@@ -1721,6 +1723,11 @@ Namespace ExtensionService
           .Low = ThisStockQuote.Low.ToSingleSafe(RoundingDigit:=3)
           .Last = ThisStockQuote.Close.ToSingleSafe(RoundingDigit:=3)
           .Vol = ThisStockQuote.Volume.ToIntegerSafe
+          If ThisStockQuote.IsLiveUpdate Then
+            .AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate
+          Else
+            .AsIRecordType.RecordType = IRecordType.enuRecordType.EndOfDay
+          End If
         End With
         ThisList.Add(ThisRecord)
       Next

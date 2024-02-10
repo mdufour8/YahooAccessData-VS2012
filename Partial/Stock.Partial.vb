@@ -237,7 +237,7 @@ Partial Public Class Stock
 
 
 	''' <summary>
-	'''   Use to refresh the data record via the buid-in web interface
+	'''   Use to refresh the data record via the builds-in web interface
 	''' </summary>
 	''' <param name="RecordDateStop"></param>
 	''' <returns>
@@ -267,10 +267,7 @@ Partial Public Class Stock
 
 		Dim ThisDateOfLastTrading = ThisWebDataSource.DayTimeOfLastTrading(ThisWebEodStockDescriptor.ExchangeCode, DateValue:=RecordDateStop)
 		Dim ThisDateOfNextTrading = ThisWebDataSource.DayTimeOfNextTrading(ThisWebEodStockDescriptor.ExchangeCode, DateValue:=RecordDateStop)
-		'ThisDateOfNextTrading = ThisDateOfNextTrading.Date.AddDays(-1).AddHours(16).AddMinutes(15)
 		Dim IsLiveUpdateReady = ThisWebDataSource.IsLiveUpdateReady(ThisWebEodStockDescriptor.ExchangeCode, DateValue:=RecordDateStop)
-		'IsLiveUpdateReady = True
-		'RecordDateStop = ThisDateOfNextTrading
 		Dim ThisWebDateStart As Date
 		If _Records.Count = 0 Then
 			'reset the date
@@ -282,39 +279,56 @@ Partial Public Class Stock
 			'should be corrected to the next trading day
 			'however that date start in some case may be too far from the current date (+- 6 mois). But
 			'at least it will correct for the week end effect
+			'Note ThisWebDateStart could be > than RecordDateStop here
+			'what should be do
 			ThisWebDateStart = ThisWebDataSource.DayTimeOfNextTrading(ThisWebEodStockDescriptor.ExchangeCode, DateValue:=RecordDateStop)
+			If ThisWebDateStart > RecordDateStop Then Return Me.DateStop
 			'check if the exchange is open
 			If ThisWebDataSource.IsExchangeOpen(ThisWebEodStockDescriptor.ExchangeCode, RecordDateStop) = False Then
 				'Debug.Print($"Data is updated but there is no live update available at this time")
 				Return Me.DateStop
 			End If
+			If ThisWebDateStart.Date = RecordDateStop.Date Then
+				If IsLiveUpdateReady = False Then
+					Return Me.DateStop
+				End If
+			End If
 		End If
-
 		Dim ThisResponseQuery As IResponseStatus(Of Dictionary(Of String, List(Of IStockQuote))) = Nothing
 		Dim ThisResponseLiveQuery As IResponseStatus(Of IStockQuote) = Nothing
 		'check if the symbol exit
 		If ThisWebDataSource.GetDictionaryOfStockSymbolBySymbol(ThisWebEodStockDescriptor.ExchangeCode).ContainsKey(ThisWebEodStockDescriptor.SymbolCode) Then
-			If ThisWebDateStart = RecordDateStop Then
-				'we should ask for the data from te update live
-				If ThisWebDateStart.Date = Now.Date Then
-					ThisResponseLiveQuery = Await ThisWebDataSource.LoadStockQuoteLiveAsync(
-						ExchangeCode:=ThisWebEodStockDescriptor.ExchangeCode,
-						Symbol:=ThisWebEodStockDescriptor.SymbolCode)
-				Else
-					Return Me.DateStop
-				End If
-			Else
-				ThisResponseQuery = Await ThisWebDataSource.LoadStockQuoteAsync(
+			ThisResponseQuery = Await ThisWebDataSource.LoadStockQuoteAsync(
 					ThisWebEodStockDescriptor.ExchangeCode,
 					ThisWebEodStockDescriptor.SymbolCode,
 					DateStart:=ThisWebDateStart,
 					DateStop:=RecordDateStop)
-				'use just a test
-				If ThisResponseQuery Is Nothing Then
-					ThisResponseQuery = ThisResponseQuery
-					Debugger.Break()
-				End If
+			'use just a test
+			If ThisResponseQuery Is Nothing Then
+				ThisResponseQuery = ThisResponseQuery
+				Debugger.Break()
 			End If
+			'If ThisWebDateStart = RecordDateStop Then
+			'	'we should ask for the data from te update live
+			'	If ThisWebDateStart.Date = Now.Date Then
+			'		ThisResponseLiveQuery = Await ThisWebDataSource.LoadStockQuoteLiveAsync(
+			'			ExchangeCode:=ThisWebEodStockDescriptor.ExchangeCode,
+			'			Symbol:=ThisWebEodStockDescriptor.SymbolCode)
+			'	Else
+			'		Return Me.DateStop
+			'	End If
+			'Else
+			'	ThisResponseQuery = Await ThisWebDataSource.LoadStockQuoteAsync(
+			'		ThisWebEodStockDescriptor.ExchangeCode,
+			'		ThisWebEodStockDescriptor.SymbolCode,
+			'		DateStart:=ThisWebDateStart,
+			'		DateStop:=RecordDateStop)
+			'	'use just a test
+			'	If ThisResponseQuery Is Nothing Then
+			'		ThisResponseQuery = ThisResponseQuery
+			'		Debugger.Break()
+			'	End If
+			'End If
 		Else
 			'do not flag an error for this 
 			'just ignore the result and leave everything as is in the data  because
@@ -323,6 +337,8 @@ Partial Public Class Stock
 			If Me.Exchange.Contains("Local") Then
 				'however MyRecordQuoteValues may still need to be updated
 				If MyRecordQuoteValues.Count = 0 Then
+					'note we could also have use this
+					'For Each ThisRecord In Me.Records(IsLoadEnabled:=False)
 					For Each ThisRecord In _Records
 						MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
 					Next
@@ -348,9 +364,31 @@ Partial Public Class Stock
 							'set the record parameters
 							ThisRecord.Stock = Me
 							ThisRecord.StockID = ThisRecord.Stock.ID
+							If ThisRecord.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
+								ThisRecord = ThisRecord
+							End If
 							If _Records.Count > 0 Then
-								If ThisRecord.DateDay > Me.DateStop Then
-									'work directly with the collection
+								If ThisRecord.DateUpdate > Me.DateStop Then
+									'work directly with then collection
+									If _Records.Last.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
+										'need to remove the last record
+										'it wil be replaced with this new one stamped with a more recent date
+										'it can be done easily if we access the low level functionality
+										With DirectCast(_Records, LinkedHashSet(Of Record, Date))
+											'check if the key exist in the data list
+											'the key may be the same indicating that the data has not yet been updated
+											'to a new timeframe
+											'in that case we ignore the record
+											'the test does not appears to be necessary but just in case
+											'the record to remove is located in the last position
+											If .RemoveAt(_Records.Count - 1) = True Then
+												MyRecordQuoteValues.RemoveAt(MyRecordQuoteValues.Count - 1)
+											Else
+												'should never happen but just in case
+												MsgBox($"Unable to remove a live record for stock {Me.Symbol} for date {ThisRecord.DateDay}")
+											End If
+										End With
+									End If
 									If _Records.TryAdd(ThisRecord) = True Then
 										MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
 										Me.DateStop = ThisRecord.DateDay
@@ -376,59 +414,59 @@ Partial Public Class Stock
 					End If
 				End If
 			End If
-		ElseIf ThisResponseLiveQuery IsNot Nothing Then
-			'process the live data
-			If ThisResponseLiveQuery.IsSuccess Then
-				Dim ThisStockQuote = ThisResponseLiveQuery.Result
-				Dim ThisRecordLive = ThisStockQuote.ToRecord(IsLiveUpdate:=True)
-				'adjust the record details
-				'set the record parameters
-				ThisRecordLive.Stock = Me
-				ThisRecordLive.StockID = ThisRecordLive.Stock.ID
-				Dim ThisRecordLast = _Records.Last
-				'_Records.delete
-				If ThisRecordLast.AsIRecordType.RecordType = IRecordType.enuRecordType.EndOfDay Then
-					'just need to add the live update
-					If _Records.TryAdd(ThisRecordLive) = True Then
-						Debug.Print($"Live update at: {ThisRecordLive.DateUpdate.ToString} with a delay of {(Now - ThisRecordLive.DateUpdate).TotalMinutes:0.0}")
-						MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecordLive))
-						Me.DateStop = ThisRecordLive.DateDay
-					Else
-						MsgBox($"Live Update failure from EOD record for {Me.Symbol}!{vbCr} Update is ignored... ")
-					End If
-				ElseIf ThisRecordLast.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
-					With DirectCast(_Records, LinkedHashSet(Of Record, Date))
-						'check if the key exist in the data list
-						'the key may be the same indicating that the data has not yet been updated
-						'to a new timeframe
-						'in that case we ignore the record
-						Debug.Print($"Live update at: {ThisRecordLive.DateUpdate.ToString} with a delay of {(Now - ThisRecordLive.DateUpdate).TotalMinutes:0.0}")
-						If .ContainKey(ThisRecordLive.DateUpdate) = False Then
-							'the record to remove is located in the last position
-							If .RemoveAt(_Records.Count - 1) = True Then
-								If .ContainKey(ThisRecordLive.DateUpdate) = True Then
-									'should have been removed!!!
-									Debugger.Break()
-									Me.DateStop = Me.DateStop
-								End If
-								MyRecordQuoteValues.RemoveAt(MyRecordQuoteValues.Count - 1)
-								If _Records.TryAdd(ThisRecordLive) = True Then
-									MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecordLive))
-									Me.DateStop = ThisRecordLive.DateDay
-								Else
-									MsgBox($"Live Update failure from EOD record for {Me.Symbol}!{vbCr} Update is ignored... ")
-								End If
-							End If
-						Else
-							Debug.Print($"The new live record is the same than the current one and is ignred...")
-						End If
-					End With
-				End If
-			Else
-				'It is not possible to go from an EOF type record to a live record
-				'flag this as an error
-				MsgBox($"Live Update failure from EOD record for {Me.Symbol}!{vbCr}Update is ignored... ")
-			End If
+			'ElseIf ThisResponseLiveQuery IsNot Nothing Then
+			'	'process the live data
+			'	If ThisResponseLiveQuery.IsSuccess Then
+			'		Dim ThisStockQuote = ThisResponseLiveQuery.Result
+			'		Dim ThisRecordLive = ThisStockQuote.ToRecord(IsLiveUpdate:=True)
+			'		'adjust the record details
+			'		'set the record parameters
+			'		ThisRecordLive.Stock = Me
+			'		ThisRecordLive.StockID = ThisRecordLive.Stock.ID
+			'		Dim ThisRecordLast = _Records.Last
+			'		'_Records.delete
+			'		If ThisRecordLast.AsIRecordType.RecordType = IRecordType.enuRecordType.EndOfDay Then
+			'			'just need to add the live update
+			'			If _Records.TryAdd(ThisRecordLive) = True Then
+			'				Debug.Print($"Live update at: {ThisRecordLive.DateUpdate.ToString} with a delay of {(Now - ThisRecordLive.DateUpdate).TotalMinutes:0.0}")
+			'				MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecordLive))
+			'				Me.DateStop = ThisRecordLive.DateDay
+			'			Else
+			'				MsgBox($"Live Update failure from EOD record for {Me.Symbol}!{vbCr} Update is ignored... ")
+			'			End If
+			'		ElseIf ThisRecordLast.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
+			'			With DirectCast(_Records, LinkedHashSet(Of Record, Date))
+			'				'check if the key exist in the data list
+			'				'the key may be the same indicating that the data has not yet been updated
+			'				'to a new timeframe
+			'				'in that case we ignore the record
+			'				Debug.Print($"Live update at: {ThisRecordLive.DateUpdate.ToString} with a delay of {(Now - ThisRecordLive.DateUpdate).TotalMinutes:0.0}")
+			'				If .ContainKey(ThisRecordLive.DateUpdate) = False Then
+			'					'the record to remove is located in the last position
+			'					If .RemoveAt(_Records.Count - 1) = True Then
+			'						If .ContainKey(ThisRecordLive.DateUpdate) = True Then
+			'							'should have been removed!!!
+			'							Debugger.Break()
+			'							Me.DateStop = Me.DateStop
+			'						End If
+			'						MyRecordQuoteValues.RemoveAt(MyRecordQuoteValues.Count - 1)
+			'						If _Records.TryAdd(ThisRecordLive) = True Then
+			'							MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecordLive))
+			'							Me.DateStop = ThisRecordLive.DateDay
+			'						Else
+			'							MsgBox($"Live Update failure from EOD record for {Me.Symbol}!{vbCr} Update is ignored... ")
+			'						End If
+			'					End If
+			'				Else
+			'					Debug.Print($"The new live record is the same than the current one and is ignred...")
+			'				End If
+			'			End With
+			'		End If
+			'	Else
+			'		'It is not possible to go from an EOF type record to a live record
+			'		'flag this as an error
+			'		MsgBox($"Live Update failure from EOD record for {Me.Symbol}!{vbCr}Update is ignored... ")
+			'	End If
 		End If
 		Return Me.DateStop
 	End Function
@@ -795,10 +833,9 @@ Partial Public Class Stock
 					End If
 				End With
 			Else
-				If Me.Report.WebDataSource IsNot Nothing Then
-					If Me.Report.WebDataSource.IsWebAccessEnable Then
-						Me.WebRefreshRecord(Now)
-					End If
+				'note is loaded is not use for the web
+				If Me.Report.WebDataSource.IsWebAccessEnable Then
+					Me.WebRefreshRecord(Now)
 				End If
 				IsLoaded = True
 			End If
@@ -931,10 +968,8 @@ Partial Public Class Stock
 				Me.RecordLoad()
 				Return _Records
 			Else
-				If Me.Report.WebDataSource IsNot Nothing Then
-					If Me.Report.WebDataSource.IsWebAccessEnable Then
-						Me.WebRefreshRecord(Now)
-					End If
+				If Me.Report.WebDataSource.IsWebAccessEnable Then
+					Me.WebRefreshRecord(Now)
 				End If
 				Return _Records
 			End If
@@ -946,8 +981,15 @@ Partial Public Class Stock
 
 	Public Overridable Property Records(ByVal IsLoadEnabled As Boolean) As ICollection(Of Record)
 		Get
-			If IsLoadEnabled Then Me.RecordLoad()
-			Return _Records
+			If Me.Report.WebDataSource Is Nothing Then
+				If IsLoadEnabled Then Me.RecordLoad()
+				Return _Records
+			Else
+				If Me.Report.WebDataSource.IsWebAccessEnable Then
+					If IsLoadEnabled Then Me.WebRefreshRecord(Now)
+				End If
+				Return _Records
+			End If
 		End Get
 		Set(value As ICollection(Of Record))
 			_Records = value
