@@ -44,7 +44,7 @@ Partial Public Class Record
       .ValuationMeasures = New LinkedHashSet(Of ValuationMeasure, Date)
     End With
     If MyListHeaderInfo Is Nothing Then
-      Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.xml"
+      Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.json"
       MyListHeaderInfo = FileHeaderRead(ThisFile, ListOfHeader, Me.Exception)
     End If
     _RecordType = IRecordType.enuRecordType.EndOfDay  'by default

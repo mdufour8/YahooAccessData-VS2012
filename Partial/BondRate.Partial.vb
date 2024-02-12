@@ -24,8 +24,8 @@ Partial Public Class BondRate
 			.DateUpdate = Now
 		End With
 		If MyListHeaderInfo Is Nothing Then
-			Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.xml"
-      MyListHeaderInfo = FileHeaderRead(ThisFile, ListOfHeader, Me.Exception)
+			Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.json"
+			MyListHeaderInfo = FileHeaderRead(ThisFile, ListOfHeader, Me.Exception)
     End If
   End Sub
 

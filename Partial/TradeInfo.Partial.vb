@@ -25,7 +25,7 @@ Partial Public Class TradeInfo
 			.LastSplitDate = DateSerial(1900, 1, 1)
 		End With
 		If MyListHeaderInfo Is Nothing Then
-			Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.xml"
+			Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.json"
       MyListHeaderInfo = FileHeaderRead(ThisFile, ListOfHeader, Me.Exception)
 		End If
 	End Sub

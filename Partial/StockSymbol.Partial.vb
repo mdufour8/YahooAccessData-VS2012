@@ -26,7 +26,7 @@ Public Class StockSymbol
 			.Symbol = ""
 		End With
 		If MyListHeaderInfo Is Nothing Then
-			Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.xml"
+			Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.json"
       MyListHeaderInfo = FileHeaderRead(ThisFile, ListOfHeader, Me.Exception)
 		End If
 	End Sub

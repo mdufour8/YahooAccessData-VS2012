@@ -116,7 +116,7 @@ Partial Public Class Stock
 			MyRecordQuoteValues = New LinkedHashSet(Of RecordQuoteValue, Date)
 		End With
 		If MyListHeaderInfo Is Nothing Then
-			Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.xml"
+			Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.json"
 			MyListHeaderInfo = FileHeaderRead(ThisFile, ListOfHeader, Me.Exception)
 		End If
 		Me.IsSplitEnabled = True
@@ -211,10 +211,11 @@ Partial Public Class Stock
 #End Region
 #Region "Main Control Function"
 	Public Function WebRefreshRecord(ByVal RecordDateStop As Date) As Date
+		Dim I As Integer
 
 		If Me.Report.WebDataSource Is Nothing Then Return Now
 
-		Dim ThisTaskOfWebRefreshRecord = New Task(Of Date)(
+		Dim ThisTaskOfWebRefreshRecord = New Task(Of IResponseStatus(Of Date))(
 		 Function()
 			 Dim ThisTask = Me.WebRefreshRecordAsync(RecordDateStop)
 			 Return ThisTask.Result
@@ -222,7 +223,11 @@ Partial Public Class Stock
 
 		'Todo: Investigate: Is this the same than the code above above? It seem that is is! NO
 		'Dim ThisTaskOfWebRefreshRecord As Task(Of Date) = Task.Run(Function() Me.WebRefreshRecordAsync(RecordDateStop))
-
+		If MySemaphoreSlimWebStockReading.CurrentCount = 0 Then
+			Debug.Print($"WebRefreshRecord: {Me.Symbol} escape with CurrentCount at {0}")
+			Return Now
+		End If
+		Debug.Print($"WebRefreshRecord: {Me.Symbol} Started with CurrentCount at {MySemaphoreSlimWebStockReading.CurrentCount}")
 		MySemaphoreSlimWebStockReading.Wait()
 		Dim ThisStockWatch As New Stopwatch
 		ThisStockWatch.Restart()
@@ -231,7 +236,11 @@ Partial Public Class Stock
 		ThisStockWatch.Stop()
 		MySemaphoreSlimWebStockReading.Release()
 		Debug.Print($"WebRefreshRecord: {Me.Symbol} executed in {ThisStockWatch.ElapsedMilliseconds} ms")
-		Return ThisTaskOfWebRefreshRecord.Result
+		Dim ThisResult = ThisTaskOfWebRefreshRecord.Result
+		If ThisResult.IsSuccess = False Then
+			MsgBox(ThisResult.Message)
+		End If
+		Return ThisResult.Result
 	End Function
 
 
@@ -243,14 +252,17 @@ Partial Public Class Stock
 	''' <returns>
 	'''   return the date for the last record after the update.
 	''' </returns>
-	Public Async Function WebRefreshRecordAsync(ByVal RecordDateStop As Date) As Task(Of Date)
+	Public Async Function WebRefreshRecordAsync(ByVal RecordDateStop As Date) As Task(Of IResponseStatus(Of Date))
 		Dim ThisWebDataSource = Me.Report.WebDataSource
 		If ThisWebDataSource Is Nothing Then
-			Return Me.DateStop
+			Return New ResponseStatus(Of Date)(Me.DateStop)
 		End If
 		'always remove the automatic splitting adjustment
 		'when connected to teh web.
 		'the data is already adjusted to reflect the share splitting
+		If Me.Symbol = "~BOND_1" Then
+			'Me.Symbol = Me.Symbol
+		End If
 		Me.IsSplitEnabled = False
 		Dim ThisWebEodStockDescriptor As IWebEodDescriptor = Nothing
 		'If WebEODData.WebStockDescriptor.IsWebStockDescriptorValid(Me) Then
@@ -259,7 +271,7 @@ Partial Public Class Stock
 		Try
 			ThisWebEodStockDescriptor = New WebEODData.WebStockDescriptor(Me)
 		Catch ex As Exception
-			Throw ex
+			Return New ResponseStatus(Of Date)(Me.DateStop, IsSuccess:=False, Message:=ex.Message)
 		End Try
 		Dim ThisExchangeCode = ThisWebEodStockDescriptor.ExchangeCode
 
@@ -276,21 +288,30 @@ Partial Public Class Stock
 			'make sure there is nothing in the MyRecordQuoteValues
 			MyRecordQuoteValues.Clear()
 		Else
+			'in some case when the stock is added via the Report.add MyRecordQuoteValues may not have been yet updated
+			If MyRecordQuoteValues.Count <> _Records.Count Then
+				MyRecordQuoteValues.Clear()
+				For Each ThisRecord In _Records
+					MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
+				Next
+			End If
 			'should be corrected to the next trading day
 			'however that date start in some case may be too far from the current date (+- 6 mois). But
 			'at least it will correct for the week end effect
 			'Note ThisWebDateStart could be > than RecordDateStop here
 			'what should be do
 			ThisWebDateStart = ThisWebDataSource.DayTimeOfNextTrading(ThisWebEodStockDescriptor.ExchangeCode, DateValue:=RecordDateStop)
-			If ThisWebDateStart > RecordDateStop Then Return Me.DateStop
+			If ThisWebDateStart > RecordDateStop Then
+				Return New ResponseStatus(Of Date)(Me.DateStop)
+			End If
 			'check if the exchange is open
 			If ThisWebDataSource.IsExchangeOpen(ThisWebEodStockDescriptor.ExchangeCode, RecordDateStop) = False Then
 				'Debug.Print($"Data is updated but there is no live update available at this time")
-				Return Me.DateStop
+				Return New ResponseStatus(Of Date)(Me.DateStop)
 			End If
 			If ThisWebDateStart.Date = RecordDateStop.Date Then
 				If IsLiveUpdateReady = False Then
-					Return Me.DateStop
+					Return New ResponseStatus(Of Date)(Me.DateStop)
 				End If
 			End If
 		End If
@@ -343,10 +364,10 @@ Partial Public Class Stock
 						MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
 					Next
 				End If
-				Return Me.DateStop
+				Return New ResponseStatus(Of Date)(Me.DateStop)
 			Else
 				Debug.Print($"Symbol {Me.Symbol} not found on web database...")
-				Return Me.DateStop
+				Return New ResponseStatus(Of Date)(Me.DateStop)
 			End If
 			'otherwise here the data is valid. keep going with further download
 		End If
@@ -413,6 +434,8 @@ Partial Public Class Stock
 						Me.Report.DateStop = Me.DateStop
 					End If
 				End If
+			Else
+				Debug.Print($"Web query failure for {Me.Symbol}{vbCr}{ThisResponseQuery.Message}")
 			End If
 			'ElseIf ThisResponseLiveQuery IsNot Nothing Then
 			'	'process the live data
@@ -468,7 +491,7 @@ Partial Public Class Stock
 			'		MsgBox($"Live Update failure from EOD record for {Me.Symbol}!{vbCr}Update is ignored... ")
 			'	End If
 		End If
-		Return Me.DateStop
+		Return New ResponseStatus(Of Date)(Me.DateStop)
 	End Function
 
 
@@ -694,7 +717,7 @@ Partial Public Class Stock
 
 		ThisTaskOfRecordQuoteValue = New Task(Of IEnumerable(Of RecordQuoteValue))(
 			Function()
-				Dim ThisRecord As IEnumerable(Of RecordQuoteValue) = Nothing
+				Dim ThisRecordQuoteValue As IEnumerable(Of RecordQuoteValue) = Nothing
 				Dim IsLoaded As Boolean
 				'Dim IsThisTheLastRecordReadingRequest As Boolean
 				'this command load the data in memory only one thread at the time
@@ -713,34 +736,34 @@ Partial Public Class Stock
 							Try
 								.Load()
 								IsLoaded = .IsLoaded
-								ThisRecord = Me.RecordQuoteValues(TimeFormat)
+								ThisRecordQuoteValue = Me.RecordQuoteValues(TimeFormat)
 
-								'    ThisRecord = Me.RecordQuoteValues(TimeFormat)
+								'    ThisRecordQuoteValue = Me.RecordQuoteValues(TimeFormat)
 								'If IsThisTheLastRecordReadingRequest Then
 								'  'only load the most recent request
 								'  .Load()
 								'  IsLoaded = .IsLoaded
 								'  If IsLoaded Then
-								'    ThisRecord = Me.RecordQuoteValues(TimeFormat)
+								'    ThisRecordQuoteValue = Me.RecordQuoteValues(TimeFormat)
 								'  Else
 								'    'the loading have been cancelled
-								'    ThisRecord = Nothing
+								'    ThisRecordQuoteValue = Nothing
 								'  End If
 								'Else
-								'  ThisRecord = Nothing
+								'  ThisRecordQuoteValue = Nothing
 								'End If
 							Catch ex As Exception
 								'how to fix because this may be a problem on a thread:seem to work
 								Me.Report.Exception = ex
-								ThisRecord = Nothing
+								ThisRecordQuoteValue = Nothing
 							End Try
 						Else
-							ThisRecord = Me.RecordQuoteValues(TimeFormat)
+							ThisRecordQuoteValue = Me.RecordQuoteValues(TimeFormat)
 						End If
 					End With
 					'End SyncLock
 				End SyncLock
-				Return ThisRecord
+				Return ThisRecordQuoteValue
 			End Function)
 
 		SyncLock MySyncLockForRecordLoading
