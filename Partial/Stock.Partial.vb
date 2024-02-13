@@ -212,12 +212,12 @@ Partial Public Class Stock
 #Region "Main Control Function"
 	Public Function WebRefreshRecord(ByVal RecordDateStop As Date) As Date
 		Dim I As Integer
-
+		Dim ThisTask As Task(Of IResponseStatus(Of Date)) = Nothing
 		If Me.Report.WebDataSource Is Nothing Then Return Now
 
 		Dim ThisTaskOfWebRefreshRecord = New Task(Of IResponseStatus(Of Date))(
 		 Function()
-			 Dim ThisTask = Me.WebRefreshRecordAsync(RecordDateStop)
+			 ThisTask = Me.WebRefreshRecordAsync(RecordDateStop)
 			 Return ThisTask.Result
 		 End Function)
 
@@ -260,8 +260,8 @@ Partial Public Class Stock
 		'always remove the automatic splitting adjustment
 		'when connected to teh web.
 		'the data is already adjusted to reflect the share splitting
-		If Me.Symbol = "~BOND_1" Then
-			'Me.Symbol = Me.Symbol
+		If Me.Symbol = "AG" Then
+			Me.Symbol = Me.Symbol
 		End If
 		Me.IsSplitEnabled = False
 		Dim ThisWebEodStockDescriptor As IWebEodDescriptor = Nothing
@@ -289,6 +289,7 @@ Partial Public Class Stock
 			MyRecordQuoteValues.Clear()
 		Else
 			'in some case when the stock is added via the Report.add MyRecordQuoteValues may not have been yet updated
+			ThisWebDateStart = Me.DateStop
 			If MyRecordQuoteValues.Count <> _Records.Count Then
 				MyRecordQuoteValues.Clear()
 				For Each ThisRecord In _Records
@@ -300,15 +301,16 @@ Partial Public Class Stock
 			'at least it will correct for the week end effect
 			'Note ThisWebDateStart could be > than RecordDateStop here
 			'what should be do
-			ThisWebDateStart = ThisWebDataSource.DayTimeOfNextTrading(ThisWebEodStockDescriptor.ExchangeCode, DateValue:=RecordDateStop)
-			If ThisWebDateStart > RecordDateStop Then
-				Return New ResponseStatus(Of Date)(Me.DateStop)
-			End If
+
+			'ThisWebDateStart = ThisWebDataSource.DayTimeOfNextTrading(ThisWebEodStockDescriptor.ExchangeCode, DateValue:=Me.DateStop)
+			'If ThisWebDateStart > Me.DateStop Then
+			'	Return New ResponseStatus(Of Date)(Me.DateStop)
+			'End If
 			'check if the exchange is open
-			If ThisWebDataSource.IsExchangeOpen(ThisWebEodStockDescriptor.ExchangeCode, RecordDateStop) = False Then
-				'Debug.Print($"Data is updated but there is no live update available at this time")
-				Return New ResponseStatus(Of Date)(Me.DateStop)
-			End If
+			'If ThisWebDataSource.IsExchangeOpen(ThisWebEodStockDescriptor.ExchangeCode, RecordDateStop) = False Then
+			'	'Debug.Print($"Data is updated but there is no live update available at this time")
+			'	Return New ResponseStatus(Of Date)(Me.DateStop)
+			'End If
 			If ThisWebDateStart.Date = RecordDateStop.Date Then
 				If IsLiveUpdateReady = False Then
 					Return New ResponseStatus(Of Date)(Me.DateStop)

@@ -768,31 +768,37 @@ Namespace ExtensionService
 			Dim ThisDictionaryResult As Dictionary(Of TKey, TValue) = Nothing
 			Dim ThisException As Exception = Nothing
 			Dim ThisJasonResult As String
+
 			'JSON is a language-independent data format. It was derived from JavaScript, but many modern programming
 			'languages include code to generate and parse JSON-format data. JSON filenames use the extension .json
-			Dim ThisJasonFileName As String = Path.ChangeExtension(FileName, ".json")
-
 			Select Case FileType
 				Case EnumFileType.Binary
 					'Throw New NotSupportedException("Invalid Binary file type...")
-					Debugger.Break()
 					ThisSharpSerializer = New Polenter.Serialization.SharpSerializer(binarySerialization:=True)
-					If ThisDictionaryResult Is Nothing Then
-						ThisDictionaryResult = CType(ThisSharpSerializer.Deserialize(filename:=FileName), Dictionary(Of TKey, TValue))
-					End If
+					Try
+						If ThisDictionaryResult Is Nothing Then
+							ThisDictionaryResult = CType(ThisSharpSerializer.Deserialize(filename:=FileName), Dictionary(Of TKey, TValue))
+						End If
+					Catch ex As Exception
+					End Try
+					Return ThisDictionaryResult
 				Case EnumFileType.XML
-					'Throw New NotSupportedException("Invalid XML file type...")
-					Debugger.Break()
-					'ThisJsonResult = JsonConvert.SerializeObject(Data, Formatting.Indented)
-					'Creates a new file, write the contents to the file, and then closes the file.
-					'If the target file already exists, it is truncated and overwritten.
-					FileName = Path.ChangeExtension(FileName, "xml")
-					ThisSharpSerializer = New Polenter.Serialization.SharpSerializer(binarySerialization:=False)
-					ThisDictionaryResult = CType(ThisSharpSerializer.Deserialize(filename:=FileName), Dictionary(Of TKey, TValue))
-
-					ThisSharpSerializer = New Polenter.Serialization.SharpSerializer(binarySerialization:=False)
+					Try
+						ThisSharpSerializer = New Polenter.Serialization.SharpSerializer(binarySerialization:=False)
+						ThisDictionaryResult = CType(ThisSharpSerializer.Deserialize(filename:=FileName), Dictionary(Of TKey, TValue))
+						Return ThisDictionaryResult
+					Catch ex As Exception
+						Try
+							ThisJasonResult = File.ReadAllText(FileName)
+							ThisDictionaryResult = JsonConvert.DeserializeObject(Of Dictionary(Of TKey, TValue))(ThisJasonResult)
+							Return ThisDictionaryResult
+						Catch ex1 As Exception
+							Throw ex1
+						End Try
+					End Try
 				Case EnumFileType.Json
 					'check if the file exist
+					'special case use to move the file to a jason standard
 					If File.Exists(FileName) = False Then
 						'check if a binary file exist
 						ThisDictionaryResult = Nothing
@@ -800,7 +806,6 @@ Namespace ExtensionService
 						If File.Exists(ThisFileNameBin) Then
 							'try to read the binary file and save it in a json file
 							'use the old version of the sharp serializer
-							Debugger.Break()
 							Try
 								ThisSharpSerializer = New Polenter.Serialization.SharpSerializer(binarySerialization:=True)
 								ThisDictionaryResult = CType(ThisSharpSerializer.Deserialize(filename:=ThisFileNameBin), Dictionary(Of TKey, TValue))
@@ -815,19 +820,6 @@ Namespace ExtensionService
 										'no file of any type found
 									End If
 								Catch ex1 As Exception
-									''try with the net xml reader
-									'Try
-									'	ThisXmlSerializer = New XmlSerializer(GetType(Dictionary(Of TKey, TValue)))
-									'	Dim ThisTextReaderStream = New StreamReader(ThisFileNameXml)
-									'	'Dim ThisResultXML = File.ReadAllText(ThisFileNameXml)
-									'	'StreamReader is designed for character input in a particular encoding, whereas the Stream class
-									'	'is designed for byte input and output. Use StreamReader for reading lines of information
-									'	'From a standard text file.
-
-									'	ThisDictionaryResult = CType(ThisXmlSerializer.Deserialize(ThisTextReaderStream), Dictionary(Of TKey, TValue))
-									'	ThisTextReaderStream.Dispose()
-									'Catch ex2 As Exception
-									'End Try
 								End Try
 							End Try
 						Else
@@ -837,87 +829,32 @@ Namespace ExtensionService
 									ThisSharpSerializer = New Polenter.Serialization.SharpSerializer(binarySerialization:=False)
 									ThisDictionaryResult = CType(ThisSharpSerializer.Deserialize(filename:=ThisFileNameXml), Dictionary(Of TKey, TValue))
 								Catch ex As Exception
-									'try with the net xml reader
-									Try
-										ThisXmlSerializer = New XmlSerializer(GetType(Dictionary(Of TKey, TValue)))
-										Dim ThisTextReaderStream = New StreamReader(ThisFileNameXml)
-										'Dim ThisResultXML = File.ReadAllText(ThisFileNameXml)
-										'StreamReader is designed for character input in a particular encoding, whereas the Stream class
-										'is designed for byte input and output. Use StreamReader for reading lines of information
-										'From a standard text file.
 
-										ThisDictionaryResult = CType(ThisXmlSerializer.Deserialize(ThisTextReaderStream), Dictionary(Of TKey, TValue))
-										ThisTextReaderStream.Dispose()
-									Catch ex2 As Exception
-									End Try
 								End Try
 							Else
 								'no file of any type found
 							End If
 						End If
 						If ThisDictionaryResult IsNot Nothing Then
-							'save to a json format
+							'save to other format to the json format
 							FileSaveOfDictionary(Of TKey, TValue)(FileName, ThisDictionaryResult, FileType:=EnumFileType.Json)
 						End If
-
 					End If
-					'at this point a json file exist unless ther is no file of any type with that name
-
-
-					'nothind to do
+					'at this point a json file exist unless there is no file of any type with that name
+					Try
+						If File.Exists(FileName) Then
+							ThisJasonResult = File.ReadAllText(FileName)
+							ThisDictionaryResult = JsonConvert.DeserializeObject(Of Dictionary(Of TKey, TValue))(ThisJasonResult)
+						Else
+							Throw New FileNotFoundException(FileName)
+						End If
+					Catch ex As Exception
+						Throw ex
+					End Try
+					Return ThisDictionaryResult
 				Case Else
 					Throw New InvalidFilterCriteriaException("Invalid file type...")
 			End Select
-			If My.Computer.FileSystem.FileExists(FileName) Then
-				Try
-					'Try
-					'	ThisJasonRead = File.ReadAllText(FileName)
-					'	ThisDictionaryResult = JsonConvert.DeserializeObject(Of Dictionary(Of TKey, TValue))(ThisJasonRead)
-					'Catch ex As Exception
-					'	ex = ex
-
-					'Finally
-					'	If ThisDictionaryResult Is Nothing Then
-					'		ThisDictionaryResult = CType(ThisSharpSerializer.Deserialize(filename:=FileName), Dictionary(Of TKey, TValue))
-					'	End If
-					'End Try
-					'first read from json file always
-					If File.Exists(ThisJasonFileName) Then
-						ThisJasonResult = File.ReadAllText(ThisJasonFileName)
-						ThisDictionaryResult = JsonConvert.DeserializeObject(Of Dictionary(Of TKey, TValue))(ThisJasonResult)
-					Else
-						ThisDictionaryResult = CType(ThisSharpSerializer.Deserialize(filename:=FileName), Dictionary(Of TKey, TValue))
-						If ThisDictionaryResult IsNot Nothing Then
-							'save the file to a json file format
-							ThisJasonResult = JsonConvert.SerializeObject(ThisDictionaryResult, Formatting.Indented)
-							File.WriteAllText(ThisJasonFileName, ThisJasonResult)
-						End If
-					End If
-				Catch ex As Exception
-					If Exception IsNot Nothing Then
-						Exception = ex
-					Else
-						Throw ex
-					End If
-				End Try
-			Else
-				'get the default 
-				'save the default file
-				Try
-					FileSaveOfDictionary(Of TKey, TValue)(
-					FileName:=FileName,
-					Data:=DataDefaultOnError,
-					FileType:=FileType)
-				Catch ex As Exception
-					If Exception IsNot Nothing Then
-						Exception = ex
-					Else
-						Throw ex
-					End If
-				End Try
-				ThisDictionaryResult = DataDefaultOnError
-			End If
-			Return ThisDictionaryResult
 		End Function
 
 		Public Function FileListReadBinary(Of TKey, TValue)(ByVal FileName As String, ByRef DataDefault As Dictionary(Of TKey, TValue), ByRef Exception As Exception) As Dictionary(Of TKey, TValue)
@@ -957,7 +894,7 @@ Namespace ExtensionService
 					If .FileExists(ThisFileBackupName) Then
 						'delete the backup file
 						.DeleteFile(ThisFileBackupName)
-						'rename the file to teh backup name
+						'rename the file to the backup name
 						.RenameFile(FileName, Path.GetFileName(ThisFileBackupName))
 						'ready to write the new file
 					End If
@@ -969,65 +906,24 @@ Namespace ExtensionService
 					Case EnumFileType.Binary
 						Debugger.Break()
 						ThisSharpSerializer = New Polenter.Serialization.SharpSerializer(binarySerialization:=True)
+						ThisSharpSerializer.Serialize(Data, FileName)
 					Case EnumFileType.XML
-						Throw New NotSupportedException
-						Debugger.Break()
+						'ThisJsonResult = JsonConvert.SerializeObject(Data, Formatting.Indented)
+						'Creates a new file, write the contents to the file, and then closes the file.
+						'If the target file already exists, it is truncated and overwritten.
+						'File.WriteAllText(FileName, ThisJsonResult)
+						ThisSharpSerializer = New Polenter.Serialization.SharpSerializer(binarySerialization:=False)
+						ThisSharpSerializer.Serialize(Data, FileName)
+					Case EnumFileType.Json
 						ThisJsonResult = JsonConvert.SerializeObject(Data, Formatting.Indented)
 						'Creates a new file, write the contents to the file, and then closes the file.
 						'If the target file already exists, it is truncated and overwritten.
 						File.WriteAllText(FileName, ThisJsonResult)
-						'ThisSharpSerializer = New Polenter.Serialization.SharpSerializer(binarySerialization:=False)
-					Case Else
-						ThisJsonResult = JsonConvert.SerializeObject(Data, Formatting.Indented)
-						'Creates a new file, write the contents to the file, and then closes the file.
-						'If the target file already exists, it is truncated and overwritten.
-						File.WriteAllText(FileName, ThisJsonResult)
-						'ThisSharpSerializer = New Polenter.Serialization.SharpSerializer(binarySerialization:=False)
 				End Select
 			Catch ex As Exception
 				Throw ex
-				ThisException = ex
 			Finally
 			End Try
-			If ThisException IsNot Nothing Then
-				'try restoring the file
-				'restore the the backup file before reporting leaving the error
-				'this should leave the system intact
-				'make sure nothing eas written in teh file
-				'Try
-				'	With My.Computer.FileSystem
-				'		If .FileExists(FileName) Then
-
-				'			'delete the file
-				'			.DeleteFile(FileName)
-				'			'rename the backup to the original file name
-				'			'this should leave the system intact
-				'			'even after the file error
-				'			.RenameFile(ThisFileBackupName, FileName)
-				'		End If
-				'	End With
-				'Catch ex1 As Exception
-				'	'this is bad the restoration of the backup failed
-				'	ThisException = New Exception($"Saving error: {FileName}{vbCr}Backup file restoration failed: {ThisFileBackupName}", ex1)
-				'End Try
-			End If
-
-			'Try
-			'Catch ex As Exception
-
-
-
-
-			'Select Case FileType
-			'	Case EnumFileType.Binary
-			'		Debugger.Break()
-			'		ThisSharpSerializer = New Polenter.Serialization.SharpSerializer(binarySerialization:=True)
-
-			'	Case EnumFileType.XML
-
-			'		'File.WriteAllText(@"c:\user.json", Json);
-			'		'ThisSharpSerializer = New Polenter.Serialization.SharpSerializer(binarySerialization:=False)
-			'End Select
 		End Sub
 
 		Public Sub FileListSaveBinary(Of TKey, TValue)(
