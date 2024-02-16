@@ -243,6 +243,22 @@ Partial Public Class Stock
 		Return ThisResult.Result
 	End Function
 
+	''' <summary>
+	''' This function return teh exchange code and code symbol needed to access the web database. It if fails it return nothing
+	''' </summary>
+	''' <returns>
+	'''	the tuple with the exchange and symbol code. It it fail it return nothing
+	''' </returns>
+	Public Function WebExchangeCode() As Tuple(Of String, String)
+		Dim ThisWebEodStockDescriptor As IWebEodDescriptor = Nothing
+		Try
+			ThisWebEodStockDescriptor = New WebEODData.WebStockDescriptor(Me)
+		Catch ex As Exception
+			Return Nothing
+		End Try
+		Return New Tuple(Of String, String)(ThisWebEodStockDescriptor.ExchangeCode, ThisWebEodStockDescriptor.SymbolCode)
+	End Function
+
 
 
 	''' <summary>
@@ -254,32 +270,27 @@ Partial Public Class Stock
 	''' </returns>
 	Public Async Function WebRefreshRecordAsync(ByVal RecordDateStop As Date) As Task(Of IResponseStatus(Of Date))
 		Dim ThisWebDataSource = Me.Report.WebDataSource
+		Dim ThisExchangeSymbol As Tuple(Of String, String)
+
 		If ThisWebDataSource Is Nothing Then
 			Return New ResponseStatus(Of Date)(Me.DateStop)
 		End If
 		'always remove the automatic splitting adjustment
-		'when connected to teh web.
-		'the data is already adjusted to reflect the share splitting
+		'when connected to the web.
+		'the data is already adjusted to reflect the share splitting on the web
 		If Me.Symbol = "AG" Then
 			Me.Symbol = Me.Symbol
 		End If
 		Me.IsSplitEnabled = False
-		Dim ThisWebEodStockDescriptor As IWebEodDescriptor = Nothing
-		'If WebEODData.WebStockDescriptor.IsWebStockDescriptorValid(Me) Then
-
-		'End If
-		Try
-			ThisWebEodStockDescriptor = New WebEODData.WebStockDescriptor(Me)
-		Catch ex As Exception
-			Return New ResponseStatus(Of Date)(Me.DateStop, IsSuccess:=False, Message:=ex.Message)
-		End Try
-		Dim ThisExchangeCode = ThisWebEodStockDescriptor.ExchangeCode
-
+		ThisExchangeSymbol = Me.WebExchangeCode()
+		If ThisExchangeSymbol Is Nothing Then
+			Return New ResponseStatus(Of Date)(Me.DateStop, IsSuccess:=False, Message:="Invalid exchange and or symbol combination...")
+		End If
 		RecordDateStop = Now
 
-		Dim ThisDateOfLastTrading = ThisWebDataSource.DayTimeOfLastTrading(ThisWebEodStockDescriptor.ExchangeCode, DateValue:=RecordDateStop)
-		Dim ThisDateOfNextTrading = ThisWebDataSource.DayTimeOfNextTrading(ThisWebEodStockDescriptor.ExchangeCode, DateValue:=RecordDateStop)
-		Dim IsLiveUpdateReady = ThisWebDataSource.IsLiveUpdateReady(ThisWebEodStockDescriptor.ExchangeCode, DateValue:=RecordDateStop)
+		Dim ThisDateOfLastTrading = ThisWebDataSource.DayTimeOfLastTrading(ThisExchangeSymbol.Item1, DateValue:=RecordDateStop)
+		Dim ThisDateOfNextTrading = ThisWebDataSource.DayTimeOfNextTrading(ThisExchangeSymbol.Item1, DateValue:=RecordDateStop)
+		Dim IsLiveUpdateReady = ThisWebDataSource.IsLiveUpdateReady(ThisExchangeSymbol.Item1, DateValue:=RecordDateStop)
 		Dim ThisWebDateStart As Date
 		If _Records.Count = 0 Then
 			'reset the date
@@ -302,12 +313,12 @@ Partial Public Class Stock
 			'Note ThisWebDateStart could be > than RecordDateStop here
 			'what should be do
 
-			'ThisWebDateStart = ThisWebDataSource.DayTimeOfNextTrading(ThisWebEodStockDescriptor.ExchangeCode, DateValue:=Me.DateStop)
+			'ThisWebDateStart = ThisWebDataSource.DayTimeOfNextTrading(ThisExchangeSymbol.Item1, DateValue:=Me.DateStop)
 			'If ThisWebDateStart > Me.DateStop Then
 			'	Return New ResponseStatus(Of Date)(Me.DateStop)
 			'End If
 			'check if the exchange is open
-			'If ThisWebDataSource.IsExchangeOpen(ThisWebEodStockDescriptor.ExchangeCode, RecordDateStop) = False Then
+			'If ThisWebDataSource.IsExchangeOpen(ThisExchangeSymbol.Item1, RecordDateStop) = False Then
 			'	'Debug.Print($"Data is updated but there is no live update available at this time")
 			'	Return New ResponseStatus(Of Date)(Me.DateStop)
 			'End If
@@ -320,10 +331,10 @@ Partial Public Class Stock
 		Dim ThisResponseQuery As IResponseStatus(Of Dictionary(Of String, List(Of IStockQuote))) = Nothing
 		Dim ThisResponseLiveQuery As IResponseStatus(Of IStockQuote) = Nothing
 		'check if the symbol exit
-		If ThisWebDataSource.GetDictionaryOfStockSymbolBySymbol(ThisWebEodStockDescriptor.ExchangeCode).ContainsKey(ThisWebEodStockDescriptor.SymbolCode) Then
+		If ThisWebDataSource.GetDictionaryOfStockSymbolBySymbol(ThisExchangeSymbol.Item1).ContainsKey(ThisExchangeSymbol.Item2) Then
 			ThisResponseQuery = Await ThisWebDataSource.LoadStockQuoteAsync(
-					ThisWebEodStockDescriptor.ExchangeCode,
-					ThisWebEodStockDescriptor.SymbolCode,
+					ThisExchangeSymbol.Item1,
+					ThisExchangeSymbol.Item2,
 					DateStart:=ThisWebDateStart,
 					DateStop:=RecordDateStop)
 			'use just a test
@@ -335,14 +346,14 @@ Partial Public Class Stock
 			'	'we should ask for the data from te update live
 			'	If ThisWebDateStart.Date = Now.Date Then
 			'		ThisResponseLiveQuery = Await ThisWebDataSource.LoadStockQuoteLiveAsync(
-			'			ExchangeCode:=ThisWebEodStockDescriptor.ExchangeCode,
+			'			ExchangeCode:=ThisExchangeSymbol.Item1,
 			'			Symbol:=ThisWebEodStockDescriptor.SymbolCode)
 			'	Else
 			'		Return Me.DateStop
 			'	End If
 			'Else
 			'	ThisResponseQuery = Await ThisWebDataSource.LoadStockQuoteAsync(
-			'		ThisWebEodStockDescriptor.ExchangeCode,
+			'		ThisExchangeSymbol.Item1,
 			'		ThisWebEodStockDescriptor.SymbolCode,
 			'		DateStart:=ThisWebDateStart,
 			'		DateStop:=RecordDateStop)
@@ -439,59 +450,6 @@ Partial Public Class Stock
 			Else
 				Debug.Print($"Web query failure for {Me.Symbol}{vbCr}{ThisResponseQuery.Message}")
 			End If
-			'ElseIf ThisResponseLiveQuery IsNot Nothing Then
-			'	'process the live data
-			'	If ThisResponseLiveQuery.IsSuccess Then
-			'		Dim ThisStockQuote = ThisResponseLiveQuery.Result
-			'		Dim ThisRecordLive = ThisStockQuote.ToRecord(IsLiveUpdate:=True)
-			'		'adjust the record details
-			'		'set the record parameters
-			'		ThisRecordLive.Stock = Me
-			'		ThisRecordLive.StockID = ThisRecordLive.Stock.ID
-			'		Dim ThisRecordLast = _Records.Last
-			'		'_Records.delete
-			'		If ThisRecordLast.AsIRecordType.RecordType = IRecordType.enuRecordType.EndOfDay Then
-			'			'just need to add the live update
-			'			If _Records.TryAdd(ThisRecordLive) = True Then
-			'				Debug.Print($"Live update at: {ThisRecordLive.DateUpdate.ToString} with a delay of {(Now - ThisRecordLive.DateUpdate).TotalMinutes:0.0}")
-			'				MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecordLive))
-			'				Me.DateStop = ThisRecordLive.DateDay
-			'			Else
-			'				MsgBox($"Live Update failure from EOD record for {Me.Symbol}!{vbCr} Update is ignored... ")
-			'			End If
-			'		ElseIf ThisRecordLast.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
-			'			With DirectCast(_Records, LinkedHashSet(Of Record, Date))
-			'				'check if the key exist in the data list
-			'				'the key may be the same indicating that the data has not yet been updated
-			'				'to a new timeframe
-			'				'in that case we ignore the record
-			'				Debug.Print($"Live update at: {ThisRecordLive.DateUpdate.ToString} with a delay of {(Now - ThisRecordLive.DateUpdate).TotalMinutes:0.0}")
-			'				If .ContainKey(ThisRecordLive.DateUpdate) = False Then
-			'					'the record to remove is located in the last position
-			'					If .RemoveAt(_Records.Count - 1) = True Then
-			'						If .ContainKey(ThisRecordLive.DateUpdate) = True Then
-			'							'should have been removed!!!
-			'							Debugger.Break()
-			'							Me.DateStop = Me.DateStop
-			'						End If
-			'						MyRecordQuoteValues.RemoveAt(MyRecordQuoteValues.Count - 1)
-			'						If _Records.TryAdd(ThisRecordLive) = True Then
-			'							MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecordLive))
-			'							Me.DateStop = ThisRecordLive.DateDay
-			'						Else
-			'							MsgBox($"Live Update failure from EOD record for {Me.Symbol}!{vbCr} Update is ignored... ")
-			'						End If
-			'					End If
-			'				Else
-			'					Debug.Print($"The new live record is the same than the current one and is ignred...")
-			'				End If
-			'			End With
-			'		End If
-			'	Else
-			'		'It is not possible to go from an EOF type record to a live record
-			'		'flag this as an error
-			'		MsgBox($"Live Update failure from EOD record for {Me.Symbol}!{vbCr}Update is ignored... ")
-			'	End If
 		End If
 		Return New ResponseStatus(Of Date)(Me.DateStop)
 	End Function
