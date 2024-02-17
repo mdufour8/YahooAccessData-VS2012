@@ -4,7 +4,7 @@ Imports System.Xml.Serialization
 Imports ExcelDataReader
 Imports ExcelDataReader.ExcelDataReaderExtensions
 
-Namespace ExtensionService
+Namespace ExtensionServiceMutex
   Public Class FileMutex
     Implements IDisposable
 
@@ -27,7 +27,7 @@ Namespace ExtensionService
     Public Sub FileHeaderSave(ByVal FileName As String, ByRef HeaderInfo As List(Of HeaderInfo))
       MyMutex.WaitOne()
       Try
-        Extensions.FileHeaderSave(FileName, HeaderInfo)
+        YahooAccessData.ExtensionService.Extensions.FileHeaderSave(FileName, HeaderInfo)
       Catch ex As Exception
         Throw ex
       Finally
@@ -45,7 +45,7 @@ Namespace ExtensionService
 
       MyMutex.WaitOne()
       Try
-        ThisListOfData = Extensions.FileHeaderRead(FileName, HeaderInfoDefault, Exception)
+        ThisListOfData = YahooAccessData.ExtensionService.Extensions.FileHeaderRead(FileName, HeaderInfoDefault, Exception)
       Catch ex As Exception
         Throw ex
       Finally
@@ -58,7 +58,7 @@ Namespace ExtensionService
     Public Sub FileListSave(Of T)(ByVal FileName As String, ByRef Data As List(Of T))
       MyMutex.WaitOne()
       Try
-        Extensions.FileListSave(Of T)(FileName, Data)
+        YahooAccessData.ExtensionService.Extensions.FileListSave(Of T)(FileName, Data)
       Catch ex As Exception
         Throw ex
       Finally
@@ -70,7 +70,7 @@ Namespace ExtensionService
     Public Sub FileListSave(Of T)(ByVal FileName As String, ByRef Data As T)
       MyMutex.WaitOne()
       Try
-        Extensions.FileListSave(Of T)(FileName, Data)
+        YahooAccessData.ExtensionService.Extensions.FileListSave(Of T)(FileName, Data)
       Catch ex As Exception
         Throw ex
       Finally
@@ -146,7 +146,7 @@ Namespace ExtensionService
 
       MyMutex.WaitOne()
       Try
-        ThisListOfData = Extensions.FileListRead(Of TKey, TValue)(FileName, DataDefault, Exception)
+        ThisListOfData = YahooAccessData.ExtensionService.Extensions.FileListRead(Of TKey, TValue)(FileName, DataDefault, Exception)
       Catch ex As Exception
         Throw ex
       Finally
@@ -159,7 +159,7 @@ Namespace ExtensionService
     Public Sub FileListSave(Of TKey, TValue)(ByVal FileName As String, ByRef Data As Dictionary(Of TKey, TValue))
       MyMutex.WaitOne()
       Try
-        Extensions.FileListSave(Of TKey, TValue)(FileName, Data)
+        YahooAccessData.ExtensionService.Extensions.FileListSave(Of TKey, TValue)(FileName, Data)
       Catch ex As Exception
         Throw ex
       Finally
@@ -184,12 +184,12 @@ Namespace ExtensionService
       ByVal FileName As String,
       ByRef DataDefaultOnError As Dictionary(Of TKey, TValue),
       ByRef Exception As Exception,
-      ByVal FileType As EnumFileType) As Dictionary(Of TKey, TValue)
+      ByVal FileType As ExtensionService.EnumFileType) As Dictionary(Of TKey, TValue)
 
       Dim ThisData As Dictionary(Of TKey, TValue) = Nothing
       MyMutex.WaitOne()
       Try
-        ThisData = Extensions.FileReadOfDictionary(Of TKey, TValue)(FileName, DataDefaultOnError, Exception, FileType)
+        ThisData = YahooAccessData.ExtensionService.Extensions.FileReadOfDictionary(Of TKey, TValue)(FileName, DataDefaultOnError, Exception, FileType)
       Catch ex As Exception
         Throw ex
       Finally
@@ -208,7 +208,7 @@ Namespace ExtensionService
 
       MyMutex.WaitOne()
       Try
-        ThisData = Extensions.FileListReadBinary(Of TKey, TValue)(FileName, DataDefault, Exception)
+        ThisData = YahooAccessData.ExtensionService.Extensions.FileListReadBinary(Of TKey, TValue)(FileName, DataDefault, Exception)
       Catch ex As Exception
         Throw ex
       Finally
@@ -221,11 +221,11 @@ Namespace ExtensionService
     Public Sub FileSaveOfDictionary(Of TKey, TValue)(
       ByVal FileName As String,
       ByRef Data As Dictionary(Of TKey, TValue),
-      ByVal FileType As EnumFileType)
+      ByVal FileType As ExtensionService.EnumFileType)
 
       MyMutex.WaitOne()
       Try
-        Extensions.FileSaveOfDictionary(Of TKey, TValue)(FileName, Data, FileType:=FileType)
+        YahooAccessData.ExtensionService.Extensions.FileSaveOfDictionary(Of TKey, TValue)(FileName, Data, FileType:=FileType)
       Catch ex As Exception
         Throw ex
       Finally
@@ -240,7 +240,7 @@ Namespace ExtensionService
 
       MyMutex.WaitOne()
       Try
-        Extensions.FileListSaveBinary(Of TKey, TValue)(FileName, Data)
+        YahooAccessData.ExtensionService.Extensions.FileListSaveBinary(Of TKey, TValue)(FileName, Data)
       Catch ex As Exception
         Throw ex
       Finally
@@ -258,7 +258,7 @@ Namespace ExtensionService
 
       MyMutex.WaitOne()
       Try
-        ThisData = Extensions.FileReadBinary(Of T)(FileName, DataDefault, Exception)
+        ThisData = YahooAccessData.ExtensionService.Extensions.FileReadBinary(Of T)(FileName, DataDefault, Exception)
       Catch ex As Exception
         Throw ex
       Finally
@@ -274,7 +274,7 @@ Namespace ExtensionService
 
       MyMutex.WaitOne()
       Try
-        Extensions.FileSaveBinary(Of T)(FileName, Data)
+        YahooAccessData.ExtensionService.Extensions.FileSaveBinary(Of T)(FileName, Data)
       Catch ex As Exception
         Throw ex
       Finally
@@ -292,7 +292,7 @@ Namespace ExtensionService
 
       MyMutex.WaitOne()
       Try
-        ThisData = Extensions.FileListRead(Of T)(FileName, DataDefault, Exception)
+        ThisData = YahooAccessData.ExtensionService.Extensions.FileListRead(Of T)(FileName, DataDefault, Exception)
       Catch ex As Exception
         Throw ex
       Finally
@@ -311,7 +311,7 @@ Namespace ExtensionService
 
       MyMutex.WaitOne()
       Try
-        ThisListOfData = Extensions.FileListRead(Of T)(FileName, DataDefault, Exception)
+        ThisListOfData = YahooAccessData.ExtensionService.Extensions.FileListRead(Of T)(FileName, DataDefault, Exception)
       Catch ex As Exception
         Throw ex
       Finally
@@ -326,7 +326,7 @@ Namespace ExtensionService
       Dim ThisListOfData As List(Of T) = Nothing
       MyMutex.WaitOne()
       Try
-        ThisListOfData = Extensions.FileListRead(Of T)(FileName)
+        ThisListOfData = YahooAccessData.ExtensionService.Extensions.FileListRead(Of T)(FileName)
       Catch ex As Exception
         Throw ex
       Finally
@@ -342,7 +342,7 @@ Namespace ExtensionService
 
       MyMutex.WaitOne()
       Try
-        Extensions.FileListSave(Of T, U)(FileName, HeaderInfo)
+        YahooAccessData.ExtensionService.Extensions.FileListSave(Of T, U)(FileName, HeaderInfo)
       Catch ex As Exception
         Throw ex
       Finally
@@ -359,7 +359,7 @@ Namespace ExtensionService
       Dim ThisListOfData As List(Of T) = Nothing
       MyMutex.WaitOne()
       Try
-        ThisListOfData = Extensions.FileListRead(Of T, U)(FileName, DataDefault, Exception)
+        ThisListOfData = YahooAccessData.ExtensionService.Extensions.FileListRead(Of T, U)(FileName, DataDefault, Exception)
       Catch ex As Exception
         Throw ex
       Finally
