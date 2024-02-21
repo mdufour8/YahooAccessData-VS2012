@@ -1,0 +1,29 @@
+[
+	{
+		"Format": "{0}",
+		"IsSortable": true,
+		"IsSortEnabled": true,
+		"Name": "ID",
+		"Title": "ID",
+		"Visible": true,
+		"Width": 0
+	},
+	{
+		"Format": "{0:G}",
+		"IsSortable": true,
+		"IsSortEnabled": true,
+		"Name": "Name",
+		"Title": "Name",
+		"Visible": true,
+		"Width": 0
+	},
+	{
+		"Format": "{0}",
+		"IsSortable": true,
+		"IsSortEnabled": true,
+		"Name": "DataSourceID",
+		"Title": "DataSourceID",
+		"Visible": true,
+		"Width": 0
+	}
+]

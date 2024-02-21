@@ -3,6 +3,7 @@ Imports System.Collections.Generic
 Imports YahooAccessData.ExtensionService
 Imports System
 Imports System.IO
+Imports Newtonsoft.Json
 #End Region
 
 <Serializable()>
@@ -70,6 +71,8 @@ Partial Public Class Industry
     End With
     If MyListHeaderInfo Is Nothing Then
       Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.json"
+      'Dim ThisFileData = File.ReadAllText("Industry.Json")
+      'ThisListInfo = JsonConvert.DeserializeObject(Of List(Of T))()
       MyListHeaderInfo = FileHeaderRead(ThisFile, ListOfHeader, Me.Exception)
     End If
     'If MyCompareByName Is Nothing Then
