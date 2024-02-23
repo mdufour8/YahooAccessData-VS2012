@@ -115,9 +115,11 @@ Partial Public Class Stock
 
 			MyRecordQuoteValues = New LinkedHashSet(Of RecordQuoteValue, Date)
 		End With
-		If MyListHeaderInfo Is Nothing Then
+		If MyListHeaderInfo Is Nothing And LIST_OF_HEADER_FILE_ENABLED Then
 			Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.json"
 			MyListHeaderInfo = FileHeaderRead(ThisFile, ListOfHeader, Me.Exception)
+		Else
+			MyListHeaderInfo = ListOfHeader()
 		End If
 		Me.IsSplitEnabled = True
 	End Sub
@@ -333,36 +335,15 @@ Partial Public Class Stock
 		'check if the symbol exit
 		If ThisWebDataSource.GetDictionaryOfStockSymbolBySymbol(ThisExchangeSymbol.Item1).ContainsKey(ThisExchangeSymbol.Item2) Then
 			ThisResponseQuery = Await ThisWebDataSource.LoadStockQuoteAsync(
-					ThisExchangeSymbol.Item1,
-					ThisExchangeSymbol.Item2,
-					DateStart:=ThisWebDateStart,
-					DateStop:=RecordDateStop)
+				ExchangeCode:=ThisExchangeSymbol.Item1,
+				Symbol:=ThisExchangeSymbol.Item2,
+				DateStart:=ThisWebDateStart,
+				DateStop:=RecordDateStop)
 			'use just a test
 			If ThisResponseQuery Is Nothing Then
 				ThisResponseQuery = ThisResponseQuery
 				Debugger.Break()
 			End If
-			'If ThisWebDateStart = RecordDateStop Then
-			'	'we should ask for the data from te update live
-			'	If ThisWebDateStart.Date = Now.Date Then
-			'		ThisResponseLiveQuery = Await ThisWebDataSource.LoadStockQuoteLiveAsync(
-			'			ExchangeCode:=ThisExchangeSymbol.Item1,
-			'			Symbol:=ThisWebEodStockDescriptor.SymbolCode)
-			'	Else
-			'		Return Me.DateStop
-			'	End If
-			'Else
-			'	ThisResponseQuery = Await ThisWebDataSource.LoadStockQuoteAsync(
-			'		ThisExchangeSymbol.Item1,
-			'		ThisWebEodStockDescriptor.SymbolCode,
-			'		DateStart:=ThisWebDateStart,
-			'		DateStop:=RecordDateStop)
-			'	'use just a test
-			'	If ThisResponseQuery Is Nothing Then
-			'		ThisResponseQuery = ThisResponseQuery
-			'		Debugger.Break()
-			'	End If
-			'End If
 		Else
 			'do not flag an error for this 
 			'just ignore the result and leave everything as is in the data  because

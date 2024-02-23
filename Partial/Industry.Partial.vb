@@ -69,15 +69,12 @@ Partial Public Class Industry
       .Name = Name
       .Stocks = New LinkedHashSet(Of Stock, String)
     End With
-    If MyListHeaderInfo Is Nothing Then
+    If MyListHeaderInfo Is Nothing And LIST_OF_HEADER_FILE_ENABLED Then
       Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.json"
-      'Dim ThisFileData = File.ReadAllText("Industry.Json")
-      'ThisListInfo = JsonConvert.DeserializeObject(Of List(Of T))()
       MyListHeaderInfo = FileHeaderRead(ThisFile, ListOfHeader, Me.Exception)
+    Else
+      MyListHeaderInfo = ListOfHeader()
     End If
-    'If MyCompareByName Is Nothing Then
-    '  MyCompareByName = New CompareByName(Of Industry)
-    'End If
   End Sub
 
   Public Sub New()

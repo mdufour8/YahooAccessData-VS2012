@@ -43,9 +43,11 @@ Partial Public Class Record
       .TradeInfoes = New LinkedHashSet(Of TradeInfo, Date)
       .ValuationMeasures = New LinkedHashSet(Of ValuationMeasure, Date)
     End With
-    If MyListHeaderInfo Is Nothing Then
+    If MyListHeaderInfo Is Nothing And LIST_OF_HEADER_FILE_ENABLED Then
       Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.json"
       MyListHeaderInfo = FileHeaderRead(ThisFile, ListOfHeader, Me.Exception)
+    Else
+      MyListHeaderInfo = ListOfHeader()
     End If
     _RecordType = IRecordType.enuRecordType.EndOfDay  'by default
     'the record is nor considered changed on initialization

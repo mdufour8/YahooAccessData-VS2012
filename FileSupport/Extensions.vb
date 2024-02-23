@@ -22,7 +22,7 @@ Imports Newtonsoft.Json.Linq
 #Region "Extension"
 Namespace ExtensionService
 	Public Module Extensions
-
+		Public Const LIST_OF_HEADER_FILE_ENABLED = False
 		Public Enum EnumFileType
 			Binary
 			XML

@@ -23,11 +23,13 @@ Partial Public Class BondRate
 		With Me
 			.DateUpdate = Now
 		End With
-		If MyListHeaderInfo Is Nothing Then
+		If MyListHeaderInfo Is Nothing And LIST_OF_HEADER_FILE_ENABLED Then
 			Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.json"
 			MyListHeaderInfo = FileHeaderRead(ThisFile, ListOfHeader, Me.Exception)
-    End If
-  End Sub
+		Else
+			MyListHeaderInfo = ListOfHeader()
+		End If
+	End Sub
 
 	Public Sub New(ByRef Parent As Report, ByRef Stream As Stream)
 		Me.New()

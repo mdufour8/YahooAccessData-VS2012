@@ -23,10 +23,11 @@ Public Class RecordDaily
       .DateUpdate = Now
       .DateDay = .DateUpdate.Date
     End With
-    If MyListHeaderInfo Is Nothing Then
+    If MyListHeaderInfo Is Nothing And LIST_OF_HEADER_FILE_ENABLED Then
       Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.json"
-
       MyListHeaderInfo = FileHeaderRead(ThisFile, ListOfHeader, MyException)
+    Else
+      MyListHeaderInfo = ListOfHeader()
     End If
   End Sub
 

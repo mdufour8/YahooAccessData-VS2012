@@ -28,13 +28,12 @@ Partial Public Class SplitFactorFuture
       .SharesLast = 1
       .Ratio = CSng(.SharesNew / .SharesLast)
     End With
-    If MyListHeaderInfo Is Nothing Then
+    If MyListHeaderInfo Is Nothing And LIST_OF_HEADER_FILE_ENABLED Then
       Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.json"
       MyListHeaderInfo = FileHeaderRead(ThisFile, ListOfHeader, Me.Exception)
+    Else
+      MyListHeaderInfo = ListOfHeader()
     End If
-    'If MyCompareByName Is Nothing Then
-    '  MyCompareByName = New CompareByName(Of SplitFactorFuture)
-    'End If
   End Sub
 
   Public Sub New(ByRef Parent As Report, ByRef Stream As Stream)
