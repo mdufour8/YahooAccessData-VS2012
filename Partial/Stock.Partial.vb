@@ -233,7 +233,7 @@ Partial Public Class Stock
 		MySemaphoreSlimWebStockReading.Wait()
 		Dim ThisStockWatch As New Stopwatch
 		ThisStockWatch.Restart()
-		ThisTaskOfWebRefreshRecord.Start()
+		ThisTaskOfWebRefreshRecord.RunSynchronously()
 		ThisTaskOfWebRefreshRecord.Wait()
 		ThisStockWatch.Stop()
 		MySemaphoreSlimWebStockReading.Release()
