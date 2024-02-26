@@ -39,6 +39,25 @@ Namespace ExtensionServiceMutex
 		'	End Try
 		'End Sub
 
+		'Public Function FileReadSettingOfDictionary(Of TKey, TValue)(
+		'	ByVal FileName As String,
+		'	ByRef DataDefaultOnError As Dictionary(Of TKey, TValue),
+		'	ByRef Exception As Exception,
+		'	ByVal FileType As ExtensionService.EnumFileType) As Dictionary(Of TKey, TValue)
+
+		'	Dim ThisData As Dictionary(Of TKey, TValue) = Nothing
+		'	MyMutex.WaitOne()
+		'	Try
+		'		ThisData = Me.FileReadOfDictionaryLocal(Of TKey, TValue)(FileName, DataDefaultOnError, Exception, FileType)
+		'	Catch ex As Exception
+		'		Throw ex
+		'	Finally
+		'		'always release
+		'		MyMutex.ReleaseMutex()
+		'	End Try
+		'	Return ThisData
+		'End Function
+
 		Public Function FileHeaderRead(
 			ByVal FileName As String,
 			ByRef HeaderInfoDefault As List(Of HeaderInfo),
