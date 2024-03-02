@@ -25,10 +25,10 @@ Public Class MeasurePeakValueRange
     'go back to exponential filter
     'Todo: Check the Filter go gold negative with continious value of zero which may cause
     'the price graphic to blow out
-    'MyFilterHigh = New FilterLowPassPLL(FilterRate:=FILTER_RATE_BAND, DampingFactor:=1.5, NumberOfPredictionOutput:=0)
-    'MyFilterLow = New FilterLowPassPLL(FilterRate:=FILTER_RATE_BAND, DampingFactor:=1.5, NumberOfPredictionOutput:=0)
-    MyFilterHigh = New FilterLowPassExp(FilterRate:=FILTER_RATE_BAND)
-    MyFilterLow = New FilterLowPassExp(FilterRate:=FILTER_RATE_BAND)
+    MyFilterHigh = New FilterLowPassPLL(FilterRate:=FILTER_RATE_BAND, DampingFactor:=1.5, NumberOfPredictionOutput:=0)
+    MyFilterLow = New FilterLowPassPLL(FilterRate:=FILTER_RATE_BAND, DampingFactor:=1.5, NumberOfPredictionOutput:=0)
+    'MyFilterHigh = New FilterLowPassExp(FilterRate:=FILTER_RATE_BAND)
+    'MyFilterLow = New FilterLowPassExp(FilterRate:=FILTER_RATE_BAND)
     MyListOfPeak = New List(Of IPeakValueRange)
   End Sub
 
@@ -46,6 +46,9 @@ Public Class MeasurePeakValueRange
     If IsFilterEnabledLocal Then
       ThisValuePeakHigh = MyFilterHigh.Filter(MyListOfWindowFrameHigh.ItemHigh.Value)
       ThisValuePeakLow = MyFilterLow.Filter(MyListOfWindowFrameLow.ItemLow.Value)
+      'Only for positive price value do not let the price go below zero
+      If ThisValuePeakHigh < 0 Then ThisValuePeakHigh = 0.0
+      If ThisValuePeakLow < 0 Then ThisValuePeakLow = 0.0
       ThisPeakValueRange = New PeakValueRange(ThisValuePeakLow, ThisValuePeakHigh)
     Else
       ThisPeakValueRange = New PeakValueRange(MyListOfWindowFrameLow.ItemLow.Value, MyListOfWindowFrameHigh.ItemHigh.Value)
