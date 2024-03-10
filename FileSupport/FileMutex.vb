@@ -245,14 +245,12 @@ Namespace ExtensionServiceMutex
 
 		Public Function FileReadOfDictionary(Of TKey, TValue)(
 			ByVal FileName As String,
-			ByRef DataDefaultOnError As Dictionary(Of TKey, TValue),
-			ByRef Exception As Exception,
 			ByVal FileType As ExtensionService.EnumFileType) As Dictionary(Of TKey, TValue)
 
 			Dim ThisData As Dictionary(Of TKey, TValue) = Nothing
 			MyMutex.WaitOne()
 			Try
-				ThisData = Me.FileReadOfDictionaryLocal(Of TKey, TValue)(FileName, DataDefaultOnError, Exception, FileType)
+				ThisData = Me.FileReadOfDictionaryLocal(Of TKey, TValue)(FileName, FileType)
 			Catch ex As Exception
 				Throw ex
 			Finally
@@ -273,8 +271,6 @@ Namespace ExtensionServiceMutex
 			Try
 				Return Me.FileReadOfDictionaryLocal(Of TKey, TValue)(
 					FileName:=FileName,
-					DataDefaultOnError:=DataDefault,
-					Exception:=Exception,
 					FileType:=EnumFileType.Binary)
 			Catch ex As Exception
 				Throw ex
@@ -570,9 +566,8 @@ Namespace ExtensionServiceMutex
 #Region "FileReadOfDictionary"
 		Private Function FileReadOfDictionaryLocal(Of TKey, TValue)(
 			ByVal FileName As String,
-			ByRef DataDefaultOnError As Dictionary(Of TKey, TValue),
-			ByRef Exception As Exception,
-			ByVal FileType As EnumFileType) As Dictionary(Of TKey, TValue)
+			ByVal FileType As EnumFileType,
+			Optional IsRecoverFromXMLAndOrBin As Boolean = False) As Dictionary(Of TKey, TValue)
 
 			Dim ThisFileNameXml As String
 			Dim ThisSharpSerializer As Polenter.Serialization.SharpSerializer = Nothing
@@ -612,54 +607,52 @@ Namespace ExtensionServiceMutex
 					'check if the file exist
 					'special case use to move the file to a jason standard
 					If File.Exists(FileName) = False Then
-						'check if a binary file exist
-						ThisDictionaryResult = Nothing
-						Dim ThisFileNameBin = Path.ChangeExtension(FileName, ".Bin")
-						If File.Exists(ThisFileNameBin) Then
-							'try to read the binary file and save it in a json file
-							'use the old version of the sharp serializer
-							Try
-								ThisSharpSerializer = New Polenter.Serialization.SharpSerializer(binarySerialization:=True)
-								ThisDictionaryResult = CType(ThisSharpSerializer.Deserialize(filename:=ThisFileNameBin), Dictionary(Of TKey, TValue))
-							Catch ex As Exception
-								'ignore the error and try in xml
-								ThisFileNameXml = Path.ChangeExtension(FileName, ".xml")
+						If IsRecoverFromXMLAndOrBin Then
+							'check if a binary file exist
+							ThisDictionaryResult = Nothing
+							Dim ThisFileNameBin = Path.ChangeExtension(FileName, ".Bin")
+							If File.Exists(ThisFileNameBin) Then
+								'try to read the binary file and save it in a json file
+								'use the old version of the sharp serializer
 								Try
-									If File.Exists(ThisFileNameXml) Then
-										ThisSharpSerializer = New Polenter.Serialization.SharpSerializer(binarySerialization:=False)
-										ThisDictionaryResult = CType(ThisSharpSerializer.Deserialize(filename:=ThisFileNameXml), Dictionary(Of TKey, TValue))
-									Else
-										'no file of any type found
-									End If
-								Catch ex1 As Exception
-								End Try
-							End Try
-						Else
-							ThisFileNameXml = Path.ChangeExtension(FileName, ".xml")
-							If File.Exists(ThisFileNameXml) Then
-								Try
-									ThisSharpSerializer = New Polenter.Serialization.SharpSerializer(binarySerialization:=False)
-									ThisDictionaryResult = CType(ThisSharpSerializer.Deserialize(filename:=ThisFileNameXml), Dictionary(Of TKey, TValue))
+									ThisSharpSerializer = New Polenter.Serialization.SharpSerializer(binarySerialization:=True)
+									ThisDictionaryResult = CType(ThisSharpSerializer.Deserialize(filename:=ThisFileNameBin), Dictionary(Of TKey, TValue))
 								Catch ex As Exception
-
+									'ignore the error and try in xml
+									ThisFileNameXml = Path.ChangeExtension(FileName, ".xml")
+									Try
+										If File.Exists(ThisFileNameXml) Then
+											ThisSharpSerializer = New Polenter.Serialization.SharpSerializer(binarySerialization:=False)
+											ThisDictionaryResult = CType(ThisSharpSerializer.Deserialize(filename:=ThisFileNameXml), Dictionary(Of TKey, TValue))
+										Else
+											'no file of any type found
+										End If
+									Catch ex1 As Exception
+									End Try
 								End Try
 							Else
-								'no file of any type found
+								ThisFileNameXml = Path.ChangeExtension(FileName, ".xml")
+								If File.Exists(ThisFileNameXml) Then
+									Try
+										ThisSharpSerializer = New Polenter.Serialization.SharpSerializer(binarySerialization:=False)
+										ThisDictionaryResult = CType(ThisSharpSerializer.Deserialize(filename:=ThisFileNameXml), Dictionary(Of TKey, TValue))
+									Catch ex As Exception
+
+									End Try
+								Else
+									'no file of any type found
+								End If
 							End If
-						End If
-						If ThisDictionaryResult IsNot Nothing Then
-							'save to other format to the json format
-							Me.FileSaveOfDictionaryLocal(Of TKey, TValue)(FileName, ThisDictionaryResult, FileType:=EnumFileType.Json)
+							If ThisDictionaryResult IsNot Nothing Then
+								'save to other format to the json format
+								Me.FileSaveOfDictionaryLocal(Of TKey, TValue)(FileName, ThisDictionaryResult, FileType:=EnumFileType.Json)
+							End If
 						End If
 					End If
 					'at this point a json file exist unless there is no file of any type with that name
 					Try
-						If File.Exists(FileName) Then
-							ThisJasonResult = File.ReadAllText(FileName)
-							ThisDictionaryResult = JsonConvert.DeserializeObject(Of Dictionary(Of TKey, TValue))(ThisJasonResult)
-						Else
-							Throw New FileNotFoundException(FileName)
-						End If
+						ThisJasonResult = File.ReadAllText(FileName)
+						ThisDictionaryResult = JsonConvert.DeserializeObject(Of Dictionary(Of TKey, TValue))(ThisJasonResult)
 					Catch ex As Exception
 						Throw ex
 					End Try
