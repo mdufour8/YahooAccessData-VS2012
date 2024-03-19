@@ -235,6 +235,10 @@ Namespace MathPlus.Filter
       MyReturnLogForHighToOpen = LogPriceReturn(ThisValueHigh, Value.Open)
       'ln(Close1/Open1)
       MyReturnLogForCloseToOpen = LogPriceReturn(Value.Last, Value.Open)
+
+      Dim ThisReturnLogForPreviousHighToOpen = LogPriceReturn(Value.Open, MyValueLast.High)
+      Dim ThisReturnLogForPreviousLowToOpen = LogPriceReturn(Value.Open, MyValueLast.Low)
+
       'VRS calculation
       'ThisVRSUp2 = (ln(High/Open)^ 2) + ((ln(Last/Low) ^ 2))
 
@@ -247,8 +251,11 @@ Namespace MathPlus.Filter
       'however other trader seem to indicate that the close is more predictive
       'an investigation is needed to clear this aspect
       'to do: calculate both for testing in the future
-      ThisVRSUp2 = (MyReturnLogForHighToOpen ^ 2) + ((LogPriceReturn(Value.Last, Value.Low) ^ 2) / 2)
-      ThisVRSDown2 = (MyReturnLogForLowToOpen ^ 2) + ((LogPriceReturn(Value.Last, Value.High) ^ 2) / 2)
+      'ThisVRSUp2 = (MyReturnLogForHighToOpen ^ 2) + ((LogPriceReturn(Value.Last, Value.Low) ^ 2) / 2)
+      'ThisVRSDown2 = (MyReturnLogForLowToOpen ^ 2) + ((LogPriceReturn(Value.Last, Value.High) ^ 2) / 2)
+      'modified mars 2024 taking into account the previous close
+      ThisVRSUp2 = ((ThisReturnLogForPreviousLowToOpen ^ 2) / 2) + (MyReturnLogForHighToOpen ^ 2) + ((LogPriceReturn(Value.Last, Value.Low) ^ 2) / 2)
+      ThisVRSDown2 = ((ThisReturnLogForPreviousHighToOpen ^ 2) / 2) + (MyReturnLogForLowToOpen ^ 2) + ((LogPriceReturn(Value.Last, Value.High) ^ 2) / 2)
 
       ThisVRSPartialOpenToHigh = MyReturnLogForHighToOpen * (MyReturnLogForHighToOpen - MyReturnLogForCloseToOpen)
       ThisVRSPartialOpenToLow = MyReturnLogForLowToOpen * (MyReturnLogForLowToOpen - MyReturnLogForCloseToOpen)
