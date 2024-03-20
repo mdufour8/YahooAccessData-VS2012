@@ -99,8 +99,8 @@ Public Class RecordPrices
 
     'add StockDividendSinglePayout here
     'eventually need to be in a file
-    Dim ThisStockDividendSinglePayout As StockDividendSinglePayout
-    Dim ThisListOfStockDividendSinglePayout As List(Of StockDividendSinglePayout)
+    'Dim ThisStockDividendSinglePayout As StockDividendSinglePayout
+    'Dim ThisListOfStockDividendSinglePayout As List(Of StockDividendSinglePayout)
 
     'for example 
     'Costco Wholesale Corporation Declares Special Cash Dividend of $10 Per Share
@@ -113,30 +113,30 @@ Public Class RecordPrices
 
     'note that the announce was fully confirmed only le Lundi 30 now 2020 after the close 2 days before payout ex-dividend 
     'thsi take into account the artificial jump in COST price
-    ThisStockDividendSinglePayout = New StockDividendSinglePayout(
-      DateReference:=New Date(year:=2020, month:=12, day:=1),
-      DateOfExDividend:=New Date(year:=2020, month:=12, day:=2),
-      PricePayoutValue:=10.0)
+    'ThisStockDividendSinglePayout = New StockDividendSinglePayout(
+    '  DateReference:=New Date(year:=2020, month:=12, day:=1),
+    '  DateOfExDividend:=New Date(year:=2020, month:=12, day:=2),
+    '  PricePayoutValue:=10.0)
 
-    ThisListOfStockDividendSinglePayout = New List(Of StockDividendSinglePayout)
-    ThisListOfStockDividendSinglePayout.Add(ThisStockDividendSinglePayout)
-    MyDictionaryOfStockDividendSinglePayout.Add("COST", ThisListOfStockDividendSinglePayout)
+    'ThisListOfStockDividendSinglePayout = New List(Of StockDividendSinglePayout)
+    'ThisListOfStockDividendSinglePayout.Add(ThisStockDividendSinglePayout)
+    'MyDictionaryOfStockDividendSinglePayout.Add("COST", ThisListOfStockDividendSinglePayout)
 
-    Dim ThisListOfStockPriceDataError As IList(Of IPriceVol) = New List(Of IPriceVol)
-    Dim ThisPriceVol As IPriceVol = New PriceVol()
-    With ThisPriceVol
-      .DateDay = New Date(year:=2018, month:=11, day:=5)
-      .DateUpdate = .DateDay
-      .Open = 2.745
-      .High = 2.8235
-      .Low = 2.745
-      .Last = 2.756
-      .Vol = 163413
-    End With
-    ThisListOfStockPriceDataError.Add(ThisPriceVol)
+    'Dim ThisListOfStockPriceDataError As IList(Of IPriceVol) = New List(Of IPriceVol)
+    'Dim ThisPriceVol As IPriceVol = New PriceVol()
+    'With ThisPriceVol
+    '  .DateDay = New Date(year:=2018, month:=11, day:=5)
+    '  .DateUpdate = .DateDay
+    '  .Open = 2.745
+    '  .High = 2.8235
+    '  .Low = 2.745
+    '  .Last = 2.756
+    '  .Vol = 163413
+    'End With
+    'ThisListOfStockPriceDataError.Add(ThisPriceVol)
     'the code to replace the pricevol is not yet completed
-    MyDictionaryOfStockPriceDataError.Add("CPR.IDX", ThisListOfStockPriceDataError)
-
+    'not use anymore
+    'MyDictionaryOfStockPriceDataError.Add("CPR.IDX", ThisListOfStockPriceDataError)
     Call ProcessDataDailyIntraDay(colData, DateStartValue, DateStopValue)
   End Sub
 
@@ -1161,6 +1161,10 @@ Public Class RecordPrices
 
     Dim ThisPriceVol As New PriceVol
     With ThisPriceVol
+      With .AsISentimentIndicator
+        .Count = RecordQuote.AsISentimentIndicator.Count
+        .Value = RecordQuote.AsISentimentIndicator.Value
+      End With
       If RecordQuote.Record.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
         'use the live update time in this specia; case when the day is not finished
         .DateLastTrade = RecordQuote.Record.DateUpdate

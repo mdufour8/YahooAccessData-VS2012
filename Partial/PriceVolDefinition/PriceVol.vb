@@ -3,6 +3,7 @@ Public Structure PriceVol
   Implements IPriceVol
   Implements IPriceVolLarge
   Implements IPricePivotPoint
+  Implements ISentimentIndicator
 
 #Region "New"
   Public Sub New(ByVal PriceValue As Single)
@@ -49,6 +50,9 @@ Public Structure PriceVol
       .EPSEstimateCurrentYear = PriceValue.EPSEstimateCurrentYear
       .EPSEstimateNextQuarter = PriceValue.EPSEstimateNextQuarter
       .EPSEstimateNextYear = PriceValue.EPSEstimateNextYear
+
+      .AsISentimentIndicator.Count = PriceValue.AsISentimentIndicator.Count
+      .AsISentimentIndicator.Value = PriceValue.AsISentimentIndicator.Value
     End With
   End Sub
 
@@ -72,8 +76,11 @@ Public Structure PriceVol
       .Vol = PriceValue.Vol
       .Range = PriceValue.Range
       .LastAdjusted = PriceValue.LastAdjusted
+      If TypeOf PriceValue Is ISentimentIndicator Then
+        .AsISentimentIndicator.Count = DirectCast(PriceValue, ISentimentIndicator).Count
+        .AsISentimentIndicator.Value = DirectCast(PriceValue, ISentimentIndicator).Value
+      End If
     End With
-    'IsPriceOnHoldLocal = False
   End Sub
 
   Public Sub New(ByVal PriceValue As PriceVolLarge)
@@ -111,7 +118,6 @@ Public Structure PriceVol
       .EPSEstimateNextQuarter = CSng(PriceValue.EPSEstimateNextQuarter)
       .EPSEstimateNextYear = CSng(PriceValue.EPSEstimateNextYear)
     End With
-    'IsPriceOnHoldLocal = False
   End Sub
 
   Public Sub New(ByVal PriceValue As PriceVolAsClass)
@@ -794,6 +800,8 @@ Public Structure PriceVol
     End Get
   End Property
 
+
+
   Private Function IPricePivotPoint_PriceVolPivot(Level As IPricePivotPoint.enuPivotLevel) As IPriceVol Implements IPricePivotPoint.PriceVolPivot
     Dim ThisPriceVol As New PriceVol(Me)
 
@@ -845,6 +853,31 @@ Public Structure PriceVol
     Get
       Return (Me.High + Me.Low + Me.Open) / 3
     End Get
+  End Property
+#End Region
+#Region "ISentimentIndicator"
+  Public Function AsISentimentIndicator() As ISentimentIndicator Implements ISentimentIndicator.AsISentimentIndicator
+    Return Me
+  End Function
+
+  Private _ISentimentIndicator_Count As Integer
+  Private Property ISentimentIndicator_Count As Integer Implements ISentimentIndicator.Count
+    Get
+      Return _ISentimentIndicator_Count
+    End Get
+    Set(value As Integer)
+      _ISentimentIndicator_Count = value
+    End Set
+  End Property
+
+  Private _ISentimentIndicator_Value As Double
+  Private Property ISentimentIndicator_Value As Double Implements ISentimentIndicator.Value
+    Get
+      Return _ISentimentIndicator_Value
+    End Get
+    Set(value As Double)
+      _ISentimentIndicator_Value = value
+    End Set
   End Property
 #End Region
 End Structure
