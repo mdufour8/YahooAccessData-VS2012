@@ -299,6 +299,28 @@ Namespace MathPlus.Filter
       Return ThisPriceVol
     End Function
 
+    ''' <summary>
+    ''' Calculate the filter next value input for a given output value. The filter memory is not affected. 
+    ''' The function is useful to evaluate the input value required for a given filter output value. 
+    ''' </summary>
+    ''' <param name="Value">The filter output value</param>
+    ''' <returns>The input value</returns>
+    Public Function FilterPredictionInverseNext(ByVal Value As Double) As Double
+      Dim ThisFilterValueLast As Double = FilterValueLast
+      If MyListOfValue.Count = 0 Then
+        'initialization
+        ThisFilterValueLast = Value
+        'note by definition: B = 1 - A
+      End If
+      ThisFilterValueLast = (Value - B * ThisFilterValueLast) / A
+      Return ThisFilterValueLast
+    End Function
+
+    ''' <summary>
+    ''' Calculate the filter next value for a given input without changing the current filter memory
+    ''' </summary>
+    ''' <param name="Value"></param>
+    ''' <returns></returns>
     Public Function FilterPredictionNext(ByVal Value As Double) As Double Implements IFilter.FilterPredictionNext
       Dim ThisFilterValueLast As Double = FilterValueLast
       If MyListOfValue.Count = 0 Then

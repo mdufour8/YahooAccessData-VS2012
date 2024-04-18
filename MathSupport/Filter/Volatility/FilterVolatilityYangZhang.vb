@@ -292,7 +292,7 @@ Namespace MathPlus.Filter
       'this is the final volatility
       ThisVariancePreviousCloseToOpenHighLowClose_V = ThisVarianceForPreviousCloseToOpen_Vo + ThisVarianceOpenToHighLowClose_KValue
 
-      'separate the variance in positif and negatif value
+      'separate the variance in positif and negatif value for calculation of the PriceVolatilityPositif measurement
       'ThisVariancePositifSum = (1 - MyValueForK) * (ThisVRSMeanUp / ThisVariancePreviousCloseToOpenHighLowClose_V)
       'ThisVarianceNegatifSum = (1 - MyValueForK) * (ThisVRSMeanDown / ThisVariancePreviousCloseToOpenHighLowClose_V)
       ThisVRSMeanUp = MyStatisticalForVRSHigh.Filter(ThisVRSUp2).Mean
@@ -314,11 +314,13 @@ Namespace MathPlus.Filter
       MyListOfOpenHighAsClose.Add(ToYearCorrected(ThisVariancePositifSum))
       MyListOfOpenLowAsClose.Add(ToYearCorrected(ThisVarianceNegatifSum))
       Dim ThisSumOfVolatilityPositifNegatif = ThisVariancePositifSum + ThisVarianceNegatifSum
+      'the balance value of this ration is 0.5
       If ThisSumOfVolatilityPositifNegatif > 0 Then
         MyListOfOpenToHighToLowAsCloseRatio.Add(ThisVariancePositifSum / ThisSumOfVolatilityPositifNegatif)
       Else
         MyListOfOpenToHighToLowAsCloseRatio.Add(0.5)
       End If
+
       MyFilterOfOpenToHighToLowAsCloseRatio.Filter(MyListOfOpenToHighToLowAsCloseRatio.Last)
       '~~~~~~~~~~~~~~~
 
