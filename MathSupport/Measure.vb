@@ -212,6 +212,42 @@ Namespace MathPlus
         Return ThisRMSSum / Value.Length
       End Function
 
+      Public Shared Function CrossCorrelation(x1 As Double(), x2 As Double()) As Double()
+        Throw New NotImplementedException
+        If x1.Length <> x2.Length Then
+          Throw New Exception("Samples must have the same size.")
+        End If
+
+        Dim len As Integer = x1.Length
+        Dim len2 As Integer = 2 * len
+        Dim len3 As Integer = 3 * len
+        Dim s1(len3 - 1) As Double
+        Dim s2(len3 - 1) As Double
+        Dim cor(len2 - 1) As Double
+        Dim lag(len2 - 1) As Double
+
+        Array.Copy(
+          sourceArray:=x1,
+          sourceIndex:=0,
+          destinationArray:=s1,
+          destinationIndex:=len,
+          length:=len)
+
+        Array.Copy(x2, 0, s2, 0, len)
+
+        For i As Integer = 0 To len2 - 1
+          cor(i) = Statistics.Correlation.Pearson(s1, s2)
+          lag(i) = i - len
+          Array.Copy(s2, 0, s2, 1, s2.Length - 1)
+          s2(0) = 0
+        Next
+
+        'Return New LagCorr With {.Corr = cor, .lag = lag}
+      End Function
+
+
+
+
 
       ''' <summary>
       ''' The Black and Scholes (1973) europeen Stock option formula from:
