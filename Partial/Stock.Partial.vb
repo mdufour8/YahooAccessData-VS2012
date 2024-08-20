@@ -341,7 +341,8 @@ Partial Public Class Stock
 				ExchangeCode:=ThisExchangeSymbol.Item1,
 				Symbol:=ThisExchangeSymbol.Item2,
 				DateStart:=ThisWebDateStart,
-				DateStop:=RecordDateStop)
+				DateStop:=RecordDateStop,
+				IsRealTimeAPI:=True)
 			'use just a test
 			If ThisResponseQuery Is Nothing Then
 				ThisResponseQuery = ThisResponseQuery
