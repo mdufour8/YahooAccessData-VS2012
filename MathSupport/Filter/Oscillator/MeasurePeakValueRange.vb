@@ -23,8 +23,6 @@ Public Class MeasurePeakValueRange
     MyListOfWindowFrameLowMinusOne = New ListWindowFrame(FilterRate - 1)
     IsFilterEnabledLocal = IsFilterPeakEnabled
     'go back to exponential filter
-    'Todo: Check the Filter go gold negative with continious value of zero which may cause
-    'the price graphic to blow out
     MyFilterHigh = New FilterLowPassPLL(FilterRate:=FILTER_RATE_BAND, DampingFactor:=1.5, NumberOfPredictionOutput:=0)
     MyFilterLow = New FilterLowPassPLL(FilterRate:=FILTER_RATE_BAND, DampingFactor:=1.5, NumberOfPredictionOutput:=0)
     'MyFilterHigh = New FilterLowPassExp(FilterRate:=FILTER_RATE_BAND)
