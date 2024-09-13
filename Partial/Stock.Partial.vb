@@ -223,11 +223,13 @@ Partial Public Class Stock
 			 Return ThisTask.Result
 		 End Function)
 
-		'Todo: Investigate: Is this the same than the code above above? It seem that is is! NO
+		'TODO: Investigate: Is this the same than the code above? It seem that is is! NO
 		'Dim ThisTaskOfWebRefreshRecord As Task(Of Date) = Task.Run(Function() Me.WebRefreshRecordAsync(RecordDateStop))
+		'Gets the number of remaining threads that can enter the SemaphoreSlim object.
+		'TODO: Betetr or not to get out or wait?
 		If MySemaphoreSlimWebStockReading.CurrentCount = 0 Then
-			Debug.Print($"WebRefreshRecord: {Me.Symbol} escape with CurrentCount at {0}")
-			Return Now
+			'Debug.Print($"WebRefreshRecord: {Me.Symbol} escape with CurrentCount at {0}")
+			'Return Now
 		End If
 		Debug.Print($"WebRefreshRecord: {Me.Symbol} Started with CurrentCount at {MySemaphoreSlimWebStockReading.CurrentCount}")
 		MySemaphoreSlimWebStockReading.Wait()
@@ -403,7 +405,8 @@ Partial Public Class Stock
 								'and is not appropriate for comparison. The last live update on the data always contain
 								'a valid time stamp, but this data condition happen when the final eod stock
 								'information become available. Hence it is still necessary to remove the live update and replace with
-								'teh new data. The condition below ensure this condition is met.
+								'the new data. The condition below ensure this condition is met.
+								'TODO: This condition for update should be checked again
 								If (ThisRecord.DateUpdate > Me.DateStop) Or (IsNewRecordLive = False And IsLastRecordLive = True) Then
 									'work directly with the collection
 									If IsLastRecordLive Then
@@ -427,12 +430,16 @@ Partial Public Class Stock
 											End If
 										End With
 									End If
-									If _Records.TryAdd(ThisRecord) = True Then
-										MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
-										Me.DateStop = ThisRecord.DateDay
-									Else
-										'should never happen but just in case
-										MsgBox($"Unable to add a record for stock {Me.Symbol} for date {ThisRecord.DateDay}")
+									If (ThisRecord.DateUpdate > Me.DateStop) Then
+										If _Records.TryAdd(ThisRecord) = True Then
+											MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
+											Me.DateStop = ThisRecord.DateDay
+										Else
+											'should never happen but just in case
+											'wrong  it can happen if you try adding another record with the same date
+											'TODO: This condition for update should be checked again
+											MsgBox($"Unable to add a record for stock {Me.Symbol} for date {ThisRecord.DateDay}")
+										End If
 									End If
 								End If
 							Else
