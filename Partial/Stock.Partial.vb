@@ -244,6 +244,10 @@ Partial Public Class Stock
 		Dim ThisResult = ThisTaskOfWebRefreshRecord.Result
 		If ThisResult.IsSuccess = False Then
 			MsgBox(ThisResult.Message)
+		Else
+			If ThisResult.Message.Length() > 0 Then
+				Trace.WriteLine(ThisResult.Message)
+			End If
 		End If
 		Return ThisResult.Result
 	End Function
@@ -315,7 +319,7 @@ Partial Public Class Stock
 				Next
 			End If
 			'should be corrected to the next trading day
-			'however that date start in some case may be too far from the current date (+- 6 mois). But
+			'however that date start in some case may be too far from the current date (+- 6 month). But
 			'at least it will correct for the week end effect
 			'Note ThisWebDateStart could be > than RecordDateStop here
 			'what should be do
@@ -331,7 +335,8 @@ Partial Public Class Stock
 			'End If
 			If ThisWebDateStart.Date = RecordDateStop.Date Then
 				If IsLiveUpdateReady = False Then
-					Return New ResponseStatus(Of Date)(Me.DateStop)
+					'Debugger.Break()
+					Return New ResponseStatus(Of Date)(Me.DateStop, IsSuccess:=True, Message:="No new data available at this time...")
 				End If
 			End If
 		End If
