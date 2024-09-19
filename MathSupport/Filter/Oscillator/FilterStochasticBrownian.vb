@@ -2498,6 +2498,18 @@ Namespace MathPlus.Filter
         ListOfStochasticProbability:=Me.ToList,
         ThresholdLevel:=ThresholdLevel)
 
+      'MyStochasticPriceGain = New StochasticPriceGain(
+      '  FilterRate:=Me.FilterRate,
+      '  FilterRateForGainMeasurement:=FilterGainMeasurementPeriod,
+      '  IsGainFunctionWeightedMethod:=IsGainFunctionWeightedMethod,
+      '  IsPriceStopEnabled:=IsPriceStopEnabled,
+      '  IsInversePositionOnPriceStopEnabled:=IsInversePositionOnPriceStopEnabled,
+      '  TransactionCostPerCent:=TransactionCostPerCent,
+      '  GainLimiting:=GainLimiting,
+      '  ListOfPriceVol:=MyListOfValue,
+      '  ListOfStochasticProbability:=Me.ToList(Type:=IStochastic.enuStochasticType.PriceStochacticVolatilityPositiveToNegativeRatio),
+      '  ThresholdLevel:=ThresholdLevel)
+
     End Sub
 
     Public ReadOnly Property AsIStochasticPriceGain As IStochasticPriceGain Implements IStochasticPriceGain.AsIStochasticPriceGain
