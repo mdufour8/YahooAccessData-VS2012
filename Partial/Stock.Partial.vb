@@ -226,7 +226,7 @@ Partial Public Class Stock
 		'TODO: Investigate: Is this the same than the code above? It seem that is is! NO
 		'Dim ThisTaskOfWebRefreshRecord As Task(Of Date) = Task.Run(Function() Me.WebRefreshRecordAsync(RecordDateStop))
 		'Gets the number of remaining threads that can enter the SemaphoreSlim object.
-		'TODO: Betetr or not to get out or wait?
+		'TODO: Better or not to get out or wait?
 		If MySemaphoreSlimWebStockReading.CurrentCount = 0 Then
 			'Debug.Print($"WebRefreshRecord: {Me.Symbol} escape with CurrentCount at {0}")
 			'Return Now
