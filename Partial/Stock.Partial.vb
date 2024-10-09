@@ -8,9 +8,6 @@ Imports YahooAccessData.ExtensionService.Extensions
 Imports StockViewInterface
 Imports WebEODData
 Imports System.Threading
-Imports WebEODData.com
-
-
 
 #End Region
 
@@ -31,7 +28,7 @@ Partial Public Class Stock
 	Implements IStockProcess
 	Implements IStockInfo
 	Implements IStockRank
-	Implements IWebYahooDescriptor
+	Implements StockViewInterface.IWebYahooDescriptor
 
 
 #Region "Definition"
