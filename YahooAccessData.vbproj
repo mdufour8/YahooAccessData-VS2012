@@ -105,10 +105,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="ExcelDataReader, Version=3.7.0.0, Culture=neutral, PublicKeyToken=93517dbe6a4012fa, processorArchitecture=MSIL">
-      <HintPath>..\..\StockView VS2012\packages\ExcelDataReader.3.7.0-develop00310\lib\net45\ExcelDataReader.dll</HintPath>
+      <HintPath>..\..\StockView VS2012\packages\ExcelDataReader.3.7.0\lib\net462\ExcelDataReader.dll</HintPath>
     </Reference>
-    <Reference Include="ExcelDataReader.DataSet, Version=3.6.0.0, Culture=neutral, PublicKeyToken=93517dbe6a4012fa, processorArchitecture=MSIL">
-      <HintPath>..\..\StockView VS2012\packages\ExcelDataReader.DataSet.3.6.0\lib\net35\ExcelDataReader.DataSet.dll</HintPath>
+    <Reference Include="ExcelDataReader.DataSet, Version=3.7.0.0, Culture=neutral, PublicKeyToken=93517dbe6a4012fa, processorArchitecture=MSIL">
+      <HintPath>..\..\StockView VS2012\packages\ExcelDataReader.DataSet.3.7.0\lib\net462\ExcelDataReader.DataSet.dll</HintPath>
     </Reference>
     <Reference Include="Ionic.Zip">
       <HintPath>..\..\Commun Work\VB2010\File Compression\DotNetZipLib\DotNetZipLib-DevKit-v1.9\zip-v1.9\Release\Ionic.Zip.dll</HintPath>
