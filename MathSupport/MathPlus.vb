@@ -8261,7 +8261,7 @@ Namespace MathPlus
 #Region "FilterOBV"
     <Serializable()>
     Public Class FilterOBV
-      Private Const FILTER_RATE_FOR_PEAK_VOLUME As Integer = 20
+      Private Const FILTER_RATE_FOR_AVERAGE_VOLUME As Integer = 20
       Private MyRate As Integer
       Private MyRatePreFilter As Integer
       Private MyPriceLast As Double
@@ -8272,7 +8272,7 @@ Namespace MathPlus
       Private MyLimitFactorForVolume As Double
       Private MyPreFilterForPrice As FilterLowPassExp
       Private MyPreFilterForVolume As FilterLowPassExp
-      Private MyFilterForVolumePeak As FilterLowPassExp
+      Private MyFilterForVolumeLowPassExp As FilterLowPassExp
       Private MyFilterForOBV As FilterLowPassExp
 
       Public Sub New(ByVal FilterRate As Integer)
@@ -8281,7 +8281,7 @@ Namespace MathPlus
         MyFilterForOBV = New FilterLowPassExp(MyRate)
         'by default
         MyLimitFactorForVolume = 5
-        MyFilterForVolumePeak = New FilterLowPassExp(FILTER_RATE_FOR_PEAK_VOLUME)
+        MyFilterForVolumeLowPassExp = New FilterLowPassExp(FILTER_RATE_FOR_AVERAGE_VOLUME)
         MyFilterForOBV = New FilterLowPassExp(FilterRate)
       End Sub
 
@@ -8309,7 +8309,7 @@ Namespace MathPlus
         Dim ThisPriceVariation As Double
         Dim ThisPriceValueFiltered As Double
         Dim ThisVolumeValueFiltered As Double
-        Dim ThisVolumePeakFiltered As Double
+        Dim ThisVolumeLogFiltered As Double
 
 #If DebugPrediction Then
         Static IsHere As Boolean
@@ -8329,23 +8329,24 @@ Namespace MathPlus
         MyVolumeLast = Volume
 
         If Volume = 0 Then
-          ThisVolumePeakFiltered = 0
+          ThisVolumeLogFiltered = 0
         Else
-          ThisVolumePeakFiltered = MyFilterForVolumePeak.Filter(CDbl(Volume))
+          ThisVolumeLogFiltered = MyFilterForVolumeLowPassExp.Filter(CDbl(Volume))
           'limit the volume 
-          ThisVolumePeakFiltered = MathPlus.WaveForm.SignalLimit(CDbl(Volume), MyLimitFactorForVolume * ThisVolumePeakFiltered)
+          'ThisVolumeLogFiltered = MathPlus.WaveForm.SignalLimit(CDbl(Volume), MyLimitFactorForVolume * ThisVolumeLogFiltered)
+          ThisVolumeLogFiltered = Math.Log((Volume + 1) / ThisVolumeLogFiltered)
         End If
         If MyPreFilterForPrice Is Nothing Then
           'do not filter
           ThisPriceValueFiltered = Price
-          ThisVolumeValueFiltered = ThisVolumePeakFiltered
+          ThisVolumeValueFiltered = ThisVolumeLogFiltered
         Else
           ThisPriceValueFiltered = MyPreFilterForPrice.Filter(Price)
-          If ThisVolumePeakFiltered = 0 Then
+          If ThisVolumeLogFiltered = 0 Then
             'do not filter volume of zero
             ThisVolumeValueFiltered = 0
           Else
-            ThisVolumeValueFiltered = MyPreFilterForVolume.Filter(CDbl(ThisVolumePeakFiltered))
+            ThisVolumeValueFiltered = MyPreFilterForVolume.Filter(CDbl(ThisVolumeLogFiltered))
           End If
         End If
         If MyFilterForOBV.Count = 0 Then
@@ -8387,7 +8388,7 @@ Namespace MathPlus
         If Volume = 0 Then
           ThisVolumePeakFiltered = 0
         Else
-          ThisVolumePeakFiltered = MyFilterForVolumePeak.FilterPredictionNext(CDbl(Volume))
+          ThisVolumePeakFiltered = MyFilterForVolumeLowPassExp.FilterPredictionNext(CDbl(Volume))
           'limit the volume
           ThisVolumePeakFiltered = MathPlus.WaveForm.SignalLimit(CDbl(Volume), MyLimitFactorForVolume * ThisVolumePeakFiltered)
         End If
