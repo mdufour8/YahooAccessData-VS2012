@@ -45,6 +45,7 @@ Namespace MathPlus.Filter
     End Enum
 
     Private Const FILTER_RATE_DEFAULT As Integer = MathPlus.NUMBER_TRADINGDAY_PER_YEAR \ 12
+    Private MyFilterDirection As FilterRSI.SlopeDirection
     Private MyRate As Integer
     Private MyFilterValueLastK1 As Double
     Private MyFilterValueLast As Double
@@ -159,6 +160,7 @@ Namespace MathPlus.Filter
       MyFilterValueLastK1 = 0
       MyValueLast = New YahooAccessData.PriceVol(0)
       MyValueLastK1 = MyValueLast
+      MyFilterDirection = FilterRSI.SlopeDirection.Zero
     End Sub
 
     ''' <summary>
@@ -181,6 +183,7 @@ Namespace MathPlus.Filter
       Return ThisResult
     End Function
     Private Function CalculateFilterLocal(ByRef Value As YahooAccessData.IPriceVol, ByVal IsVolatityHoldToLast As Boolean) As Double
+      Dim ThisOpenToHighToLowAsCloseRatio As Double
       Dim ThisVRSTotalOpenToHighLow As Double
       Dim ThisVRSPartialOpenToHigh As Double
       Dim ThisVRSPartialOpenToLow As Double
@@ -314,14 +317,26 @@ Namespace MathPlus.Filter
       MyListOfOpenHighAsClose.Add(ToYearCorrected(ThisVariancePositifSum))
       MyListOfOpenLowAsClose.Add(ToYearCorrected(ThisVarianceNegatifSum))
       Dim ThisSumOfVolatilityPositifNegatif = ThisVariancePositifSum + ThisVarianceNegatifSum
-      'the balance value of this ration is 0.5
+      'the balance value of this ratio is 0.5
       If ThisSumOfVolatilityPositifNegatif > 0 Then
-        MyListOfOpenToHighToLowAsCloseRatio.Add(ThisVariancePositifSum / ThisSumOfVolatilityPositifNegatif)
+        ThisOpenToHighToLowAsCloseRatio = ThisVariancePositifSum / ThisSumOfVolatilityPositifNegatif
       Else
-        MyListOfOpenToHighToLowAsCloseRatio.Add(0.5)
+        ThisOpenToHighToLowAsCloseRatio = 0.5
       End If
-
-      MyFilterOfOpenToHighToLowAsCloseRatio.Filter(MyListOfOpenToHighToLowAsCloseRatio.Last)
+      If MyListOfOpenToHighToLowAsCloseRatio.Count > 0 Then
+        Select Case ThisOpenToHighToLowAsCloseRatio
+          Case > 0.5
+            MyFilterDirection = FilterRSI.SlopeDirection.Positive
+          Case < 0.5
+            MyFilterDirection = FilterRSI.SlopeDirection.Negative
+          Case Else
+            MyFilterDirection = FilterRSI.SlopeDirection.Zero
+        End Select
+      Else
+        MyFilterDirection = FilterRSI.SlopeDirection.Zero
+      End If
+      MyListOfOpenToHighToLowAsCloseRatio.Add(ThisOpenToHighToLowAsCloseRatio)
+      MyFilterOfOpenToHighToLowAsCloseRatio.Filter(ThisOpenToHighToLowAsCloseRatio)
       '~~~~~~~~~~~~~~~
 
       MyValueLastK1 = MyValueLast
@@ -361,6 +376,10 @@ Namespace MathPlus.Filter
 
     Public Function FilterLast() As Double Implements IFilter.FilterLast
       Return MyFilterValueLast
+    End Function
+
+    Public Function FilterDirection() As FilterRSI.SlopeDirection
+      Return MyFilterDirection
     End Function
 
     Public Function Last() As Double Implements IFilter.Last
