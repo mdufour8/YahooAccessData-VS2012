@@ -1565,7 +1565,6 @@ Namespace OptionValuation
     ''' </returns>
     Public Function PriceOfOptionToPriceOfStock(ByVal OptionPrice As Double, ByVal TimeLimitInYear As Double) As Double
       'add some protection 
-      Dim I As Integer
       Dim ThisCount As Integer = 0
       If OptionPrice <= 0 Then Return 0.0
       If MyOptionPriceDelta = 0 Then Return 0.0

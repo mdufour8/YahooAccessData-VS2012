@@ -334,7 +334,6 @@ Namespace MathPlus.Filter
       Dim ThisProbHighHalfRate As Double
       Dim ThisProbLowHalfRate As Double
       Dim ThisStochasticResult As Double
-      Dim ThisStochasticResultHalfRate As Double
 
       'Dim ThisGainPerYearFast As Double
       'Dim ThisGainPerYearDerivativeFast As Double
@@ -1936,10 +1935,6 @@ Namespace MathPlus.Filter
       Dim ThisFilterBasedVolatilityFromOpenToClose As Double
       Dim ThisGainPerYear As Double
       Dim ThisGainPerYearDerivative As Double
-      Dim ThisTimeMarketMaximumOpenTimePeriodInDay As Double
-      Dim ThisPriceDailyHighToCloseWithGain As Double
-      Dim ThisPriceDailyLowToCloseWithGain As Double
-      Dim ThisPriceResult As Double
       Dim ThisProbabilityHigh As Double
       Dim ThisProbabilityLow As Double
       Dim ThisPriceMedianLow As Double

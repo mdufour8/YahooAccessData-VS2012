@@ -200,8 +200,6 @@ Namespace OptionValuation
     ''' <returns>Return a boolean indicationg if the current price range exceeded the new threshold</returns>
     ''' <remarks></remarks>
     Public Function Refresh(VolatilityDelta As Double) As Boolean Implements IStockPriceVolatilityPredictionBand.Refresh
-      Dim ThisProbabilityOfPriceHighExcess As Double
-      Dim ThisProbabilityOfPriceLowExcess As Double
       Dim ThisProbabilityOfPriceHighExcessVolatilityRatio As Double
       Dim ThisProbabilityOfPriceLowExcessVolatilityRatio As Double
 

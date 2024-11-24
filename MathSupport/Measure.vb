@@ -137,7 +137,6 @@ Namespace MathPlus
       End Function
 
       Public Shared Function RMS(ByVal Value As IEnumerable(Of Double), ByVal Mean As Double) As Double
-        Dim I As Integer
         Dim ThisRMSSum As Double = 0
         Dim ThisElement As Double
 

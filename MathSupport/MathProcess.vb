@@ -157,13 +157,13 @@ Namespace MathProcess
     ''' <returns>The latest trace value of the process for a typical daily trade</returns>
     ''' <remarks>This recurrent function can be used to obtain a typical data trace of the stochastic process with increasing time</remarks>
     Public Function SampleAsDailyTrade() As IPriceVol
-      Dim ThisPriceVol As PriceVol
 
       Throw New NotImplementedException
-      With ThisPriceVol
-        MyStochasticProcessLast = MyStochasticProcessLast * Math.Exp(MyMuSigma * TIME_DAILY_PERIOD_IN_YEAR + MyVolatility * MySquareRootOfTimeDailyPeriod * MyGaussian.Sample)
+      'Dim ThisPriceVol As PriceVol
+      'With ThisPriceVol
+      '  MyStochasticProcessLast = MyStochasticProcessLast * Math.Exp(MyMuSigma * TIME_DAILY_PERIOD_IN_YEAR + MyVolatility * MySquareRootOfTimeDailyPeriod * MyGaussian.Sample)
 
-      End With
+      'End With
 
 
       'Return MyStochasticProcessLast

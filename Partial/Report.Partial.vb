@@ -2124,7 +2124,6 @@ Partial Public Class Report
   Public Sub WebEODLoad()
     Dim ThisStock As YahooAccessData.Stock
     Dim ThisListOfStockSymbol As List(Of IStockSymbol)
-    Dim ThisListOfCountryName As List(Of String)
     Dim ThisCountryName As String
 
     If MyWebDataSource Is Nothing Then
@@ -2177,8 +2176,6 @@ Partial Public Class Report
     Dim ThisReport As Report
     Dim ThisStock As YahooAccessData.Stock
     Dim ThisListOfStockSymbol As List(Of IStockSymbol)
-    Dim ThisListOfCountryName As List(Of String)
-    Dim ThisCountryName As String
 
     If WebDataSource Is Nothing Then
       Throw New InvalidDataException("WebDataSource is nothing...")
@@ -3518,8 +3515,6 @@ Partial Public Class Report
 
   Public Async Sub LoadToCache(ByVal StockList As IEnumerable(Of YahooAccessData.Stock)) Implements IRecordControlInfo.LoadToCache
     Dim ThisList As New List(Of YahooAccessData.Stock)
-    Dim ThisTaskOfLoadCache As Task(Of LoadToCacheStatus)
-    Dim ThisQueue As Queue(Of YahooAccessData.Stock)
     Dim ThisStock As YahooAccessData.Stock = Nothing
     Dim ThisTick As Integer
 

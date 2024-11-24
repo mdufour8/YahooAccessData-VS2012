@@ -436,7 +436,6 @@ Public Class RecordPrices
     Dim ThisStockSplitRatio As Single
     Dim ThisStockSplitRatioLast As Single
     Dim ThisStockDividendSinglePayoutValue As Single
-    Dim ThisStockDividendSinglePayoutValueLast As Single
 
     Dim ThisListOfSplitIndex As New List(Of Integer)
     Dim ThisListOfSSpecialDividendPayout As New List(Of Integer)
@@ -1527,8 +1526,6 @@ Public Class RecordPrices
   End Sub
 
   Public Sub PriceVolsAdd(ByVal RecordPrices As YahooAccessData.RecordPrices)
-    Dim ThisWeight As Single
-    Dim ThisPriceVol As YahooAccessData.PriceVol
     Dim I As Integer
 
     'the number of point need to be the same to be valid

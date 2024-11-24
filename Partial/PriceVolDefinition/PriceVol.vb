@@ -363,7 +363,6 @@ Public Structure PriceVol
   ''' Return True if the merging is succesful in a given week otherwise false and the data is left unchanged
   ''' </returns>
   Public Shared Function AddToWeeklyMerge(ByRef PriceVolIn As IPriceVol, ByRef PriceVolResult As IPriceVol) As Boolean
-    Dim Temp As Single
     Dim ThisVolAdd As Long
     Dim ThisDateForFriday As Date = ReportDate.DateToFriday(PriceVolResult.DateUpdate).Date
     With PriceVolResult
@@ -395,7 +394,6 @@ Public Structure PriceVol
   ''' <param name="PriceVol">PriceVol need to be by increasing date value otherwise it return false</param>
   ''' <returns>return True if the merging is succesful in a given week otherwise false and the data is left unchanged</returns>
   Public Function AddToWeeklyMerge(ByRef PriceVol As PriceVol) As Boolean
-    Dim Temp As Single
     Dim ThisVolAdd As Long
     Dim ThisDateForFriday As Date = ReportDate.DateToFriday(Me.DateLastTrade).Date
     With Me

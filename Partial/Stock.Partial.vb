@@ -210,7 +210,6 @@ Partial Public Class Stock
 #End Region
 #Region "Main Control Function"
 	Public Function WebRefreshRecord(ByVal RecordDateStop As Date) As Date
-		Dim I As Integer
 		Dim ThisTask As Task(Of IResponseStatus(Of Date)) = Nothing
 		If Me.Report.WebDataSource Is Nothing Then Return Now
 
@@ -341,6 +340,7 @@ Partial Public Class Stock
 		Dim ThisResponseLiveQuery As IResponseStatus(Of IStockQuote) = Nothing
 		'check if the symbol exit
 		If ThisWebDataSource.GetDictionaryOfStockSymbolBySymbol(ThisExchangeSymbol.Item1).ContainsKey(ThisExchangeSymbol.Item2) Then
+			'ToDo: A timeout is needed here in case the server is not availaible anymore.
 			ThisResponseQuery = Await ThisWebDataSource.LoadStockQuoteAsync(
 				ExchangeCode:=ThisExchangeSymbol.Item1,
 				Symbol:=ThisExchangeSymbol.Item2,
