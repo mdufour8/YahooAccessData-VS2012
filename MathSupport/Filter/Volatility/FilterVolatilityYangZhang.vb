@@ -324,6 +324,7 @@ Namespace MathPlus.Filter
         ThisOpenToHighToLowAsCloseRatio = 0.5
       End If
       If MyListOfOpenToHighToLowAsCloseRatio.Count > 0 Then
+        'this is much better and predictive
         Select Case ThisOpenToHighToLowAsCloseRatio
           Case > 0.5
             MyFilterDirection = FilterRSI.SlopeDirection.Positive
@@ -332,6 +333,15 @@ Namespace MathPlus.Filter
           Case Else
             MyFilterDirection = FilterRSI.SlopeDirection.Zero
         End Select
+        'this method below is not predictive and is rather useless
+        'Select Case MyListOfOpenToHighToLowAsCloseRatio.Last
+        '  Case < ThisOpenToHighToLowAsCloseRatio
+        '    MyFilterDirection = FilterRSI.SlopeDirection.Positive
+        '  Case > ThisOpenToHighToLowAsCloseRatio
+        '    MyFilterDirection = FilterRSI.SlopeDirection.Negative
+        '  Case Else
+        '    MyFilterDirection = FilterRSI.SlopeDirection.Zero
+        'End Select
       Else
         MyFilterDirection = FilterRSI.SlopeDirection.Zero
       End If
