@@ -120,21 +120,31 @@ Namespace MathPlus.Filter
       Return Me.Filter(New PriceVol(CSng(Value)), WeightControl:=WeightControl, ValueTransactionStop:=ValueTransactionStop)
     End Function
 
-    Public Function Filter(
-      ByVal Value As IPriceVol,
-      ByVal WeightControl As Double) As Double
+		Public Function Filter(
+			ByVal Value As IPriceVol,
+			ByVal WeightControl As Double) As Double
 
-      Return Me.Filter(Value, WeightControl, -1)
-    End Function
+			Return Me.Filter(Value, WeightControl, -1)
+		End Function
 
+		Public Shared Function ScaleToUnit(Data As Double, ThresholdDown As Double, ThresholdUp As Double) As Double
+			Select Case Data
+				Case < ThresholdDown
+					Return -1.0
+				Case > ThresholdUp
+					Return 1.0
+				Case Else
+					Return 0.0
+			End Select
+		End Function
 
-    Public Function Filter(
+		Public Function Filter(
       ByVal Value As IPriceVol,
       ByVal WeightControl As Double,
       ByVal ValueTransactionStop As Double) As Double
 
-      Return Me.Filter(Value, WeightControl, ValueTransactionStop, -1, -1)
-    End Function
+			Return Me.Filter(Value, WeightControl, ValueTransactionStop, PriceRangeHigh:=-1, PriceRangeLow:=-1)
+		End Function
 
     Public Function Filter(
       ByVal Value As IPriceVol,
@@ -163,12 +173,12 @@ Namespace MathPlus.Filter
           IsLocalValueStopEnabled = True
         End If
       End If
-      ThisSwitchControl = FilterTransactionGain.ToSwitchScale(ThisWeightControlLimit, 0, 0)
+			ThisSwitchControl = FilterTransactionGain.ToSwitchScale(ThisWeightControlLimit, ThresholdLevelLow:=0, ThresholdLevelHigh:=0)
 
-      'If Value.DateDay = #1/26/2015# Then
-      '  Value = Value
-      'End If
-      MyValueOfSwitchControl = ThisWeightControlLimit
+			'If Value.DateDay = #1/26/2015# Then
+			'  Value = Value
+			'End If
+			MyValueOfSwitchControl = ThisWeightControlLimit
       If MyListOfFilterTotalGainValueLast.Count = 0 Then
         MyControlStart = enuControlStart.Start
         MyFilterTotalGainValueLast = 0

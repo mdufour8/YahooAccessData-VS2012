@@ -33,11 +33,12 @@ Namespace MathPlus.Filter
     Private Const STATISTIC_DB_MAXIMUM As Integer = 0
     Private Const STATISTIC_BUCKET_RANGE As Integer = STATISTIC_DB_MAXIMUM - STATISTIC_DB_MINIMUM
     Private Const STATISTIC_BUCKET_NUMBER As Integer = STATISTIC_BUCKET_RANGE + 1
-    Private Const STATISTIC_BUCKET_TO_ARRAY_MAP As Integer = 1 - STATISTIC_DB_MINIMUM
+		Private Const STATISTIC_BUCKET_TO_ARRAY_MAP As Integer = 1 - STATISTIC_DB_MINIMUM
+		Private Const THRESHOLD_LEVEL As Double = 0.5
 
-    'https://en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule
+		'https://en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule
 
-    Private Const FILTER_PLL_DETECTOR_COUNT_LIMIT As Integer = 20
+		Private Const FILTER_PLL_DETECTOR_COUNT_LIMIT As Integer = 20
     Private Const FILTER_PLL_DETECTOR_ERROR_LIMIT As Double = 0.0001
     Private Const FILTER_RATE_FOR_VOLATILITY As Integer = 30
 
@@ -538,10 +539,10 @@ Namespace MathPlus.Filter
       'again to save processing time assume tha volatility correction for the no gain is the same than with gain
       ThisVolatilityRegulatedFromOpenToCloseWithGain = ThisFilterBasedVolatilityRatioFromOpenToClose * ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.VolatilityTotal
       MyListForVolatilityRegulatedFromOpenToCloseWithGain.Add(ThisVolatilityRegulatedFromOpenToCloseWithGain)
-      If Me.Count = 900 Then
-        I = I
-      End If
-      ThisVolatilityPredictionFromPreviousCloseToCloseNoGain.Refresh(ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.VolatilityDelta)
+			'If Me.Count = 900 Then
+			'  I = I
+			'End If
+			ThisVolatilityPredictionFromPreviousCloseToCloseNoGain.Refresh(ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.VolatilityDelta)
 
       'now we have all the different volatility and can start estimating the different corresponding price range
       Dim ThisVolatilityRegulated As Double
@@ -870,10 +871,10 @@ Namespace MathPlus.Filter
       MyListOfPriceNextDailyLowWithGainOpenToClose.Add(ThisStockPriceLowValueFromOpenToClose)
       MyListOfPriceNextDailyHighWithGainOpenToClose.Add(ThisStockPriceHighValueFromOpenToClose)
 
-      If Me.Count = 1000 Then
-        ThisProbHigh = ThisProbHigh
-      End If
-      ThisProbHigh = 1 - StockOption.StockPricePredictionInverse(
+			'If Me.Count = 1000 Then
+			'  ThisProbHigh = ThisProbHigh
+			'End If
+			ThisProbHigh = 1 - StockOption.StockPricePredictionInverse(
         ThisRate,
         Value.Last,
         ThisGainPerYear,
@@ -2388,53 +2389,56 @@ Namespace MathPlus.Filter
 
     Private IsFilterGainPriceStopOneSigmaEnabledLocal As Boolean
     Private IsSochasticPriceMedianIncludingGainLocal As Boolean
-    Private IsPriceStopBoundToDailyOneSigmaEnabledLocal As Boolean
-    Private Sub Init(
-      FilterRateForGainMeasurement As Integer,
-      IsGainFunctionWeightedMethod As Boolean,
-      IsPriceStopEnabled As Boolean,
-      IsInversePositionOnPriceStopEnabled As Boolean,
-      TransactionCostPerCent As Double,
-      GainLimiting As Double,
-      IsFilterGainPriceStopOneSigmaEnabled As Boolean,
-      IsSochasticPriceMedianIncludingGain As Boolean,
-      IsPriceStopBoundToDailyOneSigmaEnabled As Boolean) Implements IStochasticPriceGain.Init
+		Private IsPriceStopBoundToDailyOneSigmaEnabledLocal As Boolean
 
-      IsFilterGainPriceStopOneSigmaEnabledLocal = IsFilterGainPriceStopOneSigmaEnabledLocal
-      IsSochasticPriceMedianIncludingGainLocal = IsSochasticPriceMedianIncludingGain
-      IsPriceStopBoundToDailyOneSigmaEnabledLocal = IsPriceStopBoundToDailyOneSigmaEnabled
+		Private Sub Init(
+			FilterRateForGainMeasurement As Integer,
+			IsGainFunctionWeightedMethod As Boolean,
+			IsPriceStopEnabled As Boolean,
+			IsInversePositionOnPriceStopEnabled As Boolean,
+			TransactionCostPerCent As Double,
+			GainLimiting As Double,
+			IsFilterGainPriceStopOneSigmaEnabled As Boolean,
+			IsSochasticPriceMedianIncludingGain As Boolean,
+			IsPriceStopBoundToDailyOneSigmaEnabled As Boolean) Implements IStochasticPriceGain.Init
 
-      Dim ThisListOfPriceStopFromStochastic = Me.CalculateStochasticPriceStop(
-        IsFilterGainPriceStopOneSigmaEnabled,
-        IsSochasticPriceMedianIncludingGain,
-        IsPriceStopBoundToDailyOneSigmaEnabled)
+			IsFilterGainPriceStopOneSigmaEnabledLocal = IsFilterGainPriceStopOneSigmaEnabledLocal
+			IsSochasticPriceMedianIncludingGainLocal = IsSochasticPriceMedianIncludingGain
+			IsPriceStopBoundToDailyOneSigmaEnabledLocal = IsPriceStopBoundToDailyOneSigmaEnabled
 
-      'MyStochasticPriceGain = New StochasticPriceGain(
-      '  FilterRate:=Me.FilterRate,
-      '  FilterRateForGainMeasurement:=FilterRateForGainMeasurement,
-      '  IsGainFunctionWeightedMethod:=IsGainFunctionWeightedMethod,
-      '  IsPriceStopEnabled:=IsPriceStopEnabled,
-      '  IsInversePositionOnPriceStopEnabled:=IsInversePositionOnPriceStopEnabled,
-      '  TransactionCostPerCent:=TransactionCostPerCent,
-      '  GainLimiting:=GainLimiting,
-      '  ListOfPriceVol:=MyListOfValue,
-      '  ListOfPriceStopFromStochastic:=ThisListOfPriceStopFromStochastic,
-      '  ListOfPriceStochasticMedianDailyBandHigh:=Me.ToList(Type:=IStochastic.enuStochasticType.PriceStochacticMedianRangeDailyUp),
-      '  ListOfPriceStochasticMedianDailyBandLow:=Me.ToList(Type:=IStochastic.enuStochasticType.PriceStochacticMedianRangeDailyDown))
+			Dim ThisListOfPriceStopFromStochastic = Me.CalculateStochasticPriceStop(
+				IsFilterGainPriceStopOneSigmaEnabled,
+				IsSochasticPriceMedianIncludingGain,
+				IsPriceStopBoundToDailyOneSigmaEnabled)
+
+			'MyStochasticPriceGain = New StochasticPriceGain(
+			'  FilterRate:=Me.FilterRate,
+			'  FilterRateForGainMeasurement:=FilterRateForGainMeasurement,
+			'  IsGainFunctionWeightedMethod:=IsGainFunctionWeightedMethod,
+			'  IsPriceStopEnabled:=IsPriceStopEnabled,
+			'  IsInversePositionOnPriceStopEnabled:=IsInversePositionOnPriceStopEnabled,
+			'  TransactionCostPerCent:=TransactionCostPerCent,
+			'  GainLimiting:=GainLimiting,
+			'  ListOfPriceVol:=MyListOfValue,
+			'  ListOfPriceStopFromStochastic:=ThisListOfPriceStopFromStochastic,
+			'  ListOfPriceStochasticMedianDailyBandHigh:=Me.ToList(Type:=IStochastic.enuStochasticType.PriceStochacticMedianRangeDailyUp),
+			'  ListOfPriceStochasticMedianDailyBandLow:=Me.ToList(Type:=IStochastic.enuStochasticType.PriceStochacticMedianRangeDailyDown))
 
 
-      MyStochasticPriceGain = New StochasticPriceGain(
-        FilterRate:=Me.FilterRate,
-        FilterRateForGainMeasurement:=FilterRateForGainMeasurement,
-        IsGainFunctionWeightedMethod:=IsGainFunctionWeightedMethod,
-        IsPriceStopEnabled:=IsPriceStopEnabled,
-        IsInversePositionOnPriceStopEnabled:=IsInversePositionOnPriceStopEnabled,
-        TransactionCostPerCent:=TransactionCostPerCent,
-        GainLimiting:=GainLimiting,
-        ListOfPriceVol:=MyListOfValue, ListOfStochasticProbability:=Me.ToList, 0.5)
-    End Sub
+			MyStochasticPriceGain = New StochasticPriceGain(
+				FilterRate:=Me.FilterRate,
+				FilterRateForGainMeasurement:=FilterRateForGainMeasurement,
+				IsGainFunctionWeightedMethod:=IsGainFunctionWeightedMethod,
+				IsPriceStopEnabled:=IsPriceStopEnabled,
+				IsInversePositionOnPriceStopEnabled:=IsInversePositionOnPriceStopEnabled,
+				TransactionCostPerCent:=TransactionCostPerCent,
+				GainLimiting:=GainLimiting,
+				ListOfPriceVol:=MyListOfValue,
+				ListOfStochasticProbability:=Me.ToList,
+				ThresholdLevel:=THRESHOLD_LEVEL)
+		End Sub
 
-    Public Sub Init(
+		Public Sub Init(
       FilterRate As Integer,
       FilterGainMeasurementPeriod As Integer,
       IsGainFunctionWeightedMethod As Boolean,

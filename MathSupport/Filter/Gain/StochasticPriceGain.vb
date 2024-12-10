@@ -21,91 +21,52 @@ Public Class StochasticPriceGain
   Private MyMeasureOfPriceGainLog As FilterTransactionGainLog
   Private MyMeasureOfPriceGainLogFast As FilterTransactionGainLog
 
-  Public Sub New(
-    ByVal FilterRate As Integer,
-    ByVal FilterRateForGainMeasurement As Integer,
-    ByVal IsGainFunctionWeightedMethod As Boolean,
-    ByVal IsPriceStopEnabled As Boolean,
-    ByVal IsInversePositionOnPriceStopEnabled As Boolean,
-    ByVal TransactionCostPerCent As Double,
-    ByVal GainLimiting As Double,
-    ByVal ReportPrices As YahooAccessData.RecordPrices,
-    ByVal ListOfPriceStopFromStochastic As IList(Of Double),
-    ByVal ListOfPriceStochasticMedianDailyBandHigh As IList(Of Double),
-    ByVal ListOfPriceStochasticMedianDailyBandLow As IList(Of Double))
+	''' <summary>
+	''' 
+	''' </summary>
+	''' <param name="FilterRate"></param>
+	''' <param name="FilterRateForGainMeasurement"></param>
+	''' <param name="IsGainFunctionWeightedMethod"></param>
+	''' <param name="IsPriceStopEnabled"></param>
+	''' <param name="IsInversePositionOnPriceStopEnabled"></param>
+	''' <param name="TransactionCostPerCent"></param>
+	''' <param name="GainLimiting"></param>
+	''' <param name="ListOfPriceVol"></param>
+	''' <param name="ListOfStochasticProbability">
+	''' Stochastic signal expected to be between [0,1]
+	''' </param>
+	''' <param name="ThresholdLevel">
+	''' Mid level for a Buy and sell signal. 
+	''' This value should be 0.5 when the signal is between [0,1] or 0 in case of a signal 
+	''' between [-0.5,0,5]
+	''' </param>
+	Public Sub New(
+		FilterRate As Integer,
+		FilterRateForGainMeasurement As Integer,
+		IsGainFunctionWeightedMethod As Boolean,
+		IsPriceStopEnabled As Boolean,
+		IsInversePositionOnPriceStopEnabled As Boolean,
+		TransactionCostPerCent As Double,
+		GainLimiting As Double,
+		ListOfPriceVol As IList(Of IPriceVol),
+		ListOfStochasticProbability As IList(Of Double),
+		ThresholdLevel As Double)
 
-    MyListOfPriceVol = New List(Of IPriceVol)
-    For Each ThisPriceVol As IPriceVol In ReportPrices.PriceVolsData
-      MyListOfPriceVol.Add(ThisPriceVol)
-    Next
-    Me.Init(
-      FilterRate,
-      FilterRateForGainMeasurement,
-      IsGainFunctionWeightedMethod,
-      IsPriceStopEnabled,
-      IsInversePositionOnPriceStopEnabled,
-      TransactionCostPerCent,
-      GainLimiting,
-      MyListOfPriceVol,
-      ListOfPriceStopFromStochastic,
-      ListOfPriceStochasticMedianDailyBandHigh,
-      ListOfPriceStochasticMedianDailyBandLow)
-  End Sub
+		Me.Init(
+			FilterRate,
+			FilterRateForGainMeasurement,
+			IsGainFunctionWeightedMethod,
+			IsPriceStopEnabled,
+			IsInversePositionOnPriceStopEnabled,
+			TransactionCostPerCent,
+			GainLimiting,
+			ListOfPriceVol,
+			ListOfStochasticProbability,
+			ThresholdLevel)
 
-  Public Sub New(
-    ByVal FilterRate As Integer,
-    ByVal FilterRateForGainMeasurement As Integer,
-    ByVal IsGainFunctionWeightedMethod As Boolean,
-    ByVal IsPriceStopEnabled As Boolean,
-    ByVal IsInversePositionOnPriceStopEnabled As Boolean,
-    ByVal TransactionCostPerCent As Double,
-    ByVal GainLimiting As Double,
-    ByVal ListOfPriceVol As IList(Of IPriceVol),
-    ByVal ListOfPriceStopFromStochastic As IList(Of Double),
-    ByVal ListOfPriceStochasticMedianDailyBandHigh As IList(Of Double),
-    ByVal ListOfPriceStochasticMedianDailyBandLow As IList(Of Double))
+	End Sub
 
-    Me.Init(
-      FilterRate,
-      FilterRateForGainMeasurement,
-      IsGainFunctionWeightedMethod,
-      IsPriceStopEnabled,
-      IsInversePositionOnPriceStopEnabled,
-      TransactionCostPerCent,
-      GainLimiting,
-      ListOfPriceVol,
-      ListOfPriceStopFromStochastic,
-      ListOfPriceStochasticMedianDailyBandHigh,
-      ListOfPriceStochasticMedianDailyBandLow)
-  End Sub
-
-  Public Sub New(
-    FilterRate As Integer,
-    FilterRateForGainMeasurement As Integer,
-    IsGainFunctionWeightedMethod As Boolean,
-    IsPriceStopEnabled As Boolean,
-    IsInversePositionOnPriceStopEnabled As Boolean,
-    TransactionCostPerCent As Double,
-    GainLimiting As Double,
-    ListOfPriceVol As IList(Of IPriceVol),
-    ListOfStochasticProbability As IList(Of Double),
-    ThresholdLevel As Double)
-
-    Me.Init(
-      FilterRate,
-      FilterRateForGainMeasurement,
-      IsGainFunctionWeightedMethod,
-      IsPriceStopEnabled,
-      IsInversePositionOnPriceStopEnabled,
-      TransactionCostPerCent,
-      GainLimiting,
-      ListOfPriceVol,
-      ListOfStochasticProbability,
-      ThresholdLevel)
-
-  End Sub
-
-  Private Sub Init(
+	Private Sub Init(
     ByVal FilterRate As Integer,
     ByVal FilterRateForGainMeasurement As Integer,
     ByVal IsGainFunctionWeightedMethod As Boolean,
@@ -217,8 +178,22 @@ Public Class StochasticPriceGain
     End If
   End Sub
 
-
-  Public Sub Init(
+	''' <summary>
+	''' '
+	''' </summary>
+	''' <param name="FilterRate"></param>
+	''' <param name="FilterRateForGainMeasurement"></param>
+	''' <param name="IsGainFunctionWeightedMethod"></param>
+	''' <param name="IsPriceStopEnabled"></param>
+	''' <param name="IsInversePositionOnPriceStopEnabled"></param>
+	''' <param name="TransactionCostPerCent"></param>
+	''' <param name="GainLimiting"></param>
+	''' <param name="ListOfPriceVol"></param>
+	''' <param name="ListOfStochasticProbability"></param>
+	''' <param name="ThresholdLevel">the level where to Buy or Sell i.e. a level of 0.5 will 
+	''' need a signal >= 0.5 to buy or -0.5 to sell. 
+	''' </param>
+	Public Sub Init(
     FilterRate As Integer,
     FilterRateForGainMeasurement As Integer,
     IsGainFunctionWeightedMethod As Boolean,
@@ -315,8 +290,8 @@ Public Class StochasticPriceGain
       For I = 0 To MyListOfPriceVol.Count - 1
         Select Case ListOfStochasticProbability(I)
           Case >= ThisThresholdLevelPlus
-            MyMeasureOfPriceGainLog.Filter(MyListOfPriceVol(I), 1)
-            MyMeasureOfPriceGainLogFast.Filter(MyListOfPriceVol(I), 1)
+						MyMeasureOfPriceGainLog.Filter(MyListOfPriceVol(I), 1)
+						MyMeasureOfPriceGainLogFast.Filter(MyListOfPriceVol(I), 1)
           Case < ThisThresholdLevelMinus
             MyMeasureOfPriceGainLog.Filter(MyListOfPriceVol(I), -1)
             MyMeasureOfPriceGainLogFast.Filter(MyListOfPriceVol(I), -1)
