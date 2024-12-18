@@ -90,28 +90,7 @@ Namespace MathPlus
         Return New Tuple(Of Integer, Integer, Integer)(StartPoint, StopPoint, StopPoint - StartPoint + 1)
       End Function
 
-      Public Shared Function ValidatePointRange(ByVal Count As Integer, ByVal StartPoint As Integer, ByVal StopPoint As Integer) As Tuple(Of Integer, Integer, Integer)
-        If StartPoint < 0 Then StartPoint = 0
-        If Count > 0 Then
-          If StartPoint > Count - 1 Then
-            StartPoint = Count - 1
-          End If
-          If StopPoint < 0 Then StopPoint = 0
-          If StopPoint > Count - 1 Then
-            StopPoint = Count - 1
-          End If
-        Else
-          StartPoint = 0
-          StopPoint = 0
-        End If
-        If StopPoint < StartPoint Then
-          StopPoint = StartPoint
-        End If
-        Return New Tuple(Of Integer, Integer, Integer)(StartPoint, StopPoint, StopPoint - StartPoint + 1)
-      End Function
-
-
-      Public Shared Function Mean(ByVal Value As IEnumerable(Of Double), ByVal StartPoint As Integer, ByVal StopPoint As Integer, ByVal IsValidatePointRange As Boolean) As Double
+			Public Shared Function Mean(ByVal Value As IEnumerable(Of Double), ByVal StartPoint As Integer, ByVal StopPoint As Integer, ByVal IsValidatePointRange As Boolean) As Double
         If IsValidatePointRange Then
           With ValidatePointRange(Value, StartPoint, StopPoint)
             StartPoint = .Item1
