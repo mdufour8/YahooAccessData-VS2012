@@ -77,8 +77,10 @@ Namespace MathPlus.Filter
       MyValueOfSwitchControl = 0
       MyTransactionCostPerCent = TransactionCostPerCent
       MyStartPoint = StartPoint
-      MyGainMeasurementPeriod = GainMeasurementPeriod  'by default
-      Me.GainSaturationForLimiting = 1.0
+			MyGainMeasurementPeriod = GainMeasurementPeriod  'by default
+			'on startup
+			MySwitchControlLast = FilterTransactionGain.enumControlBuySell.Hold
+			Me.GainSaturationForLimiting = 1.0
 
       'MyFilterPrediction = New Filter.FilterLowPassExpPredict(NUMBER_TRADINGDAY_PER_YEAR, 0)
       'If FilterRate < 5 Then
@@ -616,7 +618,11 @@ Namespace MathPlus.Filter
       Return MyFilterTotalGainValueLast
     End Function
 
-    Public Function Last() As Double
+		Public Function FilterStateLast() As FilterTransactionGain.enumControlBuySell
+			Return MySwitchControlLast
+		End Function
+
+		Public Function Last() As Double
       Return ValueLast
     End Function
 
