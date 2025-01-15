@@ -1258,8 +1258,20 @@ Partial Public Class Record
     End Set
   End Property
 
-  Public Property IsIntraDay As Boolean Implements IPriceVol.IsIntraDay
-  Public Property VolMinus As Integer Implements IPriceVol.VolMinus
+	Public Property IsIntraDay As Boolean Implements IPriceVol.IsIntraDay
+		Get
+			If Me.RecordType = IRecordType.enuRecordType.LiveUpdate Then
+				Return True
+			Else
+				Return False
+			End If
+		End Get
+		Set(value As Boolean)
+			'ignore the setting for now but inform the user 
+			Throw New NotImplementedException("'IsIntraDay' property setup is Not supported...")
+		End Set
+	End Property
+	Public Property VolMinus As Integer Implements IPriceVol.VolMinus
   Public Property VolPlus As Integer Implements IPriceVol.VolPlus
   Public Property IsSpecialDividendPayout As Boolean Implements IPriceVol.IsSpecialDividendPayout
   Public Property SpecialDividendPayoutValue As Single Implements IPriceVol.SpecialDividendPayoutValue
