@@ -285,9 +285,9 @@ Partial Public Class Stock
 		'always remove the automatic splitting adjustment
 		'when connected to the web.
 		'the data is already adjusted to reflect the share splitting on the web
-		If Me.Symbol = "AG" Then
-			Me.Symbol = Me.Symbol
-		End If
+		'If Me.Symbol = "AG" Then
+		'	Me.Symbol = Me.Symbol
+		'End If
 		Me.IsSplitEnabled = False
 		ThisExchangeSymbol = Me.WebExchangeCode()
 		If ThisExchangeSymbol Is Nothing Then
