@@ -54,8 +54,8 @@ Namespace MathPlus.Filter
       End If
       'this is working but leave it to false for now
       IsStochasticProbabilityHisteresis = False
-      MyFilterPLL = New FilterLowPassPLL(FilterRate:=7, DampingFactor:=1.0, NumberOfPredictionOutput:=0)
-      MyListOfConvergence = New List(Of Double)
+			MyFilterPLL = New FilterLowPassPLL(FilterRate:=7, DampingFactor:=1.0, NumberOfPredictionOutput:=0)
+			MyListOfConvergence = New List(Of Double)
       MyRateForVolatility = CInt(FilterPLLDetectorForVolatilitySigma.VolatilityRate)
       'MyFilterVolatilityForPriceStochasticMedian = New FilterVolatilityYangZhang(MyRateForVolatility, FilterVolatility.enuVolatilityStatisticType.Exponential)
       MyFilterVolatilityForPriceStochasticMedian = New FilterVolatilityYangZhang(MyRate, FilterVolatility.enuVolatilityStatisticType.Exponential)

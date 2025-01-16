@@ -915,18 +915,29 @@ Namespace MathPlus.Filter
 
       ThisStochasticResult = ThisProbHigh / (ThisProbHigh + ThisProbLow)
 
-      'calculate the probability to reach or exceed the Stock Price median at the end of the filter rate
-      'for PriceStochacticMedianWithGain
-      ThisProbOfStockMedian = 1 - StockOption.StockPricePredictionInverse(
-        1,
-        Value.Last,
-        ThisGainPerYear,
-        ThisGainPerYearDerivative,
-        ThisVolatilityRegulated,
-        MyPLLErrorDetectorForPriceStochacticMedianWithGain.ToList.Last)
+			'calculate the probability to reach or exceed the Stock Price median 
+			'over 20% of the FilterRate period. 
+			'for PriceStochacticMedianWithGain
+			ThisProbOfStockMedian = 1 - StockOption.StockPricePredictionInverse(
+				NumberTradingDays:=ThisRate / 5,
+				StockPriceStart:=Value.Last,
+				Gain:=ThisGainPerYear,
+				GainDerivative:=ThisGainPerYearDerivative,
+				Volatility:=ThisVolatilityRegulated,
+				StockPriceEnd:=MyPLLErrorDetectorForPriceStochacticMedianWithGain.ToList.Last)
 
-      'main stochactic result
-      MyListOfProbabilityOfStockMedian.Add(ThisProbOfStockMedian)
+			'Dim ThisProbOfStockMedian1 = 1 - StockOption.StockPricePredictionInverse(
+			'	NumberTradingDays:=5,
+			'	StockPriceStart:=Value.Last,
+			'	Gain:=ThisGainPerYear,
+			'	GainDerivative:=ThisGainPerYearDerivative,
+			'	Volatility:=ThisVolatilityRegulated,
+			'	StockPriceEnd:=MyPLLErrorDetectorForPriceStochacticMedianWithGain.ToList.Last)
+
+
+
+			'main stochactic result
+			MyListOfProbabilityOfStockMedian.Add(ThisProbOfStockMedian)
       MyFilterVolatilityForPositifNegatif.Filter(Value, IsVolatityHoldToLast:=False)
 
       'ThisStochasticResultHalfRate = ThisProbHighHalfRate / (ThisProbHighHalfRate + ThisProbLowHalfRate)
