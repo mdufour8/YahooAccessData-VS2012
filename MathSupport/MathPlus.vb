@@ -8293,7 +8293,11 @@ Namespace MathPlus
 					'Dim ThisVolLimited = MathPlus.WaveForm.SignalLimit(CDbl(Volume), MyLimitFactorForVolume * ThisVolumeLogFiltered)
 					'ThisVolumeLogFiltered = Math.Log((ThisVolLimited + 1) / ThisVolumeLogFiltered)
 					'applied a logaritmic fucntion to the volume
-					ThisVolumeLogFiltered = Math.Log((Volume + 1) / ThisVolumeFiltered)
+					If Volume = 0 Then
+						'do not allow Volume to go to zero on a Log function
+						Volume = 1
+					End If
+					ThisVolumeLogFiltered = Math.Log(Volume / ThisVolumeFiltered)
 				End If
 				ThisVolumeValueFiltered = ThisVolumeLogFiltered
 				If MyFilterForOBV.Count = 0 Then
@@ -8328,7 +8332,11 @@ Namespace MathPlus
 					'limit the volume 
 					'Dim ThisVolLimited = MathPlus.WaveForm.SignalLimit(CDbl(Volume), MyLimitFactorForVolume * ThisVolumeLogFiltered)
 					'ThisVolumeLogFiltered = Math.Log((ThisVolLimited + 1) / ThisVolumeLogFiltered)
-					ThisVolumeLogFiltered = Math.Log((Volume + 1) / ThisVolumeFiltered)
+					If Volume = 0 Then
+						'do not allow Volume to go to zero on a Log function
+						Volume = 1
+					End If
+					ThisVolumeLogFiltered = Math.Log((Volume) / ThisVolumeFiltered)
 				End If
 				'do not filter
 				ThisPriceValueFiltered = Price
