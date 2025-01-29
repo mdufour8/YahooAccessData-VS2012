@@ -7932,6 +7932,7 @@ Namespace MathPlus
 			Private RSILast As Double
 			Private MyFilter As FilterLowPassExp
 			Private MyFilterPV As FilterLowPassExp(Of PriceVolLarge)
+			Private MyPostFilterHighPassExp As FilterHighPassExp
 			Private MyListOfRSI As ListScaled
 			Private MyListOfADX As ListScaled
 			Private MyListOfDIPlus As ListScaled
@@ -7952,15 +7953,26 @@ Namespace MathPlus
 				MyValueLast = 0
 				MyValueMax = 1.0
 				MyValueMin = 0.0
+
+				MyPostFilterHighPassExp = Nothing
 			End Sub
 
 			Public Sub New(ByVal PreFilterRate As Integer, ByVal FilterRate As Integer)
+				Me.New(PreFilterRate:=PreFilterRate, FilterRate:=FilterRate, PostFilterHighPassRate:=0)
+			End Sub
+
+			Public Sub New(ByVal PreFilterRate As Integer, ByVal FilterRate As Integer, PostFilterHighPassRate As Integer)
 				Me.New(FilterRate)
 				If PreFilterRate < 1 Then PreFilterRate = 1
 				MyRatePreFilter = PreFilterRate
 				If MyRatePreFilter > 1 Then
 					MyFilter = New FilterLowPassExp(MyRatePreFilter)
 					MyFilterPV = New FilterLowPassExp(Of PriceVolLarge)(MyRatePreFilter)
+				End If
+				If PostFilterHighPassRate > 2 Then
+					MyPostFilterHighPassExp = New FilterHighPassExp(PostFilterHighPassRate)
+				Else
+					PostFilterHighPassRate = Nothing
 				End If
 			End Sub
 
@@ -8008,6 +8020,9 @@ Namespace MathPlus
 					RSILast = 0.5
 				Else
 					RSILast = MyTickRSIUp / MyTickSum
+				End If
+				If MyPostFilterHighPassExp IsNot Nothing Then
+					RSILast = MyPostFilterHighPassExp.Filter(RSILast) + 0.5
 				End If
 				MyListOfRSI.Add(RSILast)
 				Return RSILast
