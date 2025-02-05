@@ -105,39 +105,21 @@ Namespace MathPlus.Filter
       ReDim MyInputValue(-1)
     End Sub
 
-    Protected Sub New(ByVal NumberToPredict As Double, ByRef InputValue() As Double, ByVal FilterHead As IFilter, ByVal FilterBase As IFilter)
-      Me.New(NumberToPredict:=NumberToPredict, FilterHead:=FilterHead, FilterBase:=FilterBase)
-      ReDim MyInputValue(0 To InputValue.Length - 1)
-      InputValue.CopyTo(MyInputValue, 0)
-      Me.Filter(MyInputValue)
-    End Sub
+		Public Sub New(ByVal FilterRate As Double, ByVal NumberToPredict As Integer)
+			Me.New(NumberToPredict:=NumberToPredict, FilterHead:=New FilterLowPassExp(FilterRate), FilterBase:=Nothing)
+		End Sub
 
-    Public Sub New(ByVal FilterRate As Double, ByVal NumberToPredict As Integer)
-      Me.New(NumberToPredict:=NumberToPredict, FilterHead:=New FilterLowPassExp(FilterRate), FilterBase:=Nothing)
-    End Sub
-
-    Public Sub New(ByVal NumberToPredict As Double, ByVal FilterHead As IFilter)
+		Public Sub New(ByVal NumberToPredict As Double, ByVal FilterHead As IFilter)
       Me.New(NumberToPredict:=NumberToPredict, FilterHead:=FilterHead, FilterBase:=Nothing)
     End Sub
 
-    Public Sub New(ByVal NumberToPredict As Double, ByRef InputValue() As Double, ByVal FilterHead As IFilter)
-      Me.New(NumberToPredict:=NumberToPredict, FilterHead:=FilterHead, FilterBase:=Nothing)
-      ReDim MyInputValue(0 To InputValue.Length - 1)
-      InputValue.CopyTo(MyInputValue, 0)
-      Me.Filter(MyInputValue)
-    End Sub
-
-    Public Sub New(ByVal FilterRate As Double, ByVal NumberToPredict As Double, ByRef InputValue() As Double)
-      Me.New(NumberToPredict:=NumberToPredict, FilterHead:=New FilterLowPassExp(FilterRate), FilterBase:=Nothing)
-    End Sub
-
-    ''' <summary>
-    ''' This function can be used to change the default filter for gain calculation
-    ''' </summary>
-    ''' <param name="FilterHead"></param>
-    ''' <param name="FilterBase"></param>
-    ''' <remarks>See FilterLowPassPLLPredict for use in second order filter derivative</remarks>
-    Friend Sub SetFilter(ByVal FilterHead As IFilter, ByVal FilterBase As IFilter)
+		''' <summary>
+		''' This function can be used to change the default filter for gain calculation
+		''' </summary>
+		''' <param name="FilterHead"></param>
+		''' <param name="FilterBase"></param>
+		''' <remarks>See FilterLowPassPLLPredict for use in second order filter derivative</remarks>
+		Friend Sub SetFilter(ByVal FilterHead As IFilter, ByVal FilterBase As IFilter)
       Debugger.Break()
       If FilterHead IsNot Nothing Then
         MyFilter = FilterHead
@@ -182,34 +164,17 @@ Namespace MathPlus.Filter
       MyListOfAFilter.Add(Ap)
       MyListOfBFilter.Add(Bp)
       FilterValuePredictH1 = Ap + Bp
-      'If Double.IsNaN(FilterValuePredictH1) Then
-      '  Debugger.Break()
-      'End If
-      If MyListOfPredictionGainPerYear.Count = 0 Then
-        FilterValuePredictH1Last = Value
-      End If
-      ThisError = Value - FilterValuePredictH1Last
+			If MyListOfPredictionGainPerYear.Count = 0 Then
+				FilterValuePredictH1Last = Value
+			End If
+			ThisError = Value - FilterValuePredictH1Last
       MyListOfStatistical.Filter(ThisError)
       FilterValueLast = Ap + Bp * MyNumberToPredict
       MyListOfValue.Add(FilterValueLast)
 
-      ''calculate only if both numerator and denominator are positif
-      'If Ap <= 0 Then
-      '  ThisFilterPredictionGainYearly = MyFilterPredictionGainYearlyLast
-      '  ThisGainStandardDeviation = MyGainStandardDeviationLast
-      'Else
-      '  If FilterValuePredictH1 <= 0 Then
-      '    ThisFilterPredictionGainYearly = MyFilterPredictionGainYearlyLast
-      '    ThisGainStandardDeviation = MyGainStandardDeviationLast
-      '  Else
-      '    ThisGainStandardDeviation = MathPlus.General.STATISTICAL_SIGMA_DAILY_TO_YEARLY_RATIO * Math.Log((Ap + MyListOfStatistical.FilterLast.StandardDeviation) / Ap)
-      '    ThisFilterPredictionGainYearly = MathPlus.General.NUMBER_WORKDAY_PER_YEAR * Math.Log((FilterValuePredictH1 / Ap))
-      '    ThisFilterPredictionGainYearly = MathPlus.WaveForm.SignalLimit(ThisFilterPredictionGainYearly, 1)
-      '  End If
-      'End If
-      'this is an approximativ gain measurement which is very close to the exponential gain if the Ap value remain greater than 1. It also work for negative value
-      'even if it does not make sense for price stock value. 
-      ThisGainStandardDeviation = (MathPlus.General.STATISTICAL_SIGMA_DAILY_TO_YEARLY_RATIO * Math.Log((((Ap + MyListOfStatistical.FilterLast.StandardDeviation) ^ 2 + 1)) / (Ap ^ 2 + 1))) / 2
+			'this is an approximativ gain measurement which is very close to the exponential gain if the Ap value remain greater than 1. It also work for negative value
+			'even if it does not make sense for price stock value. 
+			ThisGainStandardDeviation = (MathPlus.General.STATISTICAL_SIGMA_DAILY_TO_YEARLY_RATIO * Math.Log((((Ap + MyListOfStatistical.FilterLast.StandardDeviation) ^ 2 + 1)) / (Ap ^ 2 + 1))) / 2
       'this equation is an approximation of the gain valid for value >>1
       'the computation fail for small positive and negative value but the degradation is predictable and the derivative exist.
       'the intend is not to have an exact gain measurement but a closed form that behave on a predictable value

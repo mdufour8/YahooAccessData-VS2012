@@ -160,32 +160,11 @@ Namespace MathPlus.Filter
       End If
     End Sub
 
-    Public Sub New(
-                  ByVal FilterRate As Integer,
-                  ByRef InputValue() As Double,
-                  Optional ByVal DampingFactor As Double = DAMPING_FACTOR,
-                  Optional IsPredictionEnabled As Boolean = False)
+		Public Function AsIFilterCreateNew() As IFilterCreateNew Implements IFilterCreateNew.AsIFilterCreateNew
+			Return Me
+		End Function
 
-      Me.New(CDbl(FilterRate), InputValue, DampingFactor, IsPredictionEnabled)
-    End Sub
-
-    Public Sub New(
-                  ByVal FilterRate As Double,
-                  ByRef InputValue() As Double,
-                  Optional ByVal DampingFactor As Double = DAMPING_FACTOR,
-                  Optional IsPredictionEnabled As Boolean = False)
-
-      Me.New(FilterRate:=FilterRate, NumberOfPredictionOutput:=0, DampingFactor:=DampingFactor, IsPredictionEnabled:=IsPredictionEnabled)
-      ReDim MyInputValue(0 To InputValue.Length - 1)
-      InputValue.CopyTo(MyInputValue, 0)
-      Me.Filter(MyInputValue)
-    End Sub
-
-    Public Function AsIFilterCreateNew() As IFilterCreateNew Implements IFilterCreateNew.AsIFilterCreateNew
-      Return Me
-    End Function
-
-    Private Function IFilterCreateNew_CreateNew() As IFilter Implements IFilterCreateNew.CreateNew
+		Private Function IFilterCreateNew_CreateNew() As IFilter Implements IFilterCreateNew.CreateNew
       Dim ThisFilter As IFilter
 
       If MyInputValue.Length > -1 Then

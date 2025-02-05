@@ -1747,7 +1747,12 @@ Namespace MathPlus
 				MyDampingFactor = DampingFactor
 			End Sub
 
-			Public Sub New(ByVal FilterRate As Double, ByVal NumberLookAheadPoint As Integer, Optional ByVal DampingFactor As Double = FilterLowPassPLL.DAMPING_FACTOR, Optional IsPredictionEnabled As Boolean = False)
+			Public Sub New(
+				ByVal FilterRate As Double,
+				ByVal NumberLookAheadPoint As Integer,
+				Optional ByVal DampingFactor As Double = FilterLowPassPLL.DAMPING_FACTOR,
+				Optional IsPredictionEnabled As Boolean = False)
+
 				Me.New(FilterRate, DampingFactor, IsPredictionEnabled)
 				If NumberLookAheadPoint < 0 Then NumberLookAheadPoint = -1
 				MyNumberLookAheadPoint = NumberLookAheadPoint
@@ -1758,15 +1763,6 @@ Namespace MathPlus
 				MyFilterLowPassPLL = New FilterLowPassPLL(FilterRate, InputValue, IsRunFilter:=False, DampingFactor:=DampingFactor, IsPredictionEnabled:=IsPredictionEnabled)
 				MyNumberLookAheadPoint = -1
 				MyDampingFactor = DampingFactor
-				Me.Filter(InputValue)
-			End Sub
-
-			Public Sub New(ByVal FilterRate As Double, ByRef InputValue() As Double, ByVal NumberLookAheadPoint As Integer, Optional ByVal DampingFactor As Double = FilterLowPassPLL.DAMPING_FACTOR, Optional IsPredictionEnabled As Boolean = False)
-				MyFilterLowPassPLL = New FilterLowPassPLL(FilterRate, InputValue, IsRunFilter:=False, DampingFactor:=DampingFactor, IsPredictionEnabled:=IsPredictionEnabled)
-				If NumberLookAheadPoint < 0 Then NumberLookAheadPoint = -1
-				MyNumberLookAheadPoint = NumberLookAheadPoint
-				MyDampingFactor = DampingFactor
-				'ready to run the filter
 				Me.Filter(InputValue)
 			End Sub
 
