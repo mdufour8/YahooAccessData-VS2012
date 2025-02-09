@@ -28,14 +28,14 @@ Namespace MathPlus.Filter
     Implements IFilterEstimate
 
 
-    Private MyRate As Integer
-    Private MyFilterRate As Double
+		Private MyRate As Integer
+		Private MyFilterRate As Double
     Private AFilterLast As Double
     Private BFilterLast As Double
     Private ABRatio As Double
-    Private FilterValueLastK1 As Double
+		Private FilterValueLastK1 As Double
 
-    Private FilterValuePredictH1 As Double     'future 1 point
+		Private FilterValuePredictH1 As Double     'future 1 point
     Private FilterValuePredictH1Last As Double
     Private MyFilterPredictionGainYearlyLast As Double
     Private MyGainStandardDeviationLast As Double
@@ -45,19 +45,21 @@ Namespace MathPlus.Filter
     Private FilterValueSlopeLast As Double
     Private ValueLast As Double
     Private ValueLastK1 As Double
-    Private MyListOfValue As YahooAccessData.ListScaled
-    Private MyListOfPredictionGainPerYear As YahooAccessData.ListScaled
-    Private MyListOfStatisticalVarianceError As YahooAccessData.ListScaled
-    Private MyListOfAFilter As List(Of Double)
+		Private MyListOfValue As ListScaled
+		Private MyListOfPredictionGainPerYear As ListScaled
+		Private MyListOfStatisticalVarianceError As ListScaled
+		Private MyListOfAFilter As List(Of Double)
     Private MyListOfBFilter As List(Of Double)
-    Private MyListOfStatistical As FilterStatistical
-    Private MyFilter As IFilter
+		Private MyListOfStatistical As FilterStatistical
+		Private MyListOfStatisticalForGain As FilterStatistical
+		Private MyFilter As IFilter
     Private MyFilterY As IFilter
     Private MyNumberToPredict As Double
     Private MyInputValue() As Double
-    Private MyQueueForState As Queue(Of Double)
+		Private MyQueueForState As Queue(Of Double)
+		Private MyPriceVolatility As FilterVolatility
 
-    Protected Sub New(ByVal NumberToPredict As Double, ByVal FilterHead As IFilter, ByVal FilterBase As IFilter)
+		Protected Sub New(ByVal NumberToPredict As Double, ByVal FilterHead As IFilter, ByVal FilterBase As IFilter)
       Dim A As Double
       Dim B As Double
       MyQueueForState = New Queue(Of Double)
@@ -82,10 +84,11 @@ Namespace MathPlus.Filter
 
       MyNumberToPredict = NumberToPredict
       MyListOfValue = New YahooAccessData.ListScaled
-      MyListOfPredictionGainPerYear = New YahooAccessData.ListScaled
-      MyListOfStatistical = New FilterStatistical(YahooAccessData.MathPlus.NUMBER_WORKDAY_PER_YEAR)
-      'MyListOfStatisticalExp = New FilterStatisticalExp(MyRate)
-      MyListOfStatisticalVarianceError = New YahooAccessData.ListScaled
+			MyListOfPredictionGainPerYear = New YahooAccessData.ListScaled
+			MyListOfStatistical = New FilterStatistical(YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_MONTH)
+			MyListOfStatisticalForGain = New FilterStatistical(YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_MONTH)
+			'MyListOfStatisticalExp = New FilterStatisticalExp(MyRate)
+			MyListOfStatisticalVarianceError = New YahooAccessData.ListScaled
       MyListOfAFilter = New List(Of Double)
       MyListOfBFilter = New List(Of Double)
 
@@ -96,14 +99,11 @@ Namespace MathPlus.Filter
 
       A = CDbl((2 / (MyFilterRate + 1)))
       B = 1 - A
-      If B = 0 Then
-        Debugger.Break()
-      End If
-      ABRatio = A / B
+			ABRatio = A / B
 
-
-      ReDim MyInputValue(-1)
-    End Sub
+			MyPriceVolatility = New FilterVolatility()
+			ReDim MyInputValue(-1)
+		End Sub
 
 		Public Sub New(ByVal FilterRate As Double, ByVal NumberToPredict As Integer)
 			Me.New(NumberToPredict:=NumberToPredict, FilterHead:=New FilterLowPassExp(FilterRate), FilterBase:=Nothing)
@@ -142,9 +142,10 @@ Namespace MathPlus.Filter
       Dim ResultY As Double
       Dim ThisFilterPredictionGainYearly As Double
       Dim ThisGainStandardDeviation As Double
-      Dim ThisError As Double
+			Dim ThisError As Double
 
-      FilterValueLastK1 = FilterValueLast
+
+			FilterValueLastK1 = FilterValueLast
       Select Case (MyFilter.Count - MyFilterY.Count)
         Case 0
           Result = MyFilter.Filter(Value)
@@ -168,23 +169,41 @@ Namespace MathPlus.Filter
 				FilterValuePredictH1Last = Value
 			End If
 			ThisError = Value - FilterValuePredictH1Last
-      MyListOfStatistical.Filter(ThisError)
-      FilterValueLast = Ap + Bp * MyNumberToPredict
+			MyListOfStatistical.Filter(ThisError)
+			'note that B is the average trend
+			FilterValueLast = Ap + Bp * MyNumberToPredict
       MyListOfValue.Add(FilterValueLast)
 
 			'this is an approximativ gain measurement which is very close to the exponential gain if the Ap value remain greater than 1. It also work for negative value
 			'even if it does not make sense for price stock value. 
 			ThisGainStandardDeviation = (MathPlus.General.STATISTICAL_SIGMA_DAILY_TO_YEARLY_RATIO * Math.Log((((Ap + MyListOfStatistical.FilterLast.StandardDeviation) ^ 2 + 1)) / (Ap ^ 2 + 1))) / 2
-      'this equation is an approximation of the gain valid for value >>1
-      'the computation fail for small positive and negative value but the degradation is predictable and the derivative exist.
-      'the intend is not to have an exact gain measurement but a closed form that behave on a predictable value
-      ThisFilterPredictionGainYearly = (MathPlus.General.NUMBER_WORKDAY_PER_YEAR * GainLog(FilterValuePredictH1, Ap))
-      'also limit exponentially the gain value between -1 and +1
-      ThisFilterPredictionGainYearly = MathPlus.WaveForm.SignalLimit(ThisFilterPredictionGainYearly, 1)
-      'ThisFilterPredictionGainYearly = Math.Atan2(Ap, MyListOfStatisticalExp.FilterLast.StandardDeviation)
+			'this equation is an approximation of the gain valid for value >>1
+			'the computation fail for small positive and negative value but the degradation is predictable and the derivative exist.
+			'the intend is not to have an exact gain measurement but a closed form that behave on a predictable value
 
-      MyListOfStatisticalVarianceError.Add(ThisGainStandardDeviation)
-      MyListOfPredictionGainPerYear.Add(ThisFilterPredictionGainYearly)
+			Dim ThisResult = NUMBER_TRADINGDAY_PER_YEAR * GainLog(FilterValuePredictH1, Ap)
+			'If Me.Count = 500 Then
+			'	ThisGainStandardDeviation = 0
+			'End If
+			MyListOfStatisticalForGain.Filter(ThisResult)
+			Dim ThisGainStandardDev = MyListOfStatisticalForGain.FilterLast.StandardDeviation
+			'MyPriceVolatility.Filter(ThisResult)
+			ThisFilterPredictionGainYearly = ThisResult
+			'
+			If ThisGainStandardDev > 0 Then
+				ThisFilterPredictionGainYearly = CDFGaussian(ThisResult / ThisGainStandardDev)
+				'restore the probability scale between +-1
+				ThisFilterPredictionGainYearly = 2 * (ThisFilterPredictionGainYearly - 0.5)
+			Else
+				ThisFilterPredictionGainYearly = 0.0
+			End If
+
+			'also limit exponentially the gain value between -1 and +1
+			'ThisFilterPredictionGainYearly = MathPlus.WaveForm.SignalLimit(ThisFilterPredictionGainYearly, 1)
+
+
+			MyListOfStatisticalVarianceError.Add(ThisGainStandardDeviation)
+			MyListOfPredictionGainPerYear.Add(ThisFilterPredictionGainYearly)
       MyFilterPredictionGainYearlyLast = ThisFilterPredictionGainYearly
       MyGainStandardDeviationLast = ThisGainStandardDeviation
       FilterValuePredictH1Last = FilterValuePredictH1
@@ -426,13 +445,18 @@ Namespace MathPlus.Filter
       End Get
     End Property
 
-    Public ReadOnly Property Max As Double Implements IFilter.Max
-      Get
-        Return MyListOfValue.Max
-      End Get
-    End Property
+		Public ReadOnly Property Max As Double Implements IFilter.Max
+			'Performance Considerations : 
+			'Every Call to Max() Is O(n) Each time you call Max(), the list Is traversed completely to find
+			'the maximum value, so it performs a full scan of the list.
+			'No Automatic Updates: The Max() Function does Not keep track Of changes To the list.
+			'If you add, remove, Or modify elements In the list, the Max() method does Not automatically update the maximum value. It only calculates it When you Call the method.
+			Get
+				Return MyListOfValue.Max
+			End Get
+		End Property
 
-    Public ReadOnly Property Min As Double Implements IFilter.Min
+		Public ReadOnly Property Min As Double Implements IFilter.Min
       Get
         Return MyListOfValue.Min
       End Get

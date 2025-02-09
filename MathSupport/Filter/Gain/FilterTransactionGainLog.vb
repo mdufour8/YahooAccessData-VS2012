@@ -91,7 +91,7 @@ Namespace MathPlus.Filter
 			'End If
 			'this is similar to the measure of the gain for the average period of 4 transaction
 			'MyFilterPrediction = New Filter.FilterLowPassExpPredict(4 * FilterRate, 0)
-			MyFilterPrediction = New Filter.FilterLowPassExpPredict(MyRate, 0)
+			MyFilterPrediction = New Filter.FilterLowPassExpPredict(FilterRate:=MyRate, NumberToPredict:=0)
 			'MyFilterPrediction = New Filter.FilterLowPassPLL(MyGainMeasurementPeriod, IsPredictionEnabled:=True)
 			'MyFilterPredictionForGainMeasurement = New Filter.FilterLowPassPLL(MyGainMeasurementPeriod, IsPredictionEnabled:=True)
 			MyFilterPredictionForGainMeasurement = New Filter.FilterLowPassExpPredict(MyRate, 0)
@@ -662,19 +662,19 @@ Namespace MathPlus.Filter
 
 		Public Property Max As Double
 			Set(value As Double)
-				MyListOfFilterTotalGainValueLast.Max = value
+				MyListOfFilterTotalGainValueLast.SetMaxValue(value)
 			End Set
 			Get
-				Return MyListOfFilterTotalGainValueLast.Max
+				Return MyListOfFilterTotalGainValueLast.MaxValue
 			End Get
 		End Property
 
 		Public Property Min As Double
 			Set(value As Double)
-				MyListOfFilterTotalGainValueLast.Min = value
+				MyListOfFilterTotalGainValueLast.SetMinValue(value)
 			End Set
 			Get
-				Return MyListOfFilterTotalGainValueLast.Min
+				Return MyListOfFilterTotalGainValueLast.MinValue
 			End Get
 		End Property
 
@@ -1283,19 +1283,19 @@ Namespace MathPlus.Filter
 
 		Public Property Max As Double
 			Set(value As Double)
-				MyListOfFilterTotalGainValueLast.Max = value
+				MyListOfFilterTotalGainValueLast.SetMaxValue(value)
 			End Set
 			Get
-				Return MyListOfFilterTotalGainValueLast.Max
+				Return MyListOfFilterTotalGainValueLast.MaxValue
 			End Get
 		End Property
 
 		Public Property Min As Double
 			Set(value As Double)
-				MyListOfFilterTotalGainValueLast.Min = value
+				MyListOfFilterTotalGainValueLast.SetMinValue(value)
 			End Set
 			Get
-				Return MyListOfFilterTotalGainValueLast.Min
+				Return MyListOfFilterTotalGainValueLast.MinValue
 			End Get
 		End Property
 

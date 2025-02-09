@@ -50,8 +50,8 @@ Namespace MathPlus.Filter
     Private MyListOfValue As ListScaled
     Private MyStatistical As IFilter(Of IStatistical)
     Private MyStatisticType As enuVolatilityStatisticType
-    Private MyPriceNextDailyHighPreviousCloseToOpenSigma2 As Double
-    Private IsSpecialDividendPayoutLocal As Boolean
+		'Private MyPriceNextDailyHighPreviousCloseToOpenSigma2 As Double
+		Private IsSpecialDividendPayoutLocal As Boolean
 
     Public Sub New()
       Me.New(VOLATILITY_FILTER_RATE_DEFAULT, Math.Sqrt(NUMBER_TRADINGDAY_PER_YEAR))
@@ -135,8 +135,10 @@ Namespace MathPlus.Filter
         IsSpecialDividendPayoutLocal = False
         ThisReturnLog = MyStatistical.Last
       Else
-        ThisReturnLog = LogPriceReturn(Value, ValueRef)
-      End If
+				'same thing shoudl be fixed
+				'ThisReturnLog = GainLog(Value, ValueRef)  
+				ThisReturnLog = LogPriceReturn(Value, ValueRef)
+			End If
       MyStatistical.Filter(ThisReturnLog)
       FilterValueLastK1 = FilterValueLast
       'correct the value for the yearly variation
@@ -145,14 +147,14 @@ Namespace MathPlus.Filter
       'calculate the next sample 2 sigma normal last price range
       If MyListOfValue.Count > 0 Then
         If IsFilterVolatilityJump Then
-          MyPriceNextDailyHighPreviousCloseToOpenSigma2 = OptionValuation.StockOption.StockPricePrediction(
-            NumberTradingDays:=TIME_TO_MARKET_PREVIOUS_CLOSE_TO_OPEN_IN_DAY,
-            StockPrice:=Value,
-            Gain:=0.0,
-            GainDerivative:=0.0,
-            Volatility:=FilterValueLast,
-            Probability:=GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
-        End If
+					'MyPriceNextDailyHighPreviousCloseToOpenSigma2 = OptionValuation.StockOption.StockPricePrediction(
+					'  NumberTradingDays:=TIME_TO_MARKET_PREVIOUS_CLOSE_TO_OPEN_IN_DAY,
+					'  StockPrice:=Value,
+					'  Gain:=0.0,
+					'  GainDerivative:=0.0,
+					'  Volatility:=FilterValueLast,
+					'  Probability:=GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
+				End If
       End If
       ValueLastK1 = ValueLast
       ValueLast = Value
@@ -317,7 +319,7 @@ Namespace MathPlus.Filter
       End Get
     End Property
 
-    Public ReadOnly Property ToListOfError() As IList(Of Double) Implements IFilter.ToListOfError
+    private ReadOnly Property ToListOfError() As IList(Of Double) Implements IFilter.ToListOfError
       Get
         Throw New NotSupportedException
       End Get

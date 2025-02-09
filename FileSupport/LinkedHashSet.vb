@@ -869,142 +869,419 @@ Public Class LinkedHashSet(Of T As {New, Class, IRegisterKey(Of String), IDateUp
 End Class
 #End Region
 
+
+''' <summary>
+''' Implement a ListScaled(of double to keep track automatically of the Max and Min value
+''' </summary>
 Public Class ListScaled
-  Inherits List(Of Double)
+	Inherits List(Of Double)
+
+	Private _maxValue As Double
+	Private _minValue As Double
+
+	' Constructor to initialize the values
+	Public Sub New()
+		MyBase.New()
+		_maxValue = Double.MinValue ' Initial max value
+		_minValue = Double.MaxValue ' Initial min value
+	End Sub
+
+	Public Sub New(capacity As Integer)
+		MyBase.New(capacity)
+		_maxValue = Double.MinValue ' Initial max value
+		_minValue = Double.MaxValue ' Initial min value
+	End Sub
+
+	Public Sub New(collection As IEnumerable(Of Double))
+		MyBase.New(collection)
+		Me.RecalculateMaxMin()
+	End Sub
+	''' <summary>
+	''' Property to get the current max value
+	''' </summary>
+	Public ReadOnly Property MaxValue As Double
+		Get
+			Return _maxValue
+		End Get
+	End Property
+
+	Public Sub SetMaxValue(Value As Double)
+		_maxValue = Value
+	End Sub
+
+	Public Sub SetMinValue(Value As Double)
+		_minValue = Value
+	End Sub
+
+	''' <summary>
+	''' Property to get the current min value
+	''' </summary>
+	Public ReadOnly Property MinValue As Double
+		Get
+			Return _minValue
+		End Get
+	End Property
+
+	''' <summary>
+	''' Property to get the absolute greater value between MaxValue and MinValue
+	''' </summary>
+	Public ReadOnly Property GetAbsoluteRange As Double
+		Get
+			Return Math.Max(Math.Abs(_maxValue), Math.Abs(_minValue))
+		End Get
+	End Property
 
 
-  Private MyMax As Double
-  Private MyMin As Double
-  Private MyValueLast As Double
+	''' <summary>
+	''' Override the Add method to track max and min values in real-time
+	''' </summary>
+	''' <param name="item">The item to add</param>
+	Public Shadows Sub Add(item As Double)
+		MyBase.Add(item)
 
-  Public Sub New()
-    MyBase.New()
-    MyMax = Double.MinValue
-    MyMin = Double.MaxValue
-  End Sub
+		' Update max and min values
+		If item > _maxValue Then
+			_maxValue = item
+		End If
 
-  Public Sub New(capacity As Integer)
-    MyBase.New(capacity)
-    MyMax = Double.MinValue
-    MyMin = Double.MaxValue
-  End Sub
+		If item < _minValue Then
+			_minValue = item
+		End If
+	End Sub
 
-  Public Sub New(collection As IEnumerable(Of Double))
-    MyBase.New(collection)
-    MyMax = collection.Max
-    MyMin = collection.Min
-  End Sub
+	''' <summary>
+	''' This function returns a scaled value from [-GetAbsoluteRange, GetAbsoluteRange] to [ScaleToMinValue, ScaleToMaxValue].
+	''' </summary>
+	''' <param name="index">Index of the item to scale</param>
+	''' <param name="ScaleToMinValue">The minimum value of the target range</param>
+	''' <param name="ScaleToMaxValue">The maximum value of the target range</param>
+	''' <returns>Scaled value</returns>
+	Public Function GetScaledValue(index As Integer, ScaleToMinValue As Double, ScaleToMaxValue As Double) As Double
+		' Get the original value from the base class (no change in writing to the base list)
+		Dim originalValue As Double = MyBase.Item(index)
 
-  Public Overloads Property Item(index As Integer, ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double
-    Get
-      Dim ThisValue As Double = MyBase.Item(index)
+		' Get the absolute range of the values (you can calculate this based on your data or predefine it)
+		Dim absoluteRange As Double = GetAbsoluteRange()
 
-      Dim ThisSlope As Double = Me.ScaleGainTo(ScaleToMinValue, ScaleToMaxValue)
-      'check the slope denominator
-      If ThisSlope = 0 Then
-        'divide by zero
-        'return the average of of the scale
-        Return (ScaleToMinValue + ScaleToMaxValue) / 2
-      Else
-        'complete the scaling calculation
-        Dim ThisOffset As Double = ScaleToMinValue + ThisSlope * Me.ScaleRange
-        Return ThisSlope * ThisValue + ThisOffset
-      End If
-    End Get
-    Set(value As Double)
-      MyBase.Item(index) = value
-    End Set
-  End Property
+		' Scale the original value from [-absoluteRange, absoluteRange] to [ScaleToMinValue, ScaleToMaxValue]
+		If absoluteRange <> 0 Then
+			' Normalize the original value to be in the range [-1, 1] based on absoluteRange
+			Dim normalizedValue As Double = originalValue / absoluteRange
 
-  Public Overloads Sub Add(ByRef item As Double)
-    MyBase.Add(item)
-    If item > MyMax Then
-      MyMax = item
-    End If
-    If item < MyMin Then
-      MyMin = item
-    End If
-    MyValueLast = item
-  End Sub
+			' Scale this normalized value to the target range [ScaleToMinValue, ScaleToMaxValue]
+			Return (normalizedValue + 1) * (ScaleToMaxValue - ScaleToMinValue) / 2 + ScaleToMinValue
+		Else
+			' Return the scaled value (0) if the absolute range is 0 (avoid division by zero)
+			Return (ScaleToMaxValue + ScaleToMinValue) / 2
+		End If
+	End Function
 
-  Public Function Last() As Double
-    Return MyValueLast
-  End Function
+	Public Overloads Function ToArray(ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double()
+		Return Me.ToArray(
+			MinValueInitial:=-Me.GetAbsoluteRange,
+			MaxValueInitial:=Me.GetAbsoluteRange,
+			ScaleToMinValue:=ScaleToMinValue,
+			ScaleToMaxValue:=ScaleToMaxValue)
+	End Function
 
-  Public Property Max() As Double
-    Get
-      Return MyMax
-    End Get
-    Set(value As Double)
-      MyMax = value
-    End Set
-  End Property
+	Public Overloads Function ToArray(
+		ByVal MinValueInitial As Double,
+		ByVal MaxValueInitial As Double,
+		ByVal ScaleToMinValue As Double,
+		ByVal ScaleToMaxValue As Double) As Double()
 
-  Public Property Min() As Double
-    Get
-      Return MyMin
-    End Get
-    Set(value As Double)
-      MyMin = value
-    End Set
-  End Property
+		' Create a new array to hold the scaled values
+		Dim result(Me.Count - 1) As Double
 
-  Public ReadOnly Property ScaleRange As Double
-    Get
-      If Me.Max > Math.Abs(Me.Min) Then
-        Return Me.Max
-      Else
-        Return Math.Abs(Me.Min)
-      End If
-    End Get
-  End Property
+		' Get the absolute range (the range of values you're scaling from)
+		Dim absoluteRange As Double = MaxValueInitial - MinValueInitial
+		Dim normalizedValue As Double
+		' Check if the absoluteRange is 0 (to avoid division by zero)
+		If absoluteRange <> 0 Then
+			' Loop through the list and scale each value
+			For i As Integer = 0 To Me.Count - 1
+				' Get the original value
+				' Normalize and scale
+				result(i) = Me.ToScaledValue(Me.Item(i), MinValueInitial, MaxValueInitial, ScaleToMinValue, ScaleToMaxValue)
+			Next
+		Else
+			' If absolute range is 0, return the middle value between ScaleToMinValue and ScaleToMaxValue for each item
+			Dim middleValue As Double = (ScaleToMaxValue + ScaleToMinValue) / 2
+			For i As Integer = 0 To Me.Count - 1
+				result(i) = middleValue
+			Next
+		End If
+		' Return the scaled array
+		Return result
+	End Function
 
-  Public ReadOnly Property ScaleGainTo(ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double
-    Get
-      Dim ThisSlope As Double
+	Private Function ToScaledValue(
+		Item As Double,
+		ScaleFromMin As Double,
+		ScaleFromMax As Double,
+		ScaleToMinValue As Double,
+		ScaleToMaxValue As Double) As Double
 
-      ThisSlope = 2 * Me.ScaleRange
-      'check the slope denominator
-      If ThisSlope = 0 Then
-        Return 0
-      Else
-        'complete the slope scaling calculation
-        Return (ScaleToMaxValue - ScaleToMinValue) / ThisSlope
-      End If
-    End Get
-  End Property
+		' Check if the source range is not zero to avoid division by zero
+		If ScaleFromMax <> ScaleFromMin Then
+			' Scale the value from [ScaleFromMin, ScaleFromMax] to [ScaleToMinValue, ScaleToMaxValue]
+			Return ((Item - ScaleFromMin) / (ScaleFromMax - ScaleFromMin)) * (ScaleToMaxValue - ScaleToMinValue) + ScaleToMinValue
+		Else
+			' If the source range is zero (invalid), return the midpoint of the target range
+			Return (ScaleToMinValue + ScaleToMaxValue) / 2
+		End If
+	End Function
 
-  Public Overloads Function ToArray(ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double()
-    Return Me.ToArray(MyMin, MyMax, ScaleToMinValue, ScaleToMaxValue)
-  End Function
 
-  Public Overloads Function ToArray(ByVal MinValueInitial As Double, ByVal MaxValueInitial As Double, ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double()
-    Dim ThisValues() As Double
-    Dim ThisSlope As Double
-    Dim ThisOffset As Double
+	''' <summary>
+	''' Override the Remove method to adjust the max and min values if needed
+	''' </summary>
+	''' <param name="item">The item to remove</param>
+	''' <returns>True if the item is removed, otherwise False</returns>
+	Public Shadows Function Remove(item As Double) As Boolean
+		Dim result As Boolean = MyBase.Remove(item)
 
-    ThisValues = Me.ToArray
-    If Me.Count > 0 Then
-      'find the min and max for scaling
-      ThisSlope = MaxValueInitial - MinValueInitial
-      'check the slope denominator
-      If ThisSlope = 0 Then
-        'divide by zero
-        'return all values as ScaleFromMinValue
-        For I = 0 To ThisValues.Length - 1
-          ThisValues(I) = ScaleToMinValue
-        Next
-      Else
-        'complete the slope scaling calculation
-        ThisSlope = (ScaleToMaxValue - ScaleToMinValue) / ThisSlope
-        ThisOffset = ScaleToMinValue - ThisSlope * MinValueInitial
-        For I = 0 To ThisValues.Length - 1
-          ThisValues(I) = ThisSlope * ThisValues(I) + ThisOffset
-        Next
-      End If
-    End If
-    Return ThisValues
-  End Function
+		' Recalculate max and min if necessary
+		If item = _maxValue OrElse item = _minValue Then
+			RecalculateMaxMin()
+		End If
+		Return result
+	End Function
+
+	''' <summary>
+	''' Method to recalculate max and min values if the current max or min was removed
+	''' </summary>
+	Private Sub RecalculateMaxMin()
+		If Me.Count > 0 Then
+			_maxValue = Me.Max()
+			_minValue = Me.Min()
+		Else
+			_maxValue = Double.MinValue
+			_minValue = Double.MaxValue
+		End If
+	End Sub
+
+	''' <summary>
+	''' Override RemoveAt to recalculate the max and min values if necessary
+	''' </summary>
+	''' <param name="index">The index of the item to remove</param>
+	Public Shadows Sub RemoveAt(index As Integer)
+		Dim item As Double = Me(index)
+		MyBase.RemoveAt(index)
+
+		' Recalculate max and min if necessary
+		If item = _maxValue OrElse item = _minValue Then
+			RecalculateMaxMin()
+		End If
+	End Sub
+End Class
+
+
+
+''' <summary>
+''' This List class will work with any type that implements IComparable, including Double, 
+''' DateTime, or custom types like Event.
+''' For numeric types Like Double, CompareTo works directly since the type already 
+''' implements IComparable.
+''' For custom types, you just need To ensure that the type Implements IComparable by 
+''' providing the appropriate comparison logic, such As comparing dates Or other properties 
+''' Of the Object.
+''' </summary>
+''' <typeparam name="T"></typeparam>
+Public Class ListScaled(Of T As IComparable)
+	Inherits List(Of T)
+
+	Private _maxValue As T
+	Private _minValue As T
+
+	Public Sub New()
+		MyBase.New()
+		_maxValue = Nothing
+		_minValue = Nothing
+	End Sub
+
+	Public ReadOnly Property MaxValue As T
+		Get
+			Return _maxValue
+		End Get
+	End Property
+
+	Public ReadOnly Property MinValue As T
+		Get
+			Return _minValue
+		End Get
+	End Property
+
+	Public Shadows Sub Add(item As T)
+		MyBase.Add(item)
+
+		If _maxValue Is Nothing OrElse item.CompareTo(_maxValue) > 0 Then
+			_maxValue = item
+		End If
+
+		If _minValue Is Nothing OrElse item.CompareTo(_minValue) < 0 Then
+			_minValue = item
+		End If
+	End Sub
+
+	Public Shadows Function Remove(item As T) As Boolean
+		Dim result As Boolean = MyBase.Remove(item)
+
+		If item.CompareTo(_maxValue) = 0 OrElse item.CompareTo(_minValue) = 0 Then
+			RecalculateMaxMin()
+		End If
+
+		Return result
+	End Function
+
+	Private Sub RecalculateMaxMin()
+		If Me.Count > 0 Then
+			_maxValue = Me.Max()
+			_minValue = Me.Min()
+		Else
+			_maxValue = Nothing
+			_minValue = Nothing
+		End If
+	End Sub
+End Class
+
+
+Public Class ListScaled_Old
+	Inherits List(Of Double)
+
+
+	Private MyMax As Double
+	Private MyMin As Double
+	Private MyValueLast As Double
+
+	Public Sub New()
+		MyBase.New()
+		MyMax = Double.MinValue
+		MyMin = Double.MaxValue
+	End Sub
+
+	Public Sub New(capacity As Integer)
+		MyBase.New(capacity)
+		MyMax = Double.MinValue
+		MyMin = Double.MaxValue
+	End Sub
+
+	Public Sub New(collection As IEnumerable(Of Double))
+		MyBase.New(collection)
+		MyMax = collection.Max
+		MyMin = collection.Min
+	End Sub
+
+	Public Overloads Property Item(index As Integer, ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double
+		Get
+			Dim ThisValue As Double = MyBase.Item(index)
+
+			Dim ThisSlope As Double = Me.ScaleGainTo(ScaleToMinValue, ScaleToMaxValue)
+			'check the slope denominator
+			If ThisSlope = 0 Then
+				'divide by zero
+				'return the average of of the scale
+				Return (ScaleToMinValue + ScaleToMaxValue) / 2
+			Else
+				'complete the scaling calculation
+				Dim ThisOffset As Double = ScaleToMinValue + ThisSlope * Me.ScaleRange
+				Return ThisSlope * ThisValue + ThisOffset
+			End If
+		End Get
+		Set(value As Double)
+			MyBase.Item(index) = value
+		End Set
+	End Property
+
+	Public Overloads Sub Add(ByRef item As Double)
+		MyBase.Add(item)
+		If item > MyMax Then
+			MyMax = item
+		End If
+		If item < MyMin Then
+			MyMin = item
+		End If
+		MyValueLast = item
+	End Sub
+
+	Public Function Last() As Double
+		Return MyValueLast
+	End Function
+
+	Public Property Max() As Double
+		Get
+			Return MyMax
+		End Get
+		Set(value As Double)
+			MyMax = value
+		End Set
+	End Property
+
+	Public Property Min() As Double
+		Get
+			Return MyMin
+		End Get
+		Set(value As Double)
+			MyMin = value
+		End Set
+	End Property
+
+	Public ReadOnly Property ScaleRange As Double
+		Get
+			If Me.Max > Math.Abs(Me.Min) Then
+				Return Me.Max
+			Else
+				Return Math.Abs(Me.Min)
+			End If
+		End Get
+	End Property
+
+	Public ReadOnly Property ScaleGainTo(ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double
+		Get
+			Dim ThisSlope As Double
+
+			ThisSlope = 2 * Me.ScaleRange
+			'check the slope denominator
+			If ThisSlope = 0 Then
+				Return 0
+			Else
+				'complete the slope scaling calculation
+				Return (ScaleToMaxValue - ScaleToMinValue) / ThisSlope
+			End If
+		End Get
+	End Property
+
+	Public Overloads Function ToArray(ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double()
+		Return Me.ToArray(MyMin, MyMax, ScaleToMinValue, ScaleToMaxValue)
+	End Function
+
+	Public Overloads Function ToArray(ByVal MinValueInitial As Double, ByVal MaxValueInitial As Double, ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double()
+		Dim ThisValues() As Double
+		Dim ThisSlope As Double
+		Dim ThisOffset As Double
+
+		ThisValues = Me.ToArray
+		If Me.Count > 0 Then
+			'find the min and max for scaling
+			ThisSlope = MaxValueInitial - MinValueInitial
+			'check the slope denominator
+			If ThisSlope = 0 Then
+				'divide by zero
+				'return all values as ScaleFromMinValue
+				For I = 0 To ThisValues.Length - 1
+					ThisValues(I) = ScaleToMinValue
+				Next
+			Else
+				'complete the slope scaling calculation
+				ThisSlope = (ScaleToMaxValue - ScaleToMinValue) / ThisSlope
+				ThisOffset = ScaleToMinValue - ThisSlope * MinValueInitial
+				For I = 0 To ThisValues.Length - 1
+					ThisValues(I) = ThisSlope * ThisValues(I) + ThisOffset
+				Next
+			End If
+		End If
+		Return ThisValues
+	End Function
 End Class
 
 #Region "SearchOfSubKey"
