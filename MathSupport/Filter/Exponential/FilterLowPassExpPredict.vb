@@ -50,68 +50,82 @@ Namespace MathPlus.Filter
 		Private MyListOfStatisticalVarianceError As ListScaled
 		Private MyListOfAFilter As List(Of Double)
     Private MyListOfBFilter As List(Of Double)
-		Private MyListOfStatistical As FilterStatistical
-		Private MyListOfStatisticalForGain As FilterStatistical
+		Private MyStatisticalForPredictionError As FilterStatistical
+		Private MyStatisticalForGain As FilterStatistical
 		Private MyFilter As IFilter
-    Private MyFilterY As IFilter
-    Private MyNumberToPredict As Double
-    Private MyInputValue() As Double
+		Private MyFilterY As IFilter
+		Private MyNumberToPredict As Double
+		Private MyInputValue() As Double
 		Private MyQueueForState As Queue(Of Double)
-		Private MyPriceVolatility As FilterVolatility
 
+
+		''' <summary>
+		''' Protected means that the member is accessible within the class in which it is defined and by derived classes 
+		''' (i.e., subclasses). However, it is not accessible from outside the class or any other non-derived classes.
+		''' </summary>
+		''' <param name="NumberToPredict"></param>
+		''' <param name="FilterHead"></param>
+		''' <param name="FilterBase"></param>
 		Protected Sub New(ByVal NumberToPredict As Double, ByVal FilterHead As IFilter, ByVal FilterBase As IFilter)
-      Dim A As Double
-      Dim B As Double
-      MyQueueForState = New Queue(Of Double)
+			Dim A As Double
+			Dim B As Double
+			MyQueueForState = New Queue(Of Double)
 
-      'check parameter validity before proceeding
-      If (FilterHead Is Nothing) Then
-        'filter cannot be nothing a reference is needed for the filter rate
-        Throw New ArgumentException("Invalid Filter type!")
-      End If
-      If TypeOf FilterHead Is IFilterControl Then
-        MyFilterRate = DirectCast(FilterHead, IFilterControl).FilterRate
-      Else
-        MyFilterRate = FilterHead.Rate
-      End If
-      If MyFilterRate < 2 Then MyFilterRate = 2
-      If (FilterBase Is Nothing) Then
-        'create the default exp base filter use for the prediction
-        FilterBase = New FilterLowPassExp(MyFilterRate, IsPredictionEnabled:=False)
-      End If
-      MyFilter = FilterHead
-      MyFilterY = FilterBase
+			'check parameter validity before proceeding
+			If (FilterHead Is Nothing) Then
+				'filter cannot be nothing a reference is needed for the filter rate
+				Throw New ArgumentException("Invalid Filter type!")
+			End If
+			If TypeOf FilterHead Is IFilterControl Then
+				MyFilterRate = DirectCast(FilterHead, IFilterControl).FilterRate
+			Else
+				MyFilterRate = FilterHead.Rate
+			End If
+			If MyFilterRate < 2 Then
+				Throw New ArgumentException("Invalid filter rate for FilterLowPassExpPredict!")
+			End If
+			If (FilterBase Is Nothing) Then
+				'create the default exp base filter use for the prediction
+				FilterBase = New FilterLowPassExp(MyFilterRate, IsPredictionEnabled:=False)
+			End If
+			MyFilter = FilterHead
+			MyFilterY = FilterBase
 
-      MyNumberToPredict = NumberToPredict
-      MyListOfValue = New YahooAccessData.ListScaled
+			MyNumberToPredict = NumberToPredict
+			MyListOfValue = New YahooAccessData.ListScaled
 			MyListOfPredictionGainPerYear = New YahooAccessData.ListScaled
-			MyListOfStatistical = New FilterStatistical(YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_MONTH)
-			MyListOfStatisticalForGain = New FilterStatistical(YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_MONTH)
+
+			Dim ThisFilterRateForStatistical As Double = 5 * MyFilterRate
+			If ThisFilterRateForStatistical < YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_MONTH Then
+				ThisFilterRateForStatistical = YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_MONTH
+			End If
+
+			MyStatisticalForPredictionError = New FilterStatistical(CInt(ThisFilterRateForStatistical))
+			MyStatisticalForGain = New FilterStatistical(CInt(ThisFilterRateForStatistical))
 			'MyListOfStatisticalExp = New FilterStatisticalExp(MyRate)
 			MyListOfStatisticalVarianceError = New YahooAccessData.ListScaled
-      MyListOfAFilter = New List(Of Double)
-      MyListOfBFilter = New List(Of Double)
+			MyListOfAFilter = New List(Of Double)
+			MyListOfBFilter = New List(Of Double)
 
-      FilterValueLast = 0
-      FilterValueLastK1 = 0
-      ValueLast = 0
-      ValueLastK1 = 0
+			FilterValueLast = 0
+			FilterValueLastK1 = 0
+			ValueLast = 0
+			ValueLastK1 = 0
 
-      A = CDbl((2 / (MyFilterRate + 1)))
-      B = 1 - A
+			A = CDbl((2 / (MyFilterRate + 1)))
+			B = 1 - A
 			ABRatio = A / B
 
-			MyPriceVolatility = New FilterVolatility()
 			ReDim MyInputValue(-1)
 		End Sub
 
-		Public Sub New(ByVal FilterRate As Double, ByVal NumberToPredict As Integer)
+		Public Sub New(ByVal FilterRate As Double, ByVal NumberToPredict As Double)
 			Me.New(NumberToPredict:=NumberToPredict, FilterHead:=New FilterLowPassExp(FilterRate), FilterBase:=Nothing)
 		End Sub
 
 		Public Sub New(ByVal NumberToPredict As Double, ByVal FilterHead As IFilter)
-      Me.New(NumberToPredict:=NumberToPredict, FilterHead:=FilterHead, FilterBase:=Nothing)
-    End Sub
+			Me.New(NumberToPredict:=NumberToPredict, FilterHead:=FilterHead, FilterBase:=Nothing)
+		End Sub
 
 		''' <summary>
 		''' This function can be used to change the default filter for gain calculation
@@ -120,330 +134,266 @@ Namespace MathPlus.Filter
 		''' <param name="FilterBase"></param>
 		''' <remarks>See FilterLowPassPLLPredict for use in second order filter derivative</remarks>
 		Friend Sub SetFilter(ByVal FilterHead As IFilter, ByVal FilterBase As IFilter)
-      Debugger.Break()
-      If FilterHead IsNot Nothing Then
-        MyFilter = FilterHead
-      End If
-      If FilterBase IsNot Nothing Then
-        MyFilterY = FilterBase
-      End If
-    End Sub
+			Debugger.Break()
+			If FilterHead IsNot Nothing Then
+				MyFilter = FilterHead
+			End If
+			If FilterBase IsNot Nothing Then
+				MyFilterY = FilterBase
+			End If
+		End Sub
 
-    ''' <summary>
-    ''' return the filtered prediction value
-    ''' </summary>
-    ''' <param name="Value"></param>
-    ''' <returns></returns>
-    ''' <remarks></remarks>
-    Public Function Filter(ByVal Value As Double) As Double Implements IFilter.Filter
-      Dim Ap As Double
-      Dim Bp As Double
-      Dim Result As Double
-      Dim ResultY As Double
-      Dim ThisFilterPredictionGainYearly As Double
-      Dim ThisGainStandardDeviation As Double
+		''' <summary>
+		''' return the filtered prediction value
+		''' </summary>
+		''' <param name="Value"></param>
+		''' <returns></returns>
+		''' <remarks></remarks>
+		Public Function Filter(ByVal Value As Double) As Double Implements IFilter.Filter
+			Dim Ap As Double
+			Dim Bp As Double
+			Dim Result As Double
+			Dim ResultY As Double
+			Dim ThisFilterPredictionGainYearly As Double
+			Dim ThisGainStandardDeviation As Double
+
+
+			FilterValueLastK1 = FilterValueLast
+			Result = MyFilter.Filter(Value)
+			ResultY = MyFilterY.Filter(Result)
+
+			Ap = (2 * Result) - ResultY
+			Bp = ABRatio * (Result - ResultY)
+			AFilterLast = Ap
+			BFilterLast = Bp
+			MyListOfAFilter.Add(Ap)
+			MyListOfBFilter.Add(Bp)
+			FilterValuePredictH1 = Ap + Bp
+			If MyListOfPredictionGainPerYear.Count = 0 Then
+				FilterValuePredictH1Last = Value
+			End If
+			'note that B is the average trend
+			FilterValueLast = Ap + Bp * MyNumberToPredict
+			MyListOfValue.Add(FilterValueLast)
+
+			MyStatisticalForGain.Filter(GainLog(Value:=FilterValuePredictH1, ValueRef:=Ap))
+			ThisFilterPredictionGainYearly = MyStatisticalForGain.FilterLast.ToGaussianScale
+
+			MyStatisticalForPredictionError.Filter(NUMBER_TRADINGDAY_PER_YEAR * GainLog(Value:=(Value - FilterValuePredictH1Last), ValueRef:=Ap))
+			ThisGainStandardDeviation = MyStatisticalForPredictionError.FilterLast.ToGaussianScale
+
+			MyListOfPredictionGainPerYear.Add(ThisFilterPredictionGainYearly)
+			MyListOfStatisticalVarianceError.Add(ThisGainStandardDeviation)
+
+			MyFilterPredictionGainYearlyLast = ThisFilterPredictionGainYearly
+			MyGainStandardDeviationLast = ThisGainStandardDeviation
+			FilterValuePredictH1Last = FilterValuePredictH1
+			ValueLastK1 = ValueLast
+			ValueLast = Value
+			Return FilterValueLast
+		End Function
+
+		Public Function Filter(Value As IPriceVol) As Double Implements IFilter.Filter
+			Return Me.Filter(CDbl(Value.Last))
+		End Function
+
+		Public Function Filter(ByRef Value() As Double) As Double() Implements IFilter.Filter
+			Dim ThisValue As Double
+			For Each ThisValue In Value
+				Me.Filter(ThisValue)
+			Next
+			Return Me.ToArray
+		End Function
+
+		Public Function FilterBackTo(ByRef Value As Double) As Double Implements IFilter.FilterBackTo
+			Throw New NotImplementedException
+		End Function
+
+		Public Function AsIFilterPrediction() As IFilterPrediction Implements IFilterPrediction.AsIFilterPrediction
+			Return Me
+		End Function
+
+		Private ReadOnly Property IFilterPrediction_IsEnabled As Boolean Implements IFilterPrediction.IsEnabled
+			Get
+				Return True
+			End Get
+		End Property
+
+		''' <summary>
+		''' Calculate the future output signal from the value of the input signal at the Index given the specified gain per year.
+		''' This function generally apply only for price value type signal
+		''' </summary>
+		''' <param name="Index"></param>
+		''' <param name="NumberOfPrediction"></param>
+		''' <returns></returns>
+		''' <remarks></remarks>
+		Private Function IFilterPrediction_FilterPrediction(ByVal Index As Integer, ByVal NumberOfPrediction As Integer) As Double Implements IFilterPrediction.FilterPrediction
+			Return MyListOfAFilter(Index) + MyListOfBFilter(Index) * NumberOfPrediction
+		End Function
+
+		''' <summary>
+		''' Calculate the future output signal from the value of the input signal at the Index given the specified gain per year.
+		''' This function generally apply only for price value type signal
+		''' </summary>
+		''' <param name="Index"></param>
+		''' <param name="NumberOfPrediction"></param>
+		''' <param name="GainPerYear"></param>
+		''' <returns></returns>
+		''' <remarks></remarks>
+		Private Function IFilterPrediction_FilterPrediction(ByVal Index As Integer, ByVal NumberOfPrediction As Integer, ByVal GainPerYear As Double) As Double Implements IFilterPrediction.FilterPrediction
+			Return MyListOfAFilter(Index) * (1 + NumberOfPrediction * (Math.Exp(GainPerYear / MathPlus.General.NUMBER_WORKDAY_PER_YEAR) - 1))
+		End Function
+
+		''' <summary>
+		''' Calculate the future output signal from the last input signal and gain per year.
+		''' This function generally apply only for price value type signal
+		''' </summary>
+		''' <param name="NumberOfPrediction"></param>
+		''' <returns></returns>
+		''' <remarks></remarks>
+		Private Function IFilterPrediction_FilterPrediction(ByVal NumberOfPrediction As Integer) As Double Implements IFilterPrediction.FilterPrediction
+			Return Me.AsIFilterPrediction.FilterPrediction(NumberOfPrediction, MyListOfPredictionGainPerYear.Last)
+		End Function
+
+		''' <summary>
+		''' Calculate the future output signal from the last input signal and specified gain per year.
+		''' This function generally apply only for price value type  signal
+		''' </summary>
+		''' <param name="NumberOfPrediction"></param>
+		''' <param name="GainPerYear"></param>
+		''' <returns></returns>
+		''' <remarks></remarks>
+		Private Function IFilterPrediction_FilterPrediction(ByVal NumberOfPrediction As Integer, ByVal GainPerYear As Double) As Double Implements IFilterPrediction.FilterPrediction
+			'ThisFilterPredictionGainYearly = MathPlus.General.NUMBER_WORKDAY_PER_YEAR * Math.Log((FilterValuePredictH1 / Ap))
+			Return AFilterLast * (1 + NumberOfPrediction * (Math.Exp(GainPerYear / MathPlus.General.NUMBER_WORKDAY_PER_YEAR) - 1))
+		End Function
+
+		''' <summary>
+		''' Return the logarithmic gain per year. This function is valid as long as the filter input signal is always positive >1
+		''' and generally represent a price vs time function
+		''' </summary>
+		''' <value></value>
+		''' <returns></returns>
+		''' <remarks></remarks>
+		Private ReadOnly Property IFilterPrediction_ToListOfGainPerYear() As IList(Of Double) Implements IFilterPrediction.ToListOfGainPerYear
+			Get
+				Return MyListOfPredictionGainPerYear
+			End Get
+		End Property
+
+		'not supported
+		Private ReadOnly Property IFilterPrediction_ToListOfGainPerYearDerivative As System.Collections.Generic.IList(Of Double) Implements IFilterPrediction.ToListOfGainPerYearDerivative
+			Get
+				Return Nothing
+			End Get
+		End Property
+
+
+		Public Function FilterLastToPriceVol() As YahooAccessData.IPriceVol Implements IFilter.FilterLastToPriceVol
+			Dim ThisPriceVol As YahooAccessData.IPriceVol = New YahooAccessData.PriceVol(CSng(Me.FilterLast))
+			With ThisPriceVol
+				.LastPrevious = CSng(FilterValueLastK1)
+				If Me.Last > .Last Then
+					.High = CSng(Me.Last)
+					.Range = YahooAccessData.RecordPrices.CalculateTrueRange(ThisPriceVol)
+				ElseIf Me.Last < .Last Then
+					.Low = CSng(Me.Last)
+					.Range = YahooAccessData.RecordPrices.CalculateTrueRange(ThisPriceVol)
+				End If
+			End With
+			Return ThisPriceVol
+		End Function
+
+		Public Function LastToPriceVol() As YahooAccessData.IPriceVol Implements IFilter.LastToPriceVol
+			Dim ThisPriceVol As YahooAccessData.IPriceVol = New YahooAccessData.PriceVol(CSng(Me.Last))
+			With ThisPriceVol
+				.LastPrevious = CSng(ValueLastK1)
+				If Me.FilterLast > .Last Then
+					.High = CSng(Me.FilterLast)
+					.Range = YahooAccessData.RecordPrices.CalculateTrueRange(ThisPriceVol)
+				ElseIf Me.FilterLast < .Last Then
+					.Low = CSng(Me.FilterLast)
+					.Range = YahooAccessData.RecordPrices.CalculateTrueRange(ThisPriceVol)
+				End If
+			End With
+			Return ThisPriceVol
+		End Function
+
+		Public Function Filter(ByVal Value As Single) As Double Implements IFilter.Filter
+			Return Me.Filter(CDbl(Value))
+		End Function
+
+		Public Function FilterPredictionNext(ByVal Value As Double) As Double Implements IFilter.FilterPredictionNext
+			Throw New NotImplementedException
+
+			Dim Ap As Double
+			Dim Bp As Double
+			Dim Result As Double
+			Dim ResultY As Double
+			Dim ThisFilterPredictionGainYearly As Double
+			Dim ThisGainStandardDeviation As Double
 			Dim ThisError As Double
 
 
 			FilterValueLastK1 = FilterValueLast
-      Select Case (MyFilter.Count - MyFilterY.Count)
-        Case 0
-          Result = MyFilter.Filter(Value)
-          ResultY = MyFilterY.Filter(Result)
-        Case 1
-          Debugger.Break()
-          Result = MyFilter.FilterLast
-          ResultY = MyFilterY.Filter(Result)
-        Case Is > 1, Is < 0
-          Debug.Assert(False)
-      End Select
+			Result = MyFilter.Filter(Value)
+			ResultY = MyFilterY.Filter(Result)
 
-      Ap = (2 * Result) - ResultY
-      Bp = ABRatio * (Result - ResultY)
-      AFilterLast = Ap
-      BFilterLast = Bp
-      MyListOfAFilter.Add(Ap)
-      MyListOfBFilter.Add(Bp)
-      FilterValuePredictH1 = Ap + Bp
+			Ap = (2 * Result) - ResultY
+			Bp = ABRatio * (Result - ResultY)
+			AFilterLast = Ap
+			BFilterLast = Bp
+			MyListOfAFilter.Add(Ap)
+			MyListOfBFilter.Add(Bp)
+			FilterValuePredictH1 = Ap + Bp
 			If MyListOfPredictionGainPerYear.Count = 0 Then
 				FilterValuePredictH1Last = Value
 			End If
-			ThisError = Value - FilterValuePredictH1Last
-			MyListOfStatistical.Filter(ThisError)
-			'note that B is the average trend
 			FilterValueLast = Ap + Bp * MyNumberToPredict
-      MyListOfValue.Add(FilterValueLast)
+			MyListOfValue.Add(FilterValueLast)
 
-			'this is an approximativ gain measurement which is very close to the exponential gain if the Ap value remain greater than 1. It also work for negative value
-			'even if it does not make sense for price stock value. 
-			ThisGainStandardDeviation = (MathPlus.General.STATISTICAL_SIGMA_DAILY_TO_YEARLY_RATIO * Math.Log((((Ap + MyListOfStatistical.FilterLast.StandardDeviation) ^ 2 + 1)) / (Ap ^ 2 + 1))) / 2
-			'this equation is an approximation of the gain valid for value >>1
-			'the computation fail for small positive and negative value but the degradation is predictable and the derivative exist.
-			'the intend is not to have an exact gain measurement but a closed form that behave on a predictable value
-
-			Dim ThisResult = NUMBER_TRADINGDAY_PER_YEAR * GainLog(FilterValuePredictH1, Ap)
-			'If Me.Count = 500 Then
-			'	ThisGainStandardDeviation = 0
-			'End If
-			MyListOfStatisticalForGain.Filter(ThisResult)
-			Dim ThisGainStandardDev = MyListOfStatisticalForGain.FilterLast.StandardDeviation
-			'MyPriceVolatility.Filter(ThisResult)
-			ThisFilterPredictionGainYearly = ThisResult
-			'
-			If ThisGainStandardDev > 0 Then
-				ThisFilterPredictionGainYearly = CDFGaussian(ThisResult / ThisGainStandardDev)
-				'restore the probability scale between +-1
-				ThisFilterPredictionGainYearly = 2 * (ThisFilterPredictionGainYearly - 0.5)
-			Else
-				ThisFilterPredictionGainYearly = 0.0
-			End If
+			ThisFilterPredictionGainYearly = (MathPlus.General.NUMBER_WORKDAY_PER_YEAR * GainLog(FilterValuePredictH1, Ap))
+			ThisError = Value - FilterValuePredictH1Last
+			MyStatisticalForPredictionError.Filter(ThisError)
 
 			'also limit exponentially the gain value between -1 and +1
-			'ThisFilterPredictionGainYearly = MathPlus.WaveForm.SignalLimit(ThisFilterPredictionGainYearly, 1)
-
-
+			ThisFilterPredictionGainYearly = MathPlus.WaveForm.SignalLimit(ThisFilterPredictionGainYearly, 1)
+			If Double.IsNaN(ThisFilterPredictionGainYearly) Then
+				ThisFilterPredictionGainYearly = ThisFilterPredictionGainYearly
+			End If
 			MyListOfStatisticalVarianceError.Add(ThisGainStandardDeviation)
 			MyListOfPredictionGainPerYear.Add(ThisFilterPredictionGainYearly)
-      MyFilterPredictionGainYearlyLast = ThisFilterPredictionGainYearly
-      MyGainStandardDeviationLast = ThisGainStandardDeviation
-      FilterValuePredictH1Last = FilterValuePredictH1
-      ValueLastK1 = ValueLast
-      ValueLast = Value
-      Return FilterValueLast
-    End Function
+			MyFilterPredictionGainYearlyLast = ThisFilterPredictionGainYearly
+			MyGainStandardDeviationLast = ThisGainStandardDeviation
+			FilterValuePredictH1Last = FilterValuePredictH1
+			ValueLastK1 = ValueLast
+			ValueLast = Value
+			Return FilterValueLast
+		End Function
 
-    Public Function Filter(Value As IPriceVol) As Double Implements IFilter.Filter
-      Return Me.Filter(CDbl(Value.Last))
-    End Function
+		Public Function FilterPredictionNext(ByVal Value As Single) As Double Implements IFilter.FilterPredictionNext
+			Throw New NotImplementedException
+		End Function
 
-    Public Function Filter(ByRef Value() As Double) As Double() Implements IFilter.Filter
-      Dim ThisValue As Double
-      For Each ThisValue In Value
-        Me.Filter(ThisValue)
-      Next
-      Return Me.ToArray
-    End Function
+		Public Function FilterLast() As Double Implements IFilter.FilterLast
+			Return FilterValueLast
+		End Function
 
-    Public Function FilterBackTo(ByRef Value As Double) As Double Implements IFilter.FilterBackTo
-      Throw New NotImplementedException
-    End Function
+		Public Function Last() As Double Implements IFilter.Last
+			Return ValueLast
+		End Function
 
-    Public Function AsIFilterPrediction() As IFilterPrediction Implements IFilterPrediction.AsIFilterPrediction
-      Return Me
-    End Function
+		Public ReadOnly Property Rate As Integer Implements IFilter.Rate
+			Get
+				Return MyRate
+			End Get
+		End Property
 
-    Private ReadOnly Property IFilterPrediction_IsEnabled As Boolean Implements IFilterPrediction.IsEnabled
-      Get
-        Return True
-      End Get
-    End Property
-
-    ''' <summary>
-    ''' Calculate the future output signal from the value of the input signal at the Index given the specified gain per year.
-    ''' This function generally apply only for price value type signal
-    ''' </summary>
-    ''' <param name="Index"></param>
-    ''' <param name="NumberOfPrediction"></param>
-    ''' <returns></returns>
-    ''' <remarks></remarks>
-    Private Function IFilterPrediction_FilterPrediction(ByVal Index As Integer, ByVal NumberOfPrediction As Integer) As Double Implements IFilterPrediction.FilterPrediction
-      Return MyListOfAFilter(Index) + MyListOfBFilter(Index) * NumberOfPrediction
-    End Function
-
-    ''' <summary>
-    ''' Calculate the future output signal from the value of the input signal at the Index given the specified gain per year.
-    ''' This function generally apply only for price value type signal
-    ''' </summary>
-    ''' <param name="Index"></param>
-    ''' <param name="NumberOfPrediction"></param>
-    ''' <param name="GainPerYear"></param>
-    ''' <returns></returns>
-    ''' <remarks></remarks>
-    Private Function IFilterPrediction_FilterPrediction(ByVal Index As Integer, ByVal NumberOfPrediction As Integer, ByVal GainPerYear As Double) As Double Implements IFilterPrediction.FilterPrediction
-      Return MyListOfAFilter(Index) * (1 + NumberOfPrediction * (Math.Exp(GainPerYear / MathPlus.General.NUMBER_WORKDAY_PER_YEAR) - 1))
-    End Function
-
-    ''' <summary>
-    ''' Calculate the future output signal from the last input signal and gain per year.
-    ''' This function generally apply only for price value type signal
-    ''' </summary>
-    ''' <param name="NumberOfPrediction"></param>
-    ''' <returns></returns>
-    ''' <remarks></remarks>
-    Private Function IFilterPrediction_FilterPrediction(ByVal NumberOfPrediction As Integer) As Double Implements IFilterPrediction.FilterPrediction
-      Return Me.AsIFilterPrediction.FilterPrediction(NumberOfPrediction, MyListOfPredictionGainPerYear.Last)
-    End Function
-
-    ''' <summary>
-    ''' Calculate the future output signal from the last input signal and specified gain per year.
-    ''' This function generally apply only for price value type  signal
-    ''' </summary>
-    ''' <param name="NumberOfPrediction"></param>
-    ''' <param name="GainPerYear"></param>
-    ''' <returns></returns>
-    ''' <remarks></remarks>
-    Private Function IFilterPrediction_FilterPrediction(ByVal NumberOfPrediction As Integer, ByVal GainPerYear As Double) As Double Implements IFilterPrediction.FilterPrediction
-      'ThisFilterPredictionGainYearly = MathPlus.General.NUMBER_WORKDAY_PER_YEAR * Math.Log((FilterValuePredictH1 / Ap))
-      Return AFilterLast * (1 + NumberOfPrediction * (Math.Exp(GainPerYear / MathPlus.General.NUMBER_WORKDAY_PER_YEAR) - 1))
-    End Function
-
-    ''' <summary>
-    ''' Return the logarithmic gain per year. This function is valid as long as the filter input signal is always positive >1
-    ''' and generally represent a price vs time function
-    ''' </summary>
-    ''' <value></value>
-    ''' <returns></returns>
-    ''' <remarks></remarks>
-    Private ReadOnly Property IFilterPrediction_ToListOfGainPerYear() As IList(Of Double) Implements IFilterPrediction.ToListOfGainPerYear
-      Get
-        Return MyListOfPredictionGainPerYear
-      End Get
-    End Property
-
-    'not supported
-    Private ReadOnly Property IFilterPrediction_ToListOfGainPerYearDerivative As System.Collections.Generic.IList(Of Double) Implements IFilterPrediction.ToListOfGainPerYearDerivative
-      Get
-        Return Nothing
-      End Get
-    End Property
-
-
-    Public Function FilterLastToPriceVol() As YahooAccessData.IPriceVol Implements IFilter.FilterLastToPriceVol
-      Dim ThisPriceVol As YahooAccessData.IPriceVol = New YahooAccessData.PriceVol(CSng(Me.FilterLast))
-      With ThisPriceVol
-        .LastPrevious = CSng(FilterValueLastK1)
-        If Me.Last > .Last Then
-          .High = CSng(Me.Last)
-          .Range = YahooAccessData.RecordPrices.CalculateTrueRange(ThisPriceVol)
-        ElseIf Me.Last < .Last Then
-          .Low = CSng(Me.Last)
-          .Range = YahooAccessData.RecordPrices.CalculateTrueRange(ThisPriceVol)
-        End If
-      End With
-      Return ThisPriceVol
-    End Function
-
-    Public Function LastToPriceVol() As YahooAccessData.IPriceVol Implements IFilter.LastToPriceVol
-      Dim ThisPriceVol As YahooAccessData.IPriceVol = New YahooAccessData.PriceVol(CSng(Me.Last))
-      With ThisPriceVol
-        .LastPrevious = CSng(ValueLastK1)
-        If Me.FilterLast > .Last Then
-          .High = CSng(Me.FilterLast)
-          .Range = YahooAccessData.RecordPrices.CalculateTrueRange(ThisPriceVol)
-        ElseIf Me.FilterLast < .Last Then
-          .Low = CSng(Me.FilterLast)
-          .Range = YahooAccessData.RecordPrices.CalculateTrueRange(ThisPriceVol)
-        End If
-      End With
-      Return ThisPriceVol
-    End Function
-
-    Public Function Filter(ByVal Value As Single) As Double Implements IFilter.Filter
-      Return Me.Filter(CDbl(Value))
-    End Function
-
-    Public Function FilterPredictionNext(ByVal Value As Double) As Double Implements IFilter.FilterPredictionNext
-      'Throw New NotImplementedException
-      Dim Ap As Double
-      Dim Bp As Double
-      Dim Result As Double
-      Dim ResultY As Double
-      Dim ThisFilterPredictionGainYearly As Double
-      Dim ThisGainStandardDeviation As Double
-      Dim ThisError As Double
-
-
-      FilterValueLastK1 = FilterValueLast
-      Select Case (MyFilter.Count - MyFilterY.Count)
-        Case 0
-          Result = MyFilter.Filter(Value)
-          ResultY = MyFilterY.Filter(Result)
-        Case 1
-          Result = MyFilter.FilterLast
-          ResultY = MyFilterY.Filter(Result)
-        Case Is > 1, Is < 0
-          Debug.Assert(False)
-      End Select
-
-      Ap = (2 * Result) - ResultY
-      Bp = ABRatio * (Result - ResultY)
-      AFilterLast = Ap
-      BFilterLast = Bp
-      MyListOfAFilter.Add(Ap)
-      MyListOfBFilter.Add(Bp)
-      FilterValuePredictH1 = Ap + Bp
-      If MyListOfPredictionGainPerYear.Count = 0 Then
-        FilterValuePredictH1Last = Value
-      End If
-      ThisError = Value - FilterValuePredictH1Last
-      MyListOfStatistical.Filter(ThisError)
-      FilterValueLast = Ap + Bp * MyNumberToPredict
-      MyListOfValue.Add(FilterValueLast)
-
-      ''calculate only if both numerator and denominator are positif
-      'If Ap <= 0 Then
-      '  ThisFilterPredictionGainYearly = MyFilterPredictionGainYearlyLast
-      '  ThisGainStandardDeviation = MyGainStandardDeviationLast
-      'Else
-      '  If FilterValuePredictH1 <= 0 Then
-      '    ThisFilterPredictionGainYearly = MyFilterPredictionGainYearlyLast
-      '    ThisGainStandardDeviation = MyGainStandardDeviationLast
-      '  Else
-      '    ThisGainStandardDeviation = MathPlus.General.STATISTICAL_SIGMA_DAILY_TO_YEARLY_RATIO * Math.Log((Ap + MyListOfStatistical.FilterLast.StandardDeviation) / Ap)
-      '    ThisFilterPredictionGainYearly = MathPlus.General.NUMBER_WORKDAY_PER_YEAR * Math.Log((FilterValuePredictH1 / Ap))
-      '    ThisFilterPredictionGainYearly = MathPlus.WaveForm.SignalLimit(ThisFilterPredictionGainYearly, 1)
-      '  End If
-      'End If
-      'this is an approximativ gain measurement which is very close to the exponential gain if the Ap value remain greater than 1. It also work for negative value
-      'even if it does not make sense for price stock value. 
-      'ThisGainStandardDeviation = (MathPlus.General.STATISTICAL_SIGMA_DAILY_TO_YEARLY_RATIO * Math.Log((((Ap + MyListOfStatistical.FilterLast.StandardDeviation) ^ 2 + 1)) / (Ap ^ 2 + 1))) / 2
-      ThisGainStandardDeviation = (MathPlus.General.STATISTICAL_SIGMA_DAILY_TO_YEARLY_RATIO * Math.Log((((Ap + MyListOfStatistical.FilterLast.StandardDeviation) ^ 2 + 1)) / (Ap ^ 2 + 1))) / 2
-      'this equation is an approximation of the gain valid for value >>1
-      'the computation fail for small positive and negative value but the degradation is predictable and the derivative exist.
-      'the intend is not to have an exact gain measurement but a closed form that behave on a predictable value
-      ThisFilterPredictionGainYearly = (MathPlus.General.NUMBER_WORKDAY_PER_YEAR * GainLog(FilterValuePredictH1, Ap))
-      If Double.IsNaN(ThisFilterPredictionGainYearly) Then
-        ThisFilterPredictionGainYearly = ThisFilterPredictionGainYearly
-      End If
-      'ThisFilterPredictionGainYearly = (MathPlus.General.NUMBER_WORKDAY_PER_YEAR * Math.Log(((FilterValuePredictH1 ^ 2 + 1) / (Ap ^ 2 + 1)))) / 2
-      'also limit exponentially the gain value between -1 and +1
-      ThisFilterPredictionGainYearly = MathPlus.WaveForm.SignalLimit(ThisFilterPredictionGainYearly, 1)
-      If Double.IsNaN(ThisFilterPredictionGainYearly) Then
-        ThisFilterPredictionGainYearly = ThisFilterPredictionGainYearly
-      End If
-      MyListOfStatisticalVarianceError.Add(ThisGainStandardDeviation)
-      MyListOfPredictionGainPerYear.Add(ThisFilterPredictionGainYearly)
-      MyFilterPredictionGainYearlyLast = ThisFilterPredictionGainYearly
-      MyGainStandardDeviationLast = ThisGainStandardDeviation
-      FilterValuePredictH1Last = FilterValuePredictH1
-      ValueLastK1 = ValueLast
-      ValueLast = Value
-      Return FilterValueLast
-    End Function
-
-    Public Function FilterPredictionNext(ByVal Value As Single) As Double Implements IFilter.FilterPredictionNext
-      Throw New NotImplementedException
-    End Function
-
-    Public Function FilterLast() As Double Implements IFilter.FilterLast
-      Return FilterValueLast
-    End Function
-
-    Public Function Last() As Double Implements IFilter.Last
-      Return ValueLast
-    End Function
-
-    Public ReadOnly Property Rate As Integer Implements IFilter.Rate
-      Get
-        Return MyRate
-      End Get
-    End Property
-
-    Public ReadOnly Property Count As Integer Implements IFilter.Count
-      Get
-        Return MyListOfValue.Count
-      End Get
-    End Property
+		Public ReadOnly Property Count As Integer Implements IFilter.Count
+			Get
+				Return MyListOfValue.Count
+			End Get
+		End Property
 
 		Public ReadOnly Property Max As Double Implements IFilter.Max
 			'Performance Considerations : 
@@ -457,92 +407,92 @@ Namespace MathPlus.Filter
 		End Property
 
 		Public ReadOnly Property Min As Double Implements IFilter.Min
-      Get
-        Return MyListOfValue.Min
-      End Get
-    End Property
+			Get
+				Return MyListOfValue.Min
+			End Get
+		End Property
 
-    Public ReadOnly Property ToList() As IList(Of Double) Implements IFilter.ToList
-      Get
-        Return MyListOfValue
-      End Get
-    End Property
+		Public ReadOnly Property ToList() As IList(Of Double) Implements IFilter.ToList
+			Get
+				Return MyListOfValue
+			End Get
+		End Property
 
-    Public ReadOnly Property ToListScaled() As YahooAccessData.ListScaled Implements IFilter.ToListScaled
-      Get
-        Return MyListOfValue
-      End Get
-    End Property
+		Public ReadOnly Property ToListScaled() As YahooAccessData.ListScaled Implements IFilter.ToListScaled
+			Get
+				Return MyListOfValue
+			End Get
+		End Property
 
-    Public Function ToArray() As Double() Implements IFilter.ToArray
-      Return MyListOfValue.ToArray
-    End Function
+		Public Function ToArray() As Double() Implements IFilter.ToArray
+			Return MyListOfValue.ToArray
+		End Function
 
-    Public Function ToArray(ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double() Implements IFilter.ToArray
-      Return MyListOfValue.ToArray(ScaleToMinValue, ScaleToMaxValue)
-    End Function
+		Public Function ToArray(ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double() Implements IFilter.ToArray
+			Return MyListOfValue.ToArray(ScaleToMinValue, ScaleToMaxValue)
+		End Function
 
-    Public Function ToArray(ByVal MinValueInitial As Double, ByVal MaxValueInitial As Double, ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double() Implements IFilter.ToArray
-      Return MyListOfValue.ToArray(MinValueInitial, MaxValueInitial, ScaleToMinValue, ScaleToMaxValue)
-    End Function
+		Public Function ToArray(ByVal MinValueInitial As Double, ByVal MaxValueInitial As Double, ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double() Implements IFilter.ToArray
+			Return MyListOfValue.ToArray(MinValueInitial, MaxValueInitial, ScaleToMinValue, ScaleToMaxValue)
+		End Function
 
-    Public Property Tag As String Implements IFilter.Tag
+		Public Property Tag As String Implements IFilter.Tag
 
-    Public Overrides Function ToString() As String Implements IFilter.ToString
-      Return Me.FilterLast.ToString
-    End Function
+		Public Overrides Function ToString() As String Implements IFilter.ToString
+			Return Me.FilterLast.ToString
+		End Function
 
-    Public Function Filter(ByRef Value() As Double, DelayRemovedToItem As Integer) As Double() Implements IFilter.Filter
-      Throw New NotSupportedException
-      'Return ExtensionService.ShiftTo(Of Double)(MyListOfValue, MyNumberToPredict).ToArray
-    End Function
+		Public Function Filter(ByRef Value() As Double, DelayRemovedToItem As Integer) As Double() Implements IFilter.Filter
+			Throw New NotSupportedException
+			'Return ExtensionService.ShiftTo(Of Double)(MyListOfValue, MyNumberToPredict).ToArray
+		End Function
 
-    Public Function FilterErrorLast() As Double Implements IFilter.FilterErrorLast
-      Return 0
-    End Function
+		Public Function FilterErrorLast() As Double Implements IFilter.FilterErrorLast
+			Return 0
+		End Function
 
-    ''' <summary>
-    ''' Calculate the variance between the real data and the predicted gain value
-    ''' </summary>
-    ''' <value></value>
-    ''' <returns>Return the variance of the error</returns>
-    ''' <remarks></remarks>
-    Public ReadOnly Property ToListOfError As System.Collections.Generic.IList(Of Double) Implements IFilter.ToListOfError
-      Get
-        Return MyListOfStatisticalVarianceError
-      End Get
-    End Property
+		''' <summary>
+		''' Calculate the variance between the real data and the predicted gain value
+		''' </summary>
+		''' <value></value>
+		''' <returns>Return the variance of the error</returns>
+		''' <remarks></remarks>
+		Public ReadOnly Property ToListOfError As System.Collections.Generic.IList(Of Double) Implements IFilter.ToListOfError
+			Get
+				Return MyListOfStatisticalVarianceError
+			End Get
+		End Property
 #Region "IRegisterKey"
-    Public Function AsIRegisterKey() As IRegisterKey(Of String)
-      Return Me
-    End Function
-    Private Property IRegisterKey_KeyID As Integer Implements IRegisterKey(Of String).KeyID
-    Dim MyKeyValue As String
-    Private Property IRegisterKey_KeyValue As String Implements IRegisterKey(Of String).KeyValue
-      Get
-        Return MyKeyValue
-      End Get
-      Set(value As String)
-        MyKeyValue = value
-      End Set
-    End Property
+		Public Function AsIRegisterKey() As IRegisterKey(Of String)
+			Return Me
+		End Function
+		Private Property IRegisterKey_KeyID As Integer Implements IRegisterKey(Of String).KeyID
+		Dim MyKeyValue As String
+		Private Property IRegisterKey_KeyValue As String Implements IRegisterKey(Of String).KeyValue
+			Get
+				Return MyKeyValue
+			End Get
+			Set(value As String)
+				MyKeyValue = value
+			End Set
+		End Property
 #End Region
 #Region "IFilterControl"
-    Public Function ASIFilterControl() As IFilterControl Implements IFilterControl.ASIFilterControl
-      Return Me
-    End Function
+		Public Function ASIFilterControl() As IFilterControl Implements IFilterControl.AsIFilterControl
+			Return Me
+		End Function
 
-    Private Sub IFilterControl_Clear() Implements IFilterControl.Clear
-      Static IsHere As Boolean
+		Private Sub IFilterControl_Clear() Implements IFilterControl.Clear
+			Static IsHere As Boolean
 
-      'no re-entrency allowed
-      If IsHere Then Exit Sub
-      IsHere = True
+			'no re-entrency allowed
+			If IsHere Then Exit Sub
+			IsHere = True
 
-      MyListOfValue.Clear()
-      MyListOfPredictionGainPerYear.Clear()
-      MyListOfStatistical = New FilterStatistical(YahooAccessData.MathPlus.NUMBER_WORKDAY_PER_YEAR)
-      MyListOfStatisticalVarianceError.Clear()
+			MyListOfValue.Clear()
+			MyListOfPredictionGainPerYear.Clear()
+			MyStatisticalForPredictionError = New FilterStatistical(YahooAccessData.MathPlus.NUMBER_WORKDAY_PER_YEAR)
+			MyListOfStatisticalVarianceError.Clear()
       MyListOfAFilter.Clear()
       MyListOfBFilter.Clear()
 

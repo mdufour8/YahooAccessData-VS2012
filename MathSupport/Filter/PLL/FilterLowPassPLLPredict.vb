@@ -19,12 +19,18 @@ Namespace MathPlus.Filter
 	Public Class FilterLowPassPLLPredict
 		Inherits FilterLowPassExpPredict
 
-		Public Sub New(ByVal FilterRate As Double, ByVal NumberToPredict As Integer)
-			MyBase.New(NumberToPredict:=NumberToPredict, FilterHead:=New FilterLowPassPLL(FilterRate), FilterBase:=New FilterLowPassPLL(FilterRate, IsPredictionEnabled:=False))
+		Public Sub New(ByVal FilterRate As Double, ByVal NumberToPredict As Double)
+			MyBase.New(
+				NumberToPredict:=NumberToPredict,
+				FilterHead:=New FilterLowPassPLL(FilterRate, IsPredictionEnabled:=False),
+				FilterBase:=New FilterLowPassExp(FilterRate, IsPredictionEnabled:=False))
 		End Sub
 
-		Public Sub New(ByVal NumberToPredict As Double, ByVal FilterHead As IFilter)
-			MyBase.New(NumberToPredict:=NumberToPredict, FilterHead:=FilterHead, FilterBase:=New FilterLowPassPLL(FilterHead.Rate, IsPredictionEnabled:=False))
+		Public Sub New(ByVal NumberToPredict As Double, ByVal FilterHead As IFilter, ByVal FilterBase As IFilter)
+			MyBase.New(
+				NumberToPredict:=NumberToPredict,
+				FilterHead:=FilterHead,
+				FilterBase:=FilterBase)
 		End Sub
 	End Class
 End Namespace

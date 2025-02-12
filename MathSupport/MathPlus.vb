@@ -4170,7 +4170,7 @@ Namespace MathPlus
 					ThisMean = Value
 					ThisVariance = 0
 				End If
-				FilterValueLast = New StatisticalData(ThisMean, ThisVariance, MyListOfValue.Count)
+				FilterValueLast = New StatisticalData(ThisMean, ThisVariance, MyListOfValue.Count) With {.ValueLast = Value}
 				MyListOfValueStatistical.Add(FilterValueLast)
 				ValueLastK1 = ValueLast
 				ValueLast = Value
@@ -9160,6 +9160,7 @@ Namespace MathPlus
 				MyHigh = MyMean + MyStandardDeviation
 				MyLow = MyMean - MyStandardDeviation
 				MyNumberPoint = NumberPoint
+				Me.ValueLast = 0.0  'default value
 			End Sub
 
 			Public Sub New(ByVal StatisticalData As IStatistical)
@@ -9210,6 +9211,8 @@ Namespace MathPlus
 				End Get
 			End Property
 
+			Public Property ValueLast As Double Implements IStatistical.ValueLast
+
 			Public Sub Add(Value As IStatistical) Implements IStatistical.Add
 				Dim ThisWeight1 As Double
 				Dim ThisWeight2 As Double
@@ -9238,6 +9241,20 @@ Namespace MathPlus
 				MyLow = Value.Low
 				MyNumberPoint = Value.NumberPoint
 			End Sub
+
+			Public Function ToGaussianScale() As Double Implements IStatistical.ToGaussianScale
+				Dim ThisGaussianRatio As Double
+				If Me.StandardDeviation > 0 Then
+					'transform the gain in PerCent per Year as a probability mainly for display
+					ThisGaussianRatio = Measure.Measure.CDFGaussian(Me.ValueLast / Me.StandardDeviation)
+					'restore the probability scale of the gain between +-1 for standarddization with other algorithm that
+					'output the gain in Positif or negatif Percent. TheCDF probability scale that we use is usuful to restrict the rand
+					ThisGaussianRatio = 2 * (ThisGaussianRatio - 0.5)
+				Else
+					ThisGaussianRatio = 0.0
+				End If
+				Return ThisGaussianRatio
+			End Function
 		End Class
 	End Namespace  'Filter
 #End Region

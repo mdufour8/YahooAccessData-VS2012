@@ -398,9 +398,16 @@ Namespace MathPlus
       ReadOnly Property Variance As Double
       ReadOnly Property High As Double
       ReadOnly Property Low As Double
-      ReadOnly Property NumberPoint As Integer
-      Function Copy() As IStatistical
-      Sub CopyTo(ByVal Value As IStatistical)
+			ReadOnly Property NumberPoint As Integer
+			Property ValueLast As Double
+
+			''' <summary>
+			''' Output the ratio between the ValueLast and the Standard Deviation on a Gaussian probability scaled between [-1,1]
+			''' </summary>
+			''' <returns></returns>
+			Function ToGaussianScale() As Double
+			Function Copy() As IStatistical
+			Sub CopyTo(ByVal Value As IStatistical)
       Sub Add(ByVal Value As IStatistical)
     End Interface
 

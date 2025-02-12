@@ -706,29 +706,29 @@ Namespace MathPlus
         Return ThisArray
       End Function
 
-      ''' <summary>
-      ''' Calculate the approximative logarithm gain using and squared data approximation that eliminate the problem of negative value but
-      ''' that require that values to be ideally > 1 for accurate result.
-      ''' See:https://people.duke.edu/~rnau/411log.htm
-      ''' </summary>
-      ''' <param name="Value">should be > 1 for valid result</param>
-      ''' <param name="ValueRef"></param>
-      ''' <returns></returns>
-      ''' <remarks></remarks>
-      Public Shared Function GainLog(ByVal Value As Double, ValueRef As Double) As Double
-        'gain limiting is ignored for negative value 
-        Return GainLog(Value, ValueRef, ScaleValue:=1.0)
-        'Return Math.Log(((Value ^ 2 + 1) / (ValueRef ^ 2 + 1))) / 2
-      End Function
+			''' <summary>
+			''' Calculate the approximative logarithm gain using and squared data approximation that eliminate the problem of negative value but
+			''' that require that values to be ideally > 1 for accurate result.
+			''' See:https://people.duke.edu/~rnau/411log.htm
+			''' </summary>
+			''' <param name="Value">should be > 1 for valid result</param>
+			''' <param name="ValueRef"></param>
+			''' <returns></returns>
+			''' <remarks></remarks>
+			Public Shared Function GainLog(ByVal Value As Double, ValueRef As Double) As Double
+				'gain limiting is ignored for negative value 
+				Return GainLog(Value, ValueRef, ScaleValue:=1.0)
+				'Return Math.Log(((Value ^ 2 + 1) / (ValueRef ^ 2 + 1))) / 2
+			End Function
 
-      ''' <summary>
-      ''' Compress and expand the input probabillity using the gaussian scale transformation and return a value between 0 and 1
-      ''' corresponging to the gaussian scale transformation.  
-      ''' </summary>
-      ''' <param name="ProbabilityValue">The imput probability between 0 and 1</param>
-      ''' <param name="ScaleOfX">the positive range of X value</param>
-      ''' <returns></returns>
-      Public Shared Function ProbabilityToGaussianScale(ByVal ProbabilityValue As Double, ByVal ScaleOfX As Double) As Double
+			''' <summary>
+			''' Compress and expand the input probabillity using the gaussian scale transformation and return a value between 0 and 1
+			''' corresponging to the gaussian scale transformation.  
+			''' </summary>
+			''' <param name="ProbabilityValue">The imput probability between 0 and 1</param>
+			''' <param name="ScaleOfX">the positive range of X value</param>
+			''' <returns></returns>
+			Public Shared Function ProbabilityToGaussianScale(ByVal ProbabilityValue As Double, ByVal ScaleOfX As Double) As Double
         Return (Measure.InverseNormal(ProbabilityValue, ScaleOfX) / (2 * ScaleOfX)) + 0.5
       End Function
 
