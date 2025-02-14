@@ -205,6 +205,7 @@
     <Compile Include="FileSupport\TimePeriodOverlap.vb" />
     <Compile Include="FileSupport\TreeNodeList.vb" />
     <Compile Include="MathSupport\FilterCorrelation.vb" />
+    <Compile Include="MathSupport\Filter\Exponential\FilterExp.vb" />
     <Compile Include="MathSupport\Filter\Exponential\FilterLowPassExp.vb" />
     <Compile Include="MathSupport\Filter\Exponential\FilterLowPassExpHull.vb" />
     <Compile Include="MathSupport\Filter\Exponential\FilterLowPassExpPredict.vb" />
@@ -225,6 +226,8 @@
     <Compile Include="MathSupport\Filter\Oscillator\StatisticRangeExcess.vb" />
     <Compile Include="MathSupport\Filter\PLL\FilterLowPassPLLPredict.vb" />
     <Compile Include="MathSupport\Filter\PLL\FilterLowPassPLL.vb" />
+    <Compile Include="MathSupport\Filter\PLL\FilterPLL.vb" />
+    <Compile Include="MathSupport\Filter\PLL\FilterPLLTest.vb" />
     <Compile Include="MathSupport\Filter\Volatility\FilterVolatility.vb" />
     <Compile Include="MathSupport\Filter\Volatility\FilterVolatilityYangZhang.vb" />
     <Compile Include="MathSupport\MathPlus.vb" />
@@ -301,6 +304,11 @@
       <SubType>Designer</SubType>
     </None>
     <None Include="MathSupport\Filter\Exponential\ADPLL_Filtering_Summary.docx" />
+    <None Include="MathSupport\Filter\PLL\ADPLL_Filtering_Summary.docx" />
+    <None Include="MathSupport\Filter\PLL\ADPLL_Filtering_Summary.pdf" />
+    <None Include="MathSupport\Filter\PLL\Brown_LES_Annualized_Trend.docx" />
+    <None Include="MathSupport\Filter\PLL\Brown_LES_Annualized_Trend.pdf" />
+    <None Include="MathSupport\Filter\PLL\dpll_ieee.pdf" />
     <None Include="MathSupport\Filter\Volatility\Yang Drift-Independent Volatility .pdf" />
     <None Include="MathSupport\Info\erf-approx.pdf" />
     <None Include="MathSupport\Info\Geometric Brownian Motion Option Pricing and Simulation.pdf" />

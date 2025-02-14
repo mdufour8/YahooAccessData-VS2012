@@ -86,7 +86,7 @@ Namespace MathPlus.Filter
 			End If
 			If (FilterBase Is Nothing) Then
 				'create the default exp base filter use for the prediction
-				FilterBase = New FilterLowPassExp(MyFilterRate, IsPredictionEnabled:=False)
+				FilterBase = New FilterExp(MyFilterRate)
 			End If
 			MyFilter = FilterHead
 			MyFilterY = FilterBase
@@ -120,7 +120,7 @@ Namespace MathPlus.Filter
 		End Sub
 
 		Public Sub New(ByVal FilterRate As Double, ByVal NumberToPredict As Double)
-			Me.New(NumberToPredict:=NumberToPredict, FilterHead:=New FilterLowPassExp(FilterRate), FilterBase:=Nothing)
+			Me.New(NumberToPredict:=NumberToPredict, FilterHead:=New FilterExp(FilterRate), FilterBase:=Nothing)
 		End Sub
 
 		Public Sub New(ByVal NumberToPredict As Double, ByVal FilterHead As IFilter)
@@ -252,7 +252,7 @@ Namespace MathPlus.Filter
 		''' <returns></returns>
 		''' <remarks></remarks>
 		Private Function IFilterPrediction_FilterPrediction(ByVal NumberOfPrediction As Integer) As Double Implements IFilterPrediction.FilterPrediction
-			Return Me.AsIFilterPrediction.FilterPrediction(NumberOfPrediction, MyListOfPredictionGainPerYear.Last)
+			Return AFilterLast + BFilterLast * NumberOfPrediction
 		End Function
 
 		''' <summary>
@@ -264,7 +264,7 @@ Namespace MathPlus.Filter
 		''' <returns></returns>
 		''' <remarks></remarks>
 		Private Function IFilterPrediction_FilterPrediction(ByVal NumberOfPrediction As Integer, ByVal GainPerYear As Double) As Double Implements IFilterPrediction.FilterPrediction
-			'ThisFilterPredictionGainYearly = MathPlus.General.NUMBER_WORKDAY_PER_YEAR * Math.Log((FilterValuePredictH1 / Ap))
+			Throw New NotSupportedException
 			Return AFilterLast * (1 + NumberOfPrediction * (Math.Exp(GainPerYear / MathPlus.General.NUMBER_WORKDAY_PER_YEAR) - 1))
 		End Function
 
@@ -692,10 +692,12 @@ Namespace MathPlus.Filter
       Dim ThisFilterResultLast As Double
       Dim ThisFilterValuePredictH1 As Double
 
-      If (TypeOf MyFilter Is IFilterEstimate = False) Or (TypeOf MyFilterY Is IFilterEstimate = False) Then
-        Throw New NotSupportedException("The Filter does not support the required interface!")
-      Else
-        ThisFilterEstimate = DirectCast(MyFilter, IFilterEstimate)
+			Throw New NotSupportedException
+			Debugger.Break()
+			If (TypeOf MyFilter Is IFilterEstimate = False) Or (TypeOf MyFilterY Is IFilterEstimate = False) Then
+				Throw New NotSupportedException("The Filter does not support the required interface!")
+			Else
+				ThisFilterEstimate = DirectCast(MyFilter, IFilterEstimate)
         ThisFilterEstimateY = DirectCast(MyFilterY, IFilterEstimate)
       End If
       Select Case (MyFilter.Count - MyFilterY.Count)

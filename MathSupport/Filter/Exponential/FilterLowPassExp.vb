@@ -62,13 +62,12 @@ Namespace MathPlus.Filter
 				'this is base on a exponential filter
 				MyFilterPrediction = New Filter.FilterLowPassExpPredict(
 					NumberToPredict:=0.0,
-					FilterHead:=New FilterLowPassExp(FilterRate:=MyFilterRate))
+					FilterHead:=New FilterExp(FilterRate:=MyFilterRate))
 
 				MyFilterPredictionDerivative = New Filter.FilterLowPassPLLPredict(
 					NumberToPredict:=0.0,
-					FilterHead:=New FilterLowPassExp(FilterRate:=MyFilterRate),
-					FilterBase:=New FilterLowPassPLL(FilterRate:=MyFilterRate, IsPredictionEnabled:=False))
-
+					FilterHead:=New FilterExp(FilterRate:=MyFilterRate),
+					FilterBase:=New FilterPLL(FilterRate:=MyFilterRate))
 			Else
 				MyFilterPrediction = Nothing
 				MyFilterPredictionDerivative = Nothing
@@ -607,6 +606,7 @@ Namespace MathPlus.Filter
 		Private Function IFilterCopy_CopyFrom() As IFilter Implements IFilterCopy.CopyFrom
 			Dim ThisFilter As FilterLowPassExp
 
+			Throw New NotSupportedException
 			If MyInputValue.Length > 0 Then
 				If Me.Count = 0 Then
 					ThisFilter = New FilterLowPassExp(MyFilterRate, MyInputValue, IsRunFilter:=False, IsPredictionEnabled:=IsPredictionEnabledLocal)

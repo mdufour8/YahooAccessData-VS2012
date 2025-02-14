@@ -1,15 +1,6 @@
 ﻿#Region "Imports"
-Imports MathNet.Numerics
-Imports MathNet.Numerics.RootFinding
-Imports YahooAccessData.MathPlus.Filter
-Imports YahooAccessData.OptionValuation
 Imports YahooAccessData.MathPlus.Measure.Measure
 Imports YahooAccessData.ExtensionService.Extensions
-Imports System.Threading.Tasks
-Imports System.IO
-Imports System.Runtime.Serialization.Formatters.Binary
-
-
 #End Region
 
 
@@ -62,11 +53,14 @@ Namespace MathPlus.Filter
 		Private MyListOfFilterErrorValue As ListScaled
 		Private MyFilterBPrediction As Filter.FilterLowPassExpPredict
 		Private MyFilterBPredictionDerivative As Filter.FilterLowPassPLLPredict
-		'Private MyFilterPLLForError As Filter.IFilter
+		Private MyFilterForPLLError As Filter.IFilter
 		Private MyDampingFactor As Double
 		Private IsPredictionEnabledLocal As Boolean
 		Private MyInputValue() As Double
 		Private IsRunFilterLocal As Boolean
+		Private MyFilterPLL As FilterPLL
+		Private MyFilterPLLPhase As FilterPLL
+
 
 		Public Sub New(
 									ByVal FilterRate As Double,
@@ -118,6 +112,12 @@ Namespace MathPlus.Filter
 			MyErrork0 = 0
 			IsRunFilterLocal = False
 			MyFilterBPredictionOutput = NumberOfPredictionOutput
+			'for now do not support the prediction from the 
+			If MyFilterBPredictionOutput > 0 Then
+				If IsPredictionEnabledLocal = False Then
+					Debugger.Break()
+				End If
+			End If
 
 			Dim ThisFilterRateForStatistical As Double = 5 * MyFilterRate
 			If ThisFilterRateForStatistical < YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_MONTH Then
@@ -128,16 +128,18 @@ Namespace MathPlus.Filter
 				'this is base on a exponential filter
 				MyFilterBPrediction = New Filter.FilterLowPassExpPredict(
 					NumberToPredict:=MyFilterBPredictionOutput,
-					FilterHead:=New FilterLowPassPLL(FilterRate:=MyFilterRate))
+					FilterHead:=New FilterPLL(FilterRate:=MyFilterRate))
 
 				MyFilterBPredictionDerivative = New Filter.FilterLowPassPLLPredict(
 					NumberToPredict:=MyFilterBPredictionOutput,
-					FilterHead:=New FilterLowPassPLL(FilterRate:=MyFilterRate, IsPredictionEnabled:=False),
-					FilterBase:=New FilterLowPassPLL(FilterRate:=MyFilterRate, IsPredictionEnabled:=False))
+					FilterHead:=New FilterPLL(FilterRate:=MyFilterRate),
+					FilterBase:=New FilterPLL(FilterRate:=MyFilterRate))
 			Else
 				MyFilterBPrediction = Nothing
 				MyFilterBPredictionDerivative = Nothing
 			End If
+			MyFilterPLL = New FilterPLL(FilterRate, DampingFactor)
+			MyFilterPLLPhase = New FilterPLL(FilterRate, DampingFactor)
 		End Sub
 
 
@@ -269,7 +271,15 @@ Namespace MathPlus.Filter
 				Dim ThisNumberLoop As Integer = 0
 				Dim ThisValueStart As Double = FilterPLLDetector.ValueOutput(Value, MyFilterValuek0)
 				Dim ThisValueStop As Double
+
+				Debugger.Break()
 				Do
+					'If Me.Count >= 100 And Me.Tag = "PriceFilterLowPassPLL" Then
+					'	If ThisFilterPredictionGainYearly = 0.0 Then
+					'		ThisFilterPredictionGainYearly = ThisFilterPredictionGainYearly
+					'	End If
+					'End If
+
 					ThisNumberLoop = ThisNumberLoop + 1
 					MySignalDelta = FilterPLLDetector.RunErrorDetector(Value, MyFilterValuek0)
 					'ignore the error and hold the output if the status is false
@@ -319,47 +329,60 @@ Namespace MathPlus.Filter
 				MyListOfValue.Add(MyFilterValueLast)
 			Else
 				'just the standard PLL here
-				MySignalDelta = Value - MyFilterValuek0
-				'calculate the filter loop parameters
-				MyErrork1 = MyErrork0
-				MyErrork0 = (C1 * MySignalDelta) + MyErrork1
-				MyFilterError = (C2 * MySignalDelta) + MyErrork1
-				'calculate the integrator parameters
-				MyVCOk2 = MyVCOk1
-				MyVCOk1 = MyVCOk0
-				MyVCOk0 = C + MyFilterError + MyVCOk1
-				'in this implementation MyFilterError is the instantaneous slope of the signal output
-				MyFilterValuek2 = MyFilterValuek1
-				MyFilterValuek1 = MyFilterValuek0
-
-				'MyFilterValuek0 is the next signal predicted value for the next sample
-				MyFilterValuek0 = MyRefValue + MyVCOk0
-				If MyFilterBPredictionOutput = 0 Then
-					MyFilterValueLast = MyFilterValuek0
+				'If Me.Count >= 100 And Me.Tag = "PriceFilterLowPassPLL" Then
+				'	If ThisFilterPredictionGainYearly = 0.0 Then
+				'		ThisFilterPredictionGainYearly = ThisFilterPredictionGainYearly
+				'	End If
+				'End If
+				If MyFilterPLL IsNot Nothing Then
+					MyFilterValueLast = MyFilterPLL.FilterRun(Value)
+					MyFilterError = MyFilterPLLPhase.FilterRun(MyFilterPLL.FilterError)
+					'MyFilterError = MyFilterPLL.FilterError
+					MyStatisticalForGain.Filter(GainLog(Value:=MyFilterValueLast + MyFilterError, ValueRef:=MyFilterValueLast))
+					ThisFilterPredictionGainYearly = MyStatisticalForGain.FilterLast.ToGaussianScale
 				Else
-					MyFilterValueLast = Me.FilterPredictionNext(NumberPoints:=MyFilterBPredictionOutput)
+					MySignalDelta = Value - MyFilterValuek0
+					'calculate the filter loop parameters
+					MyErrork1 = MyErrork0
+					MyErrork0 = (C1 * MySignalDelta) + MyErrork1
+					MyFilterError = (C2 * MySignalDelta) + MyErrork1
+					'calculate the integrator parameters
+					MyVCOk2 = MyVCOk1
+					MyVCOk1 = MyVCOk0
+					MyVCOk0 = C + MyFilterError + MyVCOk1
+					'in this implementation MyFilterError is the instantaneous slope of the signal output
+					MyFilterValuek2 = MyFilterValuek1
+					MyFilterValuek1 = MyFilterValuek0
+
+					'MyFilterValuek0 is the next signal predicted value for the next sample
+					MyFilterValuek0 = MyRefValue + MyVCOk0
+					If MyFilterBPredictionOutput = 0 Then
+						MyFilterValueLast = MyFilterValuek0
+					Else
+						MyFilterValueLast = MyFilterValuek0
+						'MyFilterValueLast = Me.FilterPredictionNext(NumberPoints:=MyFilterBPredictionOutput)
+					End If
+					MyStatisticalForGain.Filter(GainLog(Value:=MyFilterValuek0 + MyErrork0, ValueRef:=MyFilterValuek0))
+					ThisFilterPredictionGainYearly = MyStatisticalForGain.FilterLast.ToGaussianScale
 				End If
 				MyListOfValue.Add(MyFilterValueLast)
 			End If
-			'this equation is an approximation of the gain valid for value >>1
-			'the computation fail for small positive and negative value but the degradation is predictable and the derivative exist.
-			'the intend is not to have an exact gain measurement but a closed form that behave on a predictable value
-			'ThisFilterPredictionGainYearly = (MathPlus.General.NUMBER_WORKDAY_PER_YEAR * Math.Log(((MyFilterValuek0 ^ 2 + 1) / (MyFilterValuek1 ^ 2 + 1)))) / 2
-			'also limit exponentially the gain value between -1 and +1
-			'ThisFilterPredictionGainYearly = MathPlus.WaveForm.SignalLimit(ThisFilterPredictionGainYearly, 1)
-			'filter this error to reduce the instantaneous variation
-			'MyFilterPLLForError.Filter(ThisFilterPredictionGainYearly)
-			'MyFilterError is the unit per day slope
+				'Dim ThisGainLog = GainLog(MyFilterValuek0, ValueRef:=MyFilterValuek1)
+				'Dim ThisGainLog = Measure.Measure.GainLog(Value:=MyFilterValuek0 + MyStatisticalForGain.FilterLast.StandardDeviation)
+				'MyStatisticalForGain.Filter(ThisGainLog)
+				'ThisFilterPredictionGainYearly = MyStatisticalForGain.FilterLast.ToGaussianScale
 
-			If Me.Count = 500 Then
-				ThisFilterPredictionGainYearly = ThisFilterPredictionGainYearly
-			End If
-			MyStatisticalForGain.Filter(GainLog(Value:=MyFilterValuek0, ValueRef:=MyFilterValuek1))
-			ThisFilterPredictionGainYearly = MyStatisticalForGain.FilterLast.ToGaussianScale
+				'If Me.Count > 100 And Me.Tag = "PriceFilterLowPassPLL" Then
+				'	If ThisFilterPredictionGainYearly = 0.0 Then
+				'		ThisFilterPredictionGainYearly = ThisFilterPredictionGainYearly
+				'	End If
+				'End If
 
-			'ThisFilterPredictionGainYearly = (MathPlus.General.NUMBER_WORKDAY_PER_YEAR * MathPlus.Measure.Measure.GainLog(MyVCOk0, MyVCOk1))
-			'ThisFilterPredictionGainYearly = MathPlus.WaveForm.SignalLimit(ThisFilterPredictionGainYearly, 1)
-			MyListOfFilterErrorValue.Add(ThisFilterPredictionGainYearly)
+
+
+				'ThisFilterPredictionGainYearly = (MathPlus.General.NUMBER_WORKDAY_PER_YEAR * MathPlus.Measure.Measure.GainLog(MyVCOk0, MyVCOk1))
+				'ThisFilterPredictionGainYearly = MathPlus.WaveForm.SignalLimit(ThisFilterPredictionGainYearly, 1)
+				MyListOfFilterErrorValue.Add(ThisFilterPredictionGainYearly)
 
 			'MyListOfFilterErrorValue.Add(MyFilterError)
 			'MyListOfFilterErrorValue.Add(MyFilterValuek0)
@@ -372,7 +395,7 @@ Namespace MathPlus.Filter
 				MyFilterBPrediction.Filter(Value)
 				MyFilterBPredictionDerivative.Filter(Value)
 			End If
-			Return MyFilterValuek0
+			Return MyFilterValueLast
 		End Function
 
 
@@ -493,22 +516,23 @@ Namespace MathPlus.Filter
 		''' <remarks></remarks>
 		Public Function FilterPredictionNext(ByVal NumberPoints As Integer) As Double
 			Dim I As Integer
-			Dim ThisValue As Double
+			Dim ThisFilterValueLast As Double
 
-			Dim ThisSignalDelta As Double
-			Dim ThisFilterError As Double = MyFilterError
-			Dim ThisFilterValuek0 As Double = MyFilterValuek0
-			Dim ThisFilterValuek1 As Double = MyFilterValuek1
-			Dim ThisFilterValuek2 As Double = MyFilterValuek2
-			Dim ThisVCOk0 As Double = MyVCOk0
-			Dim ThisVCOk1 As Double = MyVCOk1
-			Dim ThisErrork0 As Double = MyErrork0
-			Dim ThisErrork1 As Double = MyErrork1
-			Dim ThisValueLast As Double
+			'Dim ThisSignalDelta As Double
+			'Dim ThisFilterError As Double = MyFilterError
+			'Dim ThisFilterValuek0 As Double = MyFilterValuek0
+			'Dim ThisFilterValuek1 As Double = MyFilterValuek1
+			'Dim ThisFilterValuek2 As Double = MyFilterValuek2
+			'Dim ThisVCOk0 As Double = MyVCOk0
+			'Dim ThisVCOk1 As Double = MyVCOk1
+			'Dim ThisErrork0 As Double = MyErrork0
+			'Dim ThisErrork1 As Double = MyErrork1
+			'Dim ThisValueLast As Double
 			'Dim ThisCubicSpline As Interpolation.CubicSpline
 			'calculate the slope at the edge point and then interpolate
 			'
 			'do not take the last value has the input 
+			MyFilterPLL.ASIFilterState.Save()
 			For I = 1 To NumberPoints
 				'comparaison signal input difference
 				'using the spline to obtain the slope is not necessary since the PLL already have a faily good estimete of the slope
@@ -526,23 +550,10 @@ Namespace MathPlus.Filter
 				'take the filter output has the best estimate of the current input 
 				'this significantly reduce the noise on the futur estimate of output value
 				'and is a superior for signal trading
-				ThisValueLast = ThisFilterValuek0
-				ThisValue = ThisValueLast + ThisFilterError
-				ThisSignalDelta = ThisValue - ThisFilterValuek0
-				'calculate the filter loop parameters
-				ThisErrork1 = ThisErrork0
-				ThisErrork0 = (C1 * ThisSignalDelta) + ThisErrork1
-				ThisFilterError = (C2 * ThisSignalDelta) + ThisErrork1
-				'calculate the integrator parameters
-				ThisVCOk1 = ThisVCOk0
-				ThisVCOk0 = C + ThisFilterError + ThisVCOk1
-				'in this implementation ThisFilterError is the instantaneous slope of the signal output
-				ThisFilterValuek2 = ThisFilterValuek1
-				ThisFilterValuek1 = ThisFilterValuek0
-				'ThisFilterValuek0 is the next signal predicted value for the next sample
-				ThisFilterValuek0 = MyRefValue + ThisVCOk0
+				ThisFilterValueLast = MyFilterPLL.FilterRun(MyFilterPLL.FilterLast + MyFilterPLL.FilterError)
 			Next
-			Return ThisFilterValuek0
+			MyFilterPLL.ASIFilterState.ReturnPrevious()
+			Return ThisFilterValueLast
 		End Function
 
 		''' <summary>
@@ -707,6 +718,8 @@ Namespace MathPlus.Filter
 			Dim ThisErrork0 As Double = MyErrork0
 			Dim ThisErrork1 As Double = MyErrork1
 
+			Throw New NotSupportedException
+			Debugger.Break()
 			ThisValue = Value
 			ThisSignalDelta = ThisValue - ThisFilterValuek0
 			'calculate the filter loop parameters
@@ -740,6 +753,8 @@ Namespace MathPlus.Filter
 			Dim ThisErrork0 As Double = MyErrork0
 			Dim ThisErrork1 As Double = MyErrork1
 
+			Throw New NotSupportedException
+			Debugger.Break()
 			For Each ThisValue In Value
 				ThisSignalDelta = ThisValue - ThisFilterValuek0
 				'calculate the filter loop parameters
@@ -1018,6 +1033,7 @@ Namespace MathPlus.Filter
 		Private Function IFilterCopy_CopyFrom() As IFilter Implements IFilterCopy.CopyFrom
 			Dim ThisFilter As FilterLowPassExp
 
+			Throw New NotSupportedException
 			If MyInputValue.Length > 0 Then
 				If Me.Count = 0 Then
 					ThisFilter = New FilterLowPassExp(MyFilterRate, MyInputValue, IsRunFilter:=False, IsPredictionEnabled:=IsPredictionEnabledLocal)

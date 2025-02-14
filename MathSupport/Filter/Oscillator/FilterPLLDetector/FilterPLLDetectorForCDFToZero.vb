@@ -28,16 +28,17 @@ Namespace MathPlus.Filter
     Private MyToErrorLimit As Double
     Private MyValueInit As Double
     Private MyValueOutput As Double
-    Private MyFilterPLL As FilterLowPassPLL
-    Private MyListOfConvergence As IList(Of Double)
+		Private MyFilterPLL As FilterPLL
+		Private MyListOfConvergence As IList(Of Double)
     Private MyListOfPriceMedianNextDayLow As IList(Of Double)
     Private MyListOfPriceMedianNextDayHigh As IList(Of Double)
     Private MyFilterVolatilityForPriceStochasticMedian As FilterVolatilityYangZhang
     Private MyRateForVolatility As Integer
-    Private MyFilterPLLForGain As FilterLowPassPLL
+		Private MyFilterPLLForGain As FilterLowPassPLL
+		Private MyListOfValue As IList(Of Double)
 
 
-    Public Sub New(
+		Public Sub New(
       ByVal Rate As Integer,
       Optional ByVal ToCountLimit As Integer = 1,
       Optional ToErrorLimit As Double = 0.001,
@@ -54,15 +55,16 @@ Namespace MathPlus.Filter
       End If
       'this is working but leave it to false for now
       IsStochasticProbabilityHisteresis = False
-			MyFilterPLL = New FilterLowPassPLL(FilterRate:=7, DampingFactor:=1.0, NumberOfPredictionOutput:=0)
+			MyFilterPLL = New FilterPLL(FilterRate:=7, DampingFactor:=1.0)
 			MyListOfConvergence = New List(Of Double)
       MyRateForVolatility = CInt(FilterPLLDetectorForVolatilitySigma.VolatilityRate)
       'MyFilterVolatilityForPriceStochasticMedian = New FilterVolatilityYangZhang(MyRateForVolatility, FilterVolatility.enuVolatilityStatisticType.Exponential)
       MyFilterVolatilityForPriceStochasticMedian = New FilterVolatilityYangZhang(MyRate, FilterVolatility.enuVolatilityStatisticType.Exponential)
       MyListOfPriceMedianNextDayLow = New List(Of Double)
       MyListOfPriceMedianNextDayHigh = New List(Of Double)
-      MyFilterPLLForGain = New FilterLowPassPLL(MyRate, IsPredictionEnabled:=True)
-      Me.Tag = TypeName(Me)  'by default
+			MyFilterPLLForGain = New FilterLowPassPLL(MyRate, IsPredictionEnabled:=True)
+			MyListOfValue = New List(Of Double)
+			Me.Tag = TypeName(Me)  'by default
     End Sub
 
     Public Function RunErrorDetector(Input As Double, InputFeedback As Double) As Double Implements IFilterPLLDetector.RunErrorDetector
@@ -169,11 +171,12 @@ Namespace MathPlus.Filter
       MyListOfPriceMedianNextDayLow.Add(ThisStockPriceLowValue)
       MyListOfPriceMedianNextDayHigh.Add(ThisStockPriceHighValue)
       If IsStochasticProbabilityHisteresis Then
-        'note IsStochasticProbabilityHisteresis is not normally being use yet
-        MyFilterPLL.Filter(MyPriceForMidStochastic, Me)
-      Else
-        MyFilterPLL.ToList.Add(MyPriceForMidStochastic)
-      End If
+				'note IsStochasticProbabilityHisteresis is not normally being use yet
+				MyFilterPLL.FilterRun(Value:=MyPriceForMidStochastic, FilterPLLDetector:=Me)
+				MyListOfValue.Add(MyFilterPLL.FilterLast)
+			Else
+				MyListOfValue.Add(MyPriceForMidStochastic)
+			End If
     End Sub
 
     ''' <summary>
@@ -301,8 +304,8 @@ Namespace MathPlus.Filter
 
     Public ReadOnly Property ToList As IList(Of Double) Implements IFilterPLLDetector.ToList
       Get
-        Return MyFilterPLL.ToList
-      End Get
+				Return MyListOfValue
+			End Get
     End Property
 
     Public Property Tag As String Implements IFilterPLLDetector.Tag

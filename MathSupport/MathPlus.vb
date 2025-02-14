@@ -2029,6 +2029,8 @@ Namespace MathPlus
 			End Function
 
 			Private Function IFilterCopy_CopyFrom() As IFilter Implements IFilterCopy.CopyFrom
+
+				Throw New NotSupportedException
 				Dim ThisFilter As FilterLowPassExpNoDelay
 				Dim ThisFilterControl As IFilterControl = Me
 				If ThisFilterControl.IsInputEnabled Then
@@ -2233,6 +2235,7 @@ Namespace MathPlus
 			End Function
 
 			Private Function IFilterPrediction_FilterPrediction(NumberOfPrediction As Integer, GainPerYear As Double) As Double Implements IFilterPrediction.FilterPrediction
+				Throw New NotSupportedException
 				Return MyFilterLowPassExp.AsIFilterPrediction.FilterPrediction(NumberOfPrediction, GainPerYear)
 			End Function
 
@@ -4406,8 +4409,8 @@ Namespace MathPlus
 			'Private MyListOfValueSquare As List(Of Double)
 			'Private MySumOfValue As Double
 			'Private MySumOfValueSquare As Double
-			Private MyFilterExpMean As FilterLowPassExp
-			Private MyFilterExpSquare As FilterLowPassExp
+			Private MyFilterExpMean As FilterExp
+			Private MyFilterExpSquare As FilterExp
 
 			Private MyListOfValueStatistical As List(Of IStatistical)
 
@@ -4436,8 +4439,8 @@ Namespace MathPlus
 				MyRate = CInt(FilterRate)
 				'the -1 is for the finite number of samples correction from an infinite number of samples
 				MyVarianceCorrection = MyRate / (MyRate - 1)
-				MyFilterExpMean = New FilterLowPassExp(FilterRate)
-				MyFilterExpSquare = New FilterLowPassExp(FilterRate)
+				MyFilterExpMean = New FilterExp(FilterRate)
+				MyFilterExpSquare = New FilterExp(FilterRate)
 
 				FilterValueLast = New StatisticalData(0, 0, 0)
 				FilterValueLastK1 = New StatisticalData(0, 0, 0)
@@ -4484,9 +4487,9 @@ Namespace MathPlus
 				End If
 				FilterValueLastK1 = FilterValueLast.Copy
 				If IsRunReady Then
-					ThisMean = MyFilterExpMean.Filter(Value)
+					ThisMean = MyFilterExpMean.FilterRun(Value)
 					ThisM2 = (Value - ThisMean) ^ 2
-					ThisVariance = MyVarianceCorrection * MyFilterExpSquare.Filter(ThisM2)
+					ThisVariance = MyVarianceCorrection * MyFilterExpSquare.FilterRun(ThisM2)
 				Else
 					ThisMean = Value
 					ThisVariance = 0
@@ -9153,18 +9156,18 @@ Namespace MathPlus
 			Private MyLow As Double
 			Private MyNumberPoint As Integer
 
-			Public Sub New(ByVal Mean As Double, ByVal Variance As Double, ByVal NumberPoint As Integer)
+			Public Sub New(ByVal Mean As Double, ByVal Variance As Double, ByVal NumberPoint As Integer, Optional ValueLast As Double = 0.0)
 				MyMean = Mean
 				MyVariance = Variance
 				MyStandardDeviation = Math.Sqrt(MyVariance)
 				MyHigh = MyMean + MyStandardDeviation
 				MyLow = MyMean - MyStandardDeviation
 				MyNumberPoint = NumberPoint
-				Me.ValueLast = 0.0  'default value
+				Me.ValueLast = ValueLast
 			End Sub
 
 			Public Sub New(ByVal StatisticalData As IStatistical)
-				Me.New(StatisticalData.Mean, StatisticalData.Variance, StatisticalData.NumberPoint)
+				Me.New(StatisticalData.Mean, StatisticalData.Variance, StatisticalData.NumberPoint, ValueLast:=StatisticalData.ValueLast)
 			End Sub
 
 			Public ReadOnly Property Mean As Double Implements IStatistical.Mean
@@ -9186,7 +9189,7 @@ Namespace MathPlus
 			End Property
 
 			Public Function Copy() As IStatistical Implements IStatistical.Copy
-				Return New StatisticalData(MyMean, MyVariance, MyNumberPoint)
+				Return New StatisticalData(MyMean, MyVariance, MyNumberPoint, Me.ValueLast)
 			End Function
 
 			Public ReadOnly Property High As Double Implements IStatistical.High
@@ -9230,7 +9233,7 @@ Namespace MathPlus
 				ThisMeanSquare2 = Value.Variance + Value.Mean ^ 2
 				ThisMeanSquareTotal = ThisWeight1 * ThisMeanSquare1 + ThisWeight2 * ThisMeanSquare2
 				ThisMeanSquareTotal = ThisMeanSquareTotal - ThisMeanTotal ^ 2
-				Me.CopyTo(New StatisticalData(ThisMeanTotal, ThisMeanSquareTotal, ThisNumberPoint))
+				Me.CopyTo(New StatisticalData(ThisMeanTotal, ThisMeanSquareTotal, ThisNumberPoint, Value.ValueLast))
 			End Sub
 
 			Public Sub CopyTo(Value As IStatistical) Implements IStatistical.CopyTo
@@ -9240,6 +9243,7 @@ Namespace MathPlus
 				MyHigh = Value.High
 				MyLow = Value.Low
 				MyNumberPoint = Value.NumberPoint
+				Me.ValueLast = Value.ValueLast
 			End Sub
 
 			Public Function ToGaussianScale() As Double Implements IStatistical.ToGaussianScale

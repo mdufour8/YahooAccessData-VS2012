@@ -62,7 +62,7 @@ Namespace MathPlus.Filter
 				MyFilterPredictionDerivative = New Filter.FilterLowPassPLLPredict(
 					NumberToPredict:=0.0,
 					FilterHead:=New FilterLowPassExpHull(FilterRate:=MyFilterRate),
-					FilterBase:=New FilterLowPassPLL(FilterRate:=MyFilterRate, IsPredictionEnabled:=False))
+					FilterBase:=New FilterPLL(FilterRate:=MyFilterRate))
 			Else
         MyFilterPrediction = Nothing
         MyFilterPredictionDerivative = Nothing

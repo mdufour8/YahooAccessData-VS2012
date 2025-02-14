@@ -27,8 +27,8 @@ Namespace MathPlus.Filter
     Private MyCountOfPLLRun As Integer
     Private MyStatus As Boolean
     Private MyVolatilityAverage As Double
-    Private MyFilterPLL As FilterLowPassPLL
-    Private MyDetectorBandExcessBalanceSum As Double
+		Private MyFilterPLL As FilterPLL
+		Private MyDetectorBandExcessBalanceSum As Double
     Private MyDetectorBalanceLast As Double
     Private MyMaximum As Double
     Private MyListOfConvergence As IList(Of Double)
@@ -36,9 +36,10 @@ Namespace MathPlus.Filter
     Private MyListOfProbabilityOfExcess As IList(Of Double)
     Private MyListOfProbabilityOfExcessBalance As IList(Of Double)
     Private MyFastAttackCountForBandExceededLow As Double
-    Private MyFastAttackCountForBandExceededHigh As Double
+		Private MyFastAttackCountForBandExceededHigh As Double
+		Private MyListOfValueOutput As IList(Of Double)
 
-    Public Sub New(ByVal Rate As Integer, Optional ByVal ToCountLimit As Integer = 1, Optional ToErrorLimit As Double = 0.001)
+		Public Sub New(ByVal Rate As Integer, Optional ByVal ToCountLimit As Integer = 1, Optional ToErrorLimit As Double = 0.001)
       MyRate = Rate
       'MyRateForSigmaStatisticDaily = CInt(FilterPLLDetectorForVolatilitySigma.VolatilityRate)
       Me.IsUseFeedbackRegulatedVolatilityFastAttackEvent = False    'by default
@@ -51,12 +52,13 @@ Namespace MathPlus.Filter
       MyCountOfPLLRun = 0
       MyStatus = False
       MyQueueForSigmaStatisticDaily = New Queue(Of IStockPriceVolatilityPredictionBand)(capacity:=CInt(MyRateForSigmaStatisticDaily))
-      MyFilterPLL = New FilterLowPassPLL(FilterRate:=7, DampingFactor:=1.0, NumberOfPredictionOutput:=0)
-      MyListOfConvergence = New List(Of Double)
+			MyFilterPLL = New FilterPLL(FilterRate:=7, DampingFactor:=1.0)
+			MyListOfConvergence = New List(Of Double)
       MyListOfProbabilityOfExcess = New List(Of Double)
-      MyListOfProbabilityOfExcessBalance = New List(Of Double)
-      Me.Tag = TypeName(Me)
-    End Sub
+			MyListOfProbabilityOfExcessBalance = New List(Of Double)
+			MyListOfValueOutput = New List(Of Double)
+			Me.Tag = TypeName(Me)
+		End Sub
 
     Public Function RunErrorDetector(Input As Double, InputFeedback As Double) As Double Implements IFilterPLLDetector.RunErrorDetector
       Dim ThisStockPriceVolatilityPredictionBand As IStockPriceVolatilityPredictionBand
@@ -235,17 +237,18 @@ Namespace MathPlus.Filter
       'End If
       MyToCountLimitSelected = MyToCountLimit
       MyQueueForSigmaStatisticDaily.Enqueue(StockPriceVolatilityPredictionBand)
-      'If MyCount >= 1576 Then
-      '  MyCount = MyCount
-      'End If
+			'If MyCount >= 1576 Then
+			'  MyCount = MyCount
+			'End If
 
-      'If ThisQueueDataLast Then
-      'note the PLL return the error VolatilityDelta, however it finish the calculation with the Volatility Total
-      'obtained by calling the object ValueOutput function. The filter PLL list contain the volatility total as the final result
-      'and also the FilterLast value
-      ThisVolatilityDelta = MyFilterPLL.Filter(StockPriceVolatilityPredictionBand.Volatility, Me)
-      'call RunErrorDetector for the last statistic update
-      Me.RunErrorDetector(StockPriceVolatilityPredictionBand.Volatility, ThisVolatilityDelta)
+			'If ThisQueueDataLast Then
+			'note the PLL return the error VolatilityDelta, however it finish the calculation with the Volatility Total
+			'obtained by calling the object ValueOutput function. The filter PLL list contain the volatility total as the final result
+			'and also the FilterLast value
+			ThisVolatilityDelta = MyFilterPLL.FilterRun(StockPriceVolatilityPredictionBand.Volatility, Me)
+			MyListOfValueOutput.Add(ThisVolatilityDelta)
+			'call RunErrorDetector for the last statistic update
+			Me.RunErrorDetector(StockPriceVolatilityPredictionBand.Volatility, ThisVolatilityDelta)
       StockPriceVolatilityPredictionBand.Refresh(VolatilityDelta:=ThisVolatilityDelta)
 
 
@@ -355,8 +358,8 @@ Namespace MathPlus.Filter
 
     Public ReadOnly Property ToList As IList(Of Double) Implements IFilterPLLDetector.ToList
       Get
-        Return MyFilterPLL.ToList
-      End Get
+				Return MyListOfValueOutput
+			End Get
     End Property
 
     Public Shared Function VolatilityRate() As Double

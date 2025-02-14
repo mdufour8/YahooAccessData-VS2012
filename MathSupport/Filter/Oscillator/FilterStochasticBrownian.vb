@@ -69,8 +69,8 @@ Namespace MathPlus.Filter
     Private MyListForVolatilityRegulatedPreviousCloseToOpenWithGain As IList(Of Double)
     Private MyListForVolatilityRegulatedFromOpenToCloseWithGain As IList(Of Double)
     Private MyListForVolatilityRegulatedNoGainFromOpenToClose As IList(Of Double)
-    Private MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain As FilterLowPassPLL
-    Private MyListForVolatilityDetectorBalance As IList(Of Double)
+		Private MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain As FilterLowPassExpPredict
+		Private MyListForVolatilityDetectorBalance As IList(Of Double)
     Private MyValueLast As IPriceVol
     Private MyProcessorCount As Integer
 
@@ -235,10 +235,11 @@ Namespace MathPlus.Filter
       MyListForVolatilityRegulatedPreviousCloseToOpenWithGain = New List(Of Double)
       MyListForVolatilityRegulatedFromOpenToCloseWithGain = New List(Of Double)
       MyListForVolatilityRegulatedNoGainFromOpenToClose = New List(Of Double)
-      'predict the next sample using the last 5 samples
-      MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain = New FilterLowPassPLL(FilterRate:=5, NumberOfPredictionOutput:=1)
-      'MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain = New FilterLowPassPLL(FilterRate:=Rate)
-      MyListForVolatilityDetectorBalance = New List(Of Double)
+			'predict the next sample using the last 5 samples
+			'MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain = New FilterLowPassPLL(FilterRate:=5, NumberOfPredictionOutput:=1)
+			MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain = New FilterLowPassExpPredict(FilterRate:=5, NumberToPredict:=1)
+			'MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain = New FilterLowPassPLL(FilterRate:=Rate)
+			MyListForVolatilityDetectorBalance = New List(Of Double)
       'MyFilterLPOfStochasticSlow = New FilterLowPassExpHull(FilterOutputRate)
       MyListOfStochasticFast = New ListScaled
       MyFilterLPOfStochasticSlow = New FilterLowPassExp(FilterOutputRate)
@@ -1177,11 +1178,11 @@ Namespace MathPlus.Filter
 
 
         If Me.IsUseFeedbackRegulatedVolatility Then
-          'calculate the probability to reach the peak ove the specified band
-          'the main stochactic brownian is calculated in this section
-          'many of the pther calculation are test evaluation that may be removed in the future
-          ThisVolatilityRegulated = MyStockPriceVolatilityPredictionBandWithGain(I).VolatilityTotal
-          ThisVolatilityForStochasticPrediction = MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain.ToList(I)
+					'calculate the probability to reach the peak ove the specified band
+					'the main stochactic brownian is calculated in this section
+					'many of the pther calculation are test evaluation that may be removed in the future
+					ThisVolatilityRegulated = MyStockPriceVolatilityPredictionBandWithGain(I).VolatilityTotal
+					ThisVolatilityForStochasticPrediction = MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain.ToList(I)
         Else
           ThisVolatilityRegulated = ThisFilterBasedVolatilityTotal
           ThisVolatilityForStochasticPrediction = ThisVolatilityRegulated
@@ -1737,25 +1738,35 @@ Namespace MathPlus.Filter
       End If
     End Function
 
-    Public Async Function FilterAsync(ReportPrices As RecordPrices) As Task(Of Boolean) Implements IFilterRunAsync.FilterAsync
-      Dim ThisTaskRun As Task(Of Boolean)
+		Public Function FilterSync(ReportPrices As RecordPrices) As Boolean
+			Dim I As Integer
 
-      ThisTaskRun = New Task(Of Boolean)(
-        Function()
-          Dim I As Integer
+			For I = 0 To ReportPrices.NumberPoint - 1
+				Me.FilterLocal(ReportPrices.PriceVols(I))
+			Next
 
-          For I = 0 To ReportPrices.NumberPoint - 1
-            Me.FilterLocal(ReportPrices.PriceVols(I))
-          Next
-          Return True
-        End Function)
+			Return True
+		End Function
 
-      ThisTaskRun.Start()
-      Await ThisTaskRun
-      Return ThisTaskRun.Result
-    End Function
+		Public Async Function FilterAsync(ReportPrices As RecordPrices) As Task(Of Boolean) Implements IFilterRunAsync.FilterAsync
+			Dim ThisTaskRun As Task(Of Boolean)
 
-    Private Async Function FilterAsync1(ByVal ReportPrices As YahooAccessData.RecordPrices) As Task(Of Boolean)
+			ThisTaskRun = New Task(Of Boolean)(
+				Function()
+					Dim I As Integer
+
+					For I = 0 To ReportPrices.NumberPoint - 1
+						Me.FilterLocal(ReportPrices.PriceVols(I))
+					Next
+					Return True
+				End Function)
+
+			ThisTaskRun.Start()
+			Await ThisTaskRun
+			Return ThisTaskRun.Result
+		End Function
+
+		Private Async Function FilterAsync1(ByVal ReportPrices As YahooAccessData.RecordPrices) As Task(Of Boolean)
       Dim ThisListOfPLLErrorDetectorWithGain As List(Of FilterPLLDetectorForVolatilitySigmaAsync)
       Dim ThisListOfPLLErrorDetectorWithGainPreviousCloseToOpen As List(Of FilterPLLDetectorForVolatilitySigmaAsync)
       Dim ThisNumberOfPointPerThread As Integer
