@@ -206,6 +206,7 @@
     <Compile Include="FileSupport\TreeNodeList.vb" />
     <Compile Include="MathSupport\FilterCorrelation.vb" />
     <Compile Include="MathSupport\Filter\Exponential\FilterExp.vb" />
+    <Compile Include="MathSupport\Filter\Exponential\FilterExpPredict.vb" />
     <Compile Include="MathSupport\Filter\Exponential\FilterLowPassExp.vb" />
     <Compile Include="MathSupport\Filter\Exponential\FilterLowPassExpHull.vb" />
     <Compile Include="MathSupport\Filter\Exponential\FilterLowPassExpPredict.vb" />
@@ -213,6 +214,7 @@
     <Compile Include="MathSupport\Filter\Gain\IStochastic1.vb" />
     <Compile Include="MathSupport\Filter\Gain\IStochasticPriceGain.vb" />
     <Compile Include="MathSupport\Filter\Gain\StochasticPriceGain.vb" />
+    <Compile Include="MathSupport\Filter\Interface\IFilterRun.vb" />
     <Compile Include="MathSupport\Filter\Interface\Interface.vb" />
     <Compile Include="MathSupport\Filter\Oscillator\FilterPLLDetector\FilterPLLDetectorForCDFToZero.vb" />
     <Compile Include="MathSupport\Filter\Oscillator\FilterPLLDetector\FilterPLLDetectorForVolatilitySigma.vb" />

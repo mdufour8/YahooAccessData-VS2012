@@ -1,37 +1,80 @@
 ﻿Imports YahooAccessData.MathPlus.Filter
 
-Public Class FilterExp
+Public Class FilterExpPredict
 	Implements IFilterRun
 	Implements IFilter
 	Implements IFilterState
 
 	Private MyRate As Integer
 	Private MyFilterRate As Double
-	Private A As Double
-	Private B As Double
+	Private AFilterLast As Double
+	Private BFilterLast As Double
+	Private ABRatio As Double
 	Private FilterValueLastK1 As Double
+
+	Private FilterValuePredictH1 As Double     'future 1 point
+	Private FilterValuePredictH1Last As Double
+	Private MyFilterPredictionGainYearlyLast As Double
+	Private MyGainStandardDeviationLast As Double
 	Private FilterValueLast As Double
+	Private FilterValueLastY As Double
+	Private FilterValueSlopeLastK1 As Double
+	Private FilterValueSlopeLast As Double
 	Private ValueLast As Double
 	Private ValueLastK1 As Double
+	Private MyListOfValue As ListScaled
+	Private MyListOfPredictionGainPerYear As ListScaled
+	Private MyListOfStatisticalVarianceError As ListScaled
+	Private MyListOfAFilter As List(Of Double)
+	Private MyListOfBFilter As List(Of Double)
+	Private MyStatisticalForPredictionError As FilterStatistical
+	Private MyStatisticalForGain As FilterStatistical
+	Private MyFilter As IFilter
+	Private MyFilterY As IFilter
+	Private MyNumberToPredict As Double
+	Private MyInputValue() As Double
 	Private IsReset As Boolean
 
-	Public Sub New(ByVal FilterRate As Double)
+	Protected Sub New(ByVal NumberToPredict As Double, ByVal FilterHead As IFilter, ByVal FilterBase As IFilter)
+		Dim A As Double
+		Dim B As Double
 
-		If FilterRate < 1 Then FilterRate = 1
-		MyFilterRate = FilterRate
-		MyRate = CInt(MyFilterRate)
+		'check parameter validity before proceeding
+		If (FilterHead Is Nothing) Then
+			'filter cannot be nothing a reference is needed for the filter rate
+			Throw New ArgumentException("Invalid Filter type FilterHead in FilterExpPredict!")
+		End If
+		If TypeOf FilterHead Is IFilterControl Then
+			MyFilterRate = DirectCast(FilterHead, IFilterControl).FilterRate
+		Else
+			MyFilterRate = FilterHead.Rate
+		End If
+		If MyFilterRate < 2 Then
+			Throw New ArgumentException("Invalid filter rate in FilterExpPredict!")
+		End If
+		If (FilterBase Is Nothing) Then
+			'filter cannot be nothing a reference is needed for the filter rate
+			Throw New ArgumentException("Invalid Filter type FilterHead in FilterExpPredict!")
+		End If
+		MyFilter = FilterHead
+		MyFilterY = FilterBase
 
-		'this is the factor A that will give the same bandwidth than a moving average with a flat windows of FilterRate points
-		'see https://en.wikipedia.org/wiki/Exponential_smoothing  section: Comparison with moving average
-		'this result come from the fact that the delay for a square window moving average is given by (N+1)/2 and 1/Alpha for an exponential filter
-		A = CDbl((2 / (MyFilterRate + 1)))
+		MyNumberToPredict = NumberToPredict
+		Dim ThisFilterRateForStatistical As Double = 5 * MyFilterRate
+		If ThisFilterRateForStatistical < YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_MONTH Then
+			ThisFilterRateForStatistical = YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_MONTH
+		End If
 
-		'Seek also:https://en.wikipedia.org/wiki/Low-pass_filter
-		B = 1 - A
+		MyStatisticalForPredictionError = New FilterStatistical(CInt(ThisFilterRateForStatistical))
+		MyStatisticalForGain = New FilterStatistical(CInt(ThisFilterRateForStatistical))
 		FilterValueLast = 0
 		FilterValueLastK1 = 0
 		ValueLast = 0
 		ValueLastK1 = 0
+		A = CDbl((2 / (MyFilterRate + 1)))
+		B = 1 - A
+		ABRatio = A / B
+
 		IsReset = True
 	End Sub
 
@@ -42,7 +85,7 @@ Public Class FilterExp
 			IsReset = False
 		End If
 		FilterValueLastK1 = FilterValueLast
-		FilterValueLast = A * Value + B * FilterValueLast
+		'FilterValueLast = A * Value + B * FilterValueLast
 		ValueLastK1 = ValueLast
 		ValueLast = Value
 		Return FilterValueLast
@@ -208,5 +251,5 @@ Public Class FilterExp
 		Return $"FilterExp: {Me.FilterLast}"
 	End Function
 #End Region
-End Class
 
+End Class

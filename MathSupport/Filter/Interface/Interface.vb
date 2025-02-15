@@ -402,10 +402,23 @@ Namespace MathPlus
 			Property ValueLast As Double
 
 			''' <summary>
-			''' Output the ratio between the ValueLast and the Standard Deviation on a Gaussian probability scaled between [-1,1]
+			''' Output the ratio between the ValueLast and the Standard Deviation on a Gaussian probability scaled between [0,1] or optionally between [-1,1] 
 			''' </summary>
 			''' <returns></returns>
-			Function ToGaussianScale() As Double
+			Function ToGaussianScale(Optional ScaleToSignedUnit As Boolean = False) As Double
+			''' <summary>
+			''' Output the ratio between the ValueLast and the Standard Deviation on a Gaussian probability scaled between [0,1] or optionally between [-1,1] 
+			''' </summary>
+			''' <param name="GaussianPropabilityRangeOfX">The range </param>
+			''' <param name="ScaleToSignedUnit"></param>
+			''' <returns></returns>
+			''' and adiitionally scaly for a graphisc display range of GaussianPropabilityRangeOfX. The recommended range is between 1 to 5 sigma scaling
+			''' </summary>
+			''' <param name="GaussianPropabilityRangeOfX"></param>
+			''' <param name="ScaleToSignedUnit"></param>
+			''' <returns></returns>
+			'Function ToGaussianScale(GaussianPropabilityRangeOfX As Double, Optional ScaleToSignedUnit As Boolean = False) As Double
+
 			Function Copy() As IStatistical
 			Sub CopyTo(ByVal Value As IStatistical)
       Sub Add(ByVal Value As IStatistical)

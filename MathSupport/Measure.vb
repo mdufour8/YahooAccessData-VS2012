@@ -816,14 +816,16 @@ Namespace MathPlus
         Return ThisFilter.FilterLast / Math.Sqrt(Gain ^ 2 + StandardDeviation ^ 2)
       End Function
 
-      ''' <summary>
-      ''' The cumulative normal distribution function approimative implementation for mean=0 and sigma = 1
-      ''' see http://en.wikipedia.org/wiki/Normal_distribution
-      ''' </summary>
-      ''' <param name="X"></param>
-      ''' <returns></returns>
-      ''' <remarks></remarks>
-      Public Shared Function CDFGaussian(ByVal X As Double) As Double
+			''' <summary>
+			''' The cumulative normal distribution function approimative implementation for mean=0 and sigma = 1
+			''' Converting values to a Gaussian scale, also known as standardizing or normalizing data to a Gaussian (normal) distribution, 
+			''' is a common preprocessing step in data analysis and machine learning.
+			''' see http://en.wikipedia.org/wiki/Normal_distribution
+			''' </summary>
+			''' <param name="X"></param>
+			''' <returns></returns>
+			''' <remarks></remarks>
+			Public Shared Function CDFGaussian(ByVal X As Double) As Double
 
         Dim L As Double, K As Double
         Dim ThisResult As Double

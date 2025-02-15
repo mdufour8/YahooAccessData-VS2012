@@ -9246,14 +9246,14 @@ Namespace MathPlus
 				Me.ValueLast = Value.ValueLast
 			End Sub
 
-			Public Function ToGaussianScale() As Double Implements IStatistical.ToGaussianScale
+			Public Function ToGaussianScale(Optional ScaleToSignedUnit As Boolean = False) As Double Implements IStatistical.ToGaussianScale
 				Dim ThisGaussianRatio As Double
 				If Me.StandardDeviation > 0 Then
 					'transform the gain in PerCent per Year as a probability mainly for display
 					ThisGaussianRatio = Measure.Measure.CDFGaussian(Me.ValueLast / Me.StandardDeviation)
-					'restore the probability scale of the gain between +-1 for standarddization with other algorithm that
-					'output the gain in Positif or negatif Percent. TheCDF probability scale that we use is usuful to restrict the rand
-					ThisGaussianRatio = 2 * (ThisGaussianRatio - 0.5)
+					If ScaleToSignedUnit Then
+						ThisGaussianRatio = 2 * (ThisGaussianRatio - 0.5)
+					End If
 				Else
 					ThisGaussianRatio = 0.0
 				End If

@@ -177,10 +177,11 @@ Namespace MathPlus.Filter
 			MyListOfValue.Add(FilterValueLast)
 
 			MyStatisticalForGain.Filter(GainLog(Value:=FilterValuePredictH1, ValueRef:=Ap))
-			ThisFilterPredictionGainYearly = MyStatisticalForGain.FilterLast.ToGaussianScale
+			ThisFilterPredictionGainYearly = MyStatisticalForGain.FilterLast.ToGaussianScale(ScaleToSignedUnit:=True)
+			'ThisFilterPredictionGainYearly = Measure.Measure.ProbabilityToGaussianScale((Me.ToGaussianScale + 1, GaussianPropabilityRangeOfX)
 
-			MyStatisticalForPredictionError.Filter(NUMBER_TRADINGDAY_PER_YEAR * GainLog(Value:=(Value - FilterValuePredictH1Last), ValueRef:=Ap))
-			ThisGainStandardDeviation = MyStatisticalForPredictionError.FilterLast.ToGaussianScale
+			MyStatisticalForPredictionError.Filter(GainLog(Value:=(Value - FilterValuePredictH1Last), ValueRef:=Ap))
+			ThisGainStandardDeviation = MyStatisticalForPredictionError.FilterLast.ToGaussianScale(ScaleToSignedUnit:=True)
 
 			MyListOfPredictionGainPerYear.Add(ThisFilterPredictionGainYearly)
 			MyListOfStatisticalVarianceError.Add(ThisGainStandardDeviation)
@@ -241,6 +242,7 @@ Namespace MathPlus.Filter
 		''' <returns></returns>
 		''' <remarks></remarks>
 		Private Function IFilterPrediction_FilterPrediction(ByVal Index As Integer, ByVal NumberOfPrediction As Integer, ByVal GainPerYear As Double) As Double Implements IFilterPrediction.FilterPrediction
+			Throw New NotSupportedException
 			Return MyListOfAFilter(Index) * (1 + NumberOfPrediction * (Math.Exp(GainPerYear / MathPlus.General.NUMBER_WORKDAY_PER_YEAR) - 1))
 		End Function
 

@@ -8,6 +8,7 @@ Imports YahooAccessData.MathPlus.Filter
 ''' The class provides methods to run the filter and reset it, as well as properties to access the current state of the filter.
 ''' </summary>
 Public Class FilterPLL
+	Implements IFilterRun
 	Implements IFilter
 	Implements IFilterState
 
@@ -64,7 +65,7 @@ Public Class FilterPLL
 		IsReset = True
 	End Sub
 
-	Public Function FilterRun(Value As Double) As Double
+	Public Function FilterRun(Value As Double) As Double Implements IFilterRun.FilterRun
 		If IsReset Then
 			'initialization
 			'initialize the loop with the first time sample
@@ -97,7 +98,7 @@ Public Class FilterPLL
 		Return MyFilterValueLast
 	End Function
 
-	Public Function FilterRun(Value As Double, FilterPLLDetector As IFilterPLLDetector) As Double
+	Public Function FilterRun(Value As Double, FilterPLLDetector As IFilterPLLDetector) As Double Implements IFilterRun.FilterRun
 
 		If FilterPLLDetector Is Nothing Then
 			Throw New InvalidConstraintException("FilterPLLDetector is not initialized...")
@@ -167,11 +168,21 @@ Public Class FilterPLL
 		Return MyFilterValueLast
 	End Function
 
-	Public ReadOnly Property FilterLast As Double
+	Public ReadOnly Property FilterLast As Double Implements IFilterRun.FilterLast
 		Get
 			Return MyFilterValueLast
 		End Get
 	End Property
+
+	Public ReadOnly Property Rate() As Double Implements IFilterRun.FilterRate
+		Get
+			Return MyFilterRate
+		End Get
+	End Property
+
+	Public Sub Reset() Implements IFilterRun.Reset
+		IsReset = True
+	End Sub
 
 	Public ReadOnly Property FilterValuek0 As Double
 		Get
@@ -202,16 +213,6 @@ Public Class FilterPLL
 			Return MyFilterError
 		End Get
 	End Property
-
-	Public ReadOnly Property Rate() As Double
-		Get
-			Return MyFilterRate
-		End Get
-	End Property
-
-	Public Sub Reset()
-		IsReset = True
-	End Sub
 
 #Region "IFilterState"
 	Public Function ASIFilterState() As IFilterState Implements IFilterState.ASIFilterState
@@ -314,6 +315,7 @@ Public Class FilterPLL
 			Throw New NotImplementedException()
 		End Set
 	End Property
+
 	Public Function Filter(Value As Double) As Double Implements IFilter.Filter
 		Return Me.FilterRun(Value)
 	End Function
@@ -381,5 +383,6 @@ Public Class FilterPLL
 	Private Function IFilter_ToString() As String Implements IFilter.ToString
 		Return Me.ToString()
 	End Function
+
 #End Region
 End Class

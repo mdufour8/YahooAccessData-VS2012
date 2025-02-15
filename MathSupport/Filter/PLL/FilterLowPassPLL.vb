@@ -338,8 +338,8 @@ Namespace MathPlus.Filter
 					MyFilterValueLast = MyFilterPLL.FilterRun(Value)
 					MyFilterError = MyFilterPLLPhase.FilterRun(MyFilterPLL.FilterError)
 					'MyFilterError = MyFilterPLL.FilterError
-					MyStatisticalForGain.Filter(GainLog(Value:=MyFilterValueLast + MyFilterError, ValueRef:=MyFilterValueLast))
-					ThisFilterPredictionGainYearly = MyStatisticalForGain.FilterLast.ToGaussianScale
+					MyStatisticalForGain.Filter(NUMBER_TRADINGDAY_PER_YEAR * GainLog(Value:=MyFilterValueLast + MyFilterError, ValueRef:=MyFilterValueLast))
+					ThisFilterPredictionGainYearly = MyStatisticalForGain.FilterLast.ToGaussianScale(ScaleToSignedUnit:=True)
 				Else
 					MySignalDelta = Value - MyFilterValuek0
 					'calculate the filter loop parameters
