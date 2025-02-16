@@ -1,4 +1,6 @@
-﻿Imports YahooAccessData.MathPlus.Filter
+﻿Imports YahooAccessData.MathPlus
+Imports YahooAccessData.MathPlus.Filter
+
 
 Public Class FilterExpPredict
 	Implements IFilterRun
@@ -7,27 +9,17 @@ Public Class FilterExpPredict
 
 	Private MyRate As Integer
 	Private MyFilterRate As Double
-	Private AFilterLast As Double
-	Private BFilterLast As Double
+	Private MyFilterALast As Double
+	Private MyFilterBLast As Double
 	Private ABRatio As Double
 	Private FilterValueLastK1 As Double
 
 	Private FilterValuePredictH1 As Double     'future 1 point
 	Private FilterValuePredictH1Last As Double
 	Private MyFilterPredictionGainYearlyLast As Double
-	Private MyGainStandardDeviationLast As Double
 	Private FilterValueLast As Double
-	Private FilterValueLastY As Double
-	Private FilterValueSlopeLastK1 As Double
-	Private FilterValueSlopeLast As Double
 	Private ValueLast As Double
 	Private ValueLastK1 As Double
-	Private MyListOfValue As ListScaled
-	Private MyListOfPredictionGainPerYear As ListScaled
-	Private MyListOfStatisticalVarianceError As ListScaled
-	Private MyListOfAFilter As List(Of Double)
-	Private MyListOfBFilter As List(Of Double)
-	Private MyStatisticalForPredictionError As FilterStatistical
 	Private MyStatisticalForGain As FilterStatistical
 	Private MyFilter As IFilter
 	Private MyFilterY As IFilter
@@ -65,7 +57,6 @@ Public Class FilterExpPredict
 			ThisFilterRateForStatistical = YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_MONTH
 		End If
 
-		MyStatisticalForPredictionError = New FilterStatistical(CInt(ThisFilterRateForStatistical))
 		MyStatisticalForGain = New FilterStatistical(CInt(ThisFilterRateForStatistical))
 		FilterValueLast = 0
 		FilterValueLastK1 = 0
@@ -79,25 +70,51 @@ Public Class FilterExpPredict
 	End Sub
 
 	Public Function FilterRun(Value As Double) As Double Implements IFilterRun.FilterRun
+		Dim Ap As Double
+		Dim Bp As Double
+		Dim Result As Double
+		Dim ResultY As Double
+		Dim ThisFilterPredictionGainYearly As Double
+		Dim ThisGainStandardDeviation As Double
 		If IsReset Then
 			'initialization
 			FilterValueLast = Value
+			FilterValuePredictH1Last = Value
 			IsReset = False
 		End If
 		FilterValueLastK1 = FilterValueLast
-		'FilterValueLast = A * Value + B * FilterValueLast
+		Result = MyFilter.Filter(Value)
+		ResultY = MyFilterY.Filter(Result)
+		Ap = (2 * Result) - ResultY
+		Bp = ABRatio * (Result - ResultY)
+		MyFilterALast = Ap
+		MyFilterBLast = Bp
+		FilterValuePredictH1 = Ap + Bp
+		'note that Bp is the average trend
+		FilterValueLast = Ap + Bp * MyNumberToPredict
+		MyStatisticalForGain.Filter(Measure.Measure.GainLog(Value:=FilterValuePredictH1, ValueRef:=Ap))
+		ThisFilterPredictionGainYearly = MyStatisticalForGain.FilterLast.ToGaussianScale(ScaleToSignedUnit:=True)
+
+		MyFilterPredictionGainYearlyLast = ThisFilterPredictionGainYearly
+		FilterValuePredictH1Last = FilterValuePredictH1
 		ValueLastK1 = ValueLast
 		ValueLast = Value
 		Return FilterValueLast
 	End Function
 
-	Public Function FilterRun(Value As Double, FilterPLLDetector As IFilterPLLDetector) As Double Implements IFilterRun.FilterRun
-		Return Me.FilterRun(Value)
+	Private Function Filter(Value As Double, FilterPLLDetector As IFilterPLLDetector) As Double Implements IFilterRun.FilterRun
+		Throw New NotImplementedException()
 	End Function
 
 	Public ReadOnly Property FilterLast As Double Implements IFilterRun.FilterLast
 		Get
 			Return FilterValueLast
+		End Get
+	End Property
+
+	Public ReadOnly Property FilterSlopeLast As Double
+		Get
+			Return MyFilterBLast
 		End Get
 	End Property
 
@@ -248,8 +265,7 @@ Public Class FilterExpPredict
 	End Function
 
 	Private Function IFilter_ToString() As String Implements IFilter.ToString
-		Return $"FilterExp: {Me.FilterLast}"
+		Return $"FilterExpPredict: {Me.FilterLast}"
 	End Function
 #End Region
-
 End Class

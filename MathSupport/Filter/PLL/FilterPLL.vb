@@ -1,4 +1,5 @@
 ﻿
+Imports Newtonsoft.Json.Linq
 Imports YahooAccessData.MathPlus
 Imports YahooAccessData.MathPlus.Filter
 
@@ -39,21 +40,34 @@ Public Class FilterPLL
 	Public Sub New(ByVal FilterRate As Double, Optional DampingFactor As Double = 1.0)
 		Dim ThisFilterRateMinimum As Double
 		Dim FreqDigital As Double
+		Dim SamplingPeriod As Double
+		Dim FrequencyNaturel As Double
 
 		MyFilterRate = FilterRate
 		MyDampingFactor = DampingFactor
 		ThisFilterRateMinimum = 5 * MyDampingFactor
-		If MyFilterRate < ThisFilterRateMinimum Then
-			MyFilterRate = ThisFilterRateMinimum
-		End If
-		FreqDigital = 1 / (Math.PI * MyFilterRate)
-
+		'If MyFilterRate < ThisFilterRateMinimum Then
+		'	MyFilterRate = ThisFilterRateMinimum
+		'End If
 		MyVCOPeriod = 0   'by default in this application
 		MyErrork1 = 0
 		MyFilterValuek2 = 0
 
+		'original code
+
+
+		FreqDigital = 1 / (Math.PI * MyFilterRate)
 		C = MyVCOPeriod
 		C2 = 2 * MyDampingFactor * (2 * Math.PI) * FreqDigital
+
+		'see DPLL_Detailed_Frequency_Response_Analysis_1.pdf for explanation
+		FreqDigital = 1.0  '(Sampling rate Is 1.0 day by Default))
+		SamplingPeriod = 1 / FreqDigital
+		FrequencyNaturel = 1 / MyFilterRate
+		'C2 = 2 * MyDampingFactor * (2 * Math.PI) * FreqDigital
+		C2 = 2 * MyDampingFactor * (2 * Math.PI * MyFilterRate) * SamplingPeriod / Math.PI
+
+
 		C1 = (C2 ^ 2) / (4 * (MyDampingFactor ^ 2))
 		'check stability
 		If Not (((2 * C2 - 4) < C1) And (C1 < C2) And (C1 > 0)) Then
@@ -92,7 +106,7 @@ Public Class FilterPLL
 		MyFilterValuek1 = MyFilterValuek0
 
 		'MyFilterValuek0 is the next signal predicted value for the next input sample
-		MyFilterValuek0 = MyRefValue + MyVCOk0
+		MyFilterValuek0 = MyVCOk0
 		MyFilterValueLast = MyFilterValuek0
 		ValueLast = Value
 		Return MyFilterValueLast
@@ -112,6 +126,7 @@ Public Class FilterPLL
 			MyRefValue = MyFilterValuek0
 			MyFilterValueLast = FilterPLLDetector.ValueOutput(Value, MyFilterValuek0)
 			MyVCOk0 = 0
+			IsReset = False
 		End If
 		Dim ThisNumberLoop As Integer = 0
 		Dim ThisValueStart As Double = FilterPLLDetector.ValueOutput(Value, MyFilterValuek0)
