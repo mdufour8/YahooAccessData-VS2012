@@ -1,27 +1,61 @@
-﻿Module FilterTest
+﻿Imports FilterTest.FilterTest
 
+Imports System.IO
+
+Module FilterTest
 	Sub Main()
-		Dim MyPLLFilter As FilterPLL
-		Dim ThisResult As Double
-		Dim I As Integer
-		MyPLLFilter = New FilterPLL(FilterRate:=7, DampingFactor:=1.0)
+		Dim MyPLLFilterUnit As FilterPLL
+		Dim MyPLLFilterSinusoidal As FilterPLL
+		Dim ThisResultUnit As Double
+		Dim ThisResultSinus As Double
+		Dim InputSignal As Double
+		Dim FrequencyHz As Double = 1 / 20.0  ' 10-day cycle frequency
+		Dim SamplingRate As Double = 1.0  ' 1 sample per day
+		Dim Time As Double
 
-		MyPLLFilter.Reset()  'the reset is needed to initialize the filter and idicate that teh next sample will be use for initilaisation
-		MyPLLFilter.FilterRun(0.0)  'needed to register the initial value of teh variable at zero and start the filter amplitude step response
-		For I = 1 To 20
-			ThisResult = MyPLLFilter.FilterRun(1.0)
-			Console.WriteLine("Filter output: " & ThisResult)
-		Next
+		Dim I As Integer
+
+		' Initialize PLL filter with a 7-day cutoff and damping factor of 1.0
+		Dim ThisAppDir = My.Application.Info.DirectoryPath
+		Dim ThisLogFile As String = My.Computer.FileSystem.CombinePath(ThisAppDir, "output.csv")
+		MyPLLFilterUnit = New FilterPLL(FilterRate:=7, DampingFactor:=1.0)
+		MyPLLFilterSinusoidal = New FilterPLL(FilterRate:=7, DampingFactor:=1.0)
+		' Create a StreamWriter to write to a CSV file
+		Try
+			File.Delete(ThisLogFile)
+		Catch ex As Exception
+			MsgBox(ex.Message)
+			Environment.Exit(0) ' Exit the application with a success code
+		End Try
+		Using writer As New StreamWriter("output.csv")
+			MyPLLFilterUnit.Reset()
+			MyPLLFilterUnit.FilterRun(0.0)  ' Initialize with zero
+			MyPLLFilterSinusoidal.Reset()
+			MyPLLFilterSinusoidal.FilterRun(0.0) 'set the filter variable at zero 
+			Console.WriteLine($"Time,Unit Input,Unit Output,Sinus Input,Sinus Output")
+			writer.WriteLine($"Time,Unit Input,Unit Output,Sinus Input,Sinus Output")
+			For I = 0 To 50
+				Time = I * SamplingRate
+				InputSignal = Math.Sin(2 * Math.PI * FrequencyHz * Time)
+				ThisResultUnit = MyPLLFilterUnit.FilterRun(1.0)
+				ThisResultSinus = MyPLLFilterSinusoidal.FilterRun(InputSignal)
+				Console.WriteLine($"{Time},{1.0},{ThisResultUnit},{InputSignal},{ThisResultSinus}")
+				writer.WriteLine($"{Time},{1.0},{ThisResultUnit},{InputSignal},{ThisResultSinus}")
+			Next
+		End Using
 		Console.WriteLine("Press any key to exit...")
 		Console.ReadKey()
+		Environment.Exit(0) ' Exit the application with a success code
 	End Sub
+End Module
 
-	''' <summary>
-	''' The FilterPLL class implements a Phase-Locked Loop (PLL) filter that processes an input signal to generate a filtered output.
-	''' The filter uses a set of coefficients and error terms to adjust the output based on the input signal.
-	''' The class provides methods to run the filter and reset it, as well as properties to access the current state of the filter.
-	''' </summary>
-	Public Class FilterPLL
+
+''' <summary>
+''' The FilterPLL class implements a Phase-Locked Loop (PLL) filter that processes an input signal to generate a filtered output.
+''' The filter uses a set of coefficients and error terms to adjust the output based on the input signal.
+''' The class provides methods to run the filter and reset it, as well as properties to access the current state of the filter.
+''' </summary>
+Public Class FilterPLL
 		Private C As Double
 		Private C1 As Double
 		Private C2 As Double
@@ -172,4 +206,3 @@
 			End Get
 		End Property
 	End Class
-End Module
