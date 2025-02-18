@@ -204,8 +204,8 @@ Public Class FilterExp
 		Throw New NotImplementedException()
 	End Function
 
-	Private Function IFilter_ToString() As String Implements IFilter.ToString
-		Return $"FilterExp: {Me.FilterLast}"
+	Public Overrides Function ToString() As String Implements IFilter.ToString
+		Return $"{Me.GetType().Name}: FilterRate={MyFilterRate}"
 	End Function
 #End Region
 End Class

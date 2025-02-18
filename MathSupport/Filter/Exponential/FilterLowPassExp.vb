@@ -401,7 +401,7 @@ Namespace MathPlus.Filter
 		Public Property Tag As String Implements IFilter.Tag
 
 		Public Overrides Function ToString() As String Implements IFilter.ToString
-			Return Me.FilterLast.ToString
+			Return $"{Me.GetType().Name}: FilterRate={MyFilterRate}"
 		End Function
 
 #Region "IFilterPrediction"

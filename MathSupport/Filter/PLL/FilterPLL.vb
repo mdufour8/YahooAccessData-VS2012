@@ -229,6 +229,10 @@ Public Class FilterPLL
 		End Get
 	End Property
 
+	Public Overrides Function ToString() As String
+		Return $"{Me.GetType().Name}: FilterRate={MyFilterRate}"
+	End Function
+
 #Region "IFilterState"
 	Public Function ASIFilterState() As IFilterState Implements IFilterState.ASIFilterState
 		Return Me
@@ -335,11 +339,11 @@ Public Class FilterPLL
 		Return Me.FilterRun(Value)
 	End Function
 
-	Public Function Filter(ByRef Value() As Double) As Double() Implements IFilter.Filter
+	Private Function IFilter_Filter(ByRef Value() As Double) As Double() Implements IFilter.Filter
 		Throw New NotImplementedException()
 	End Function
 
-	Public Function Filter(ByRef Value() As Double, DelayRemovedToItem As Integer) As Double() Implements IFilter.Filter
+	Private Function Filter_IFilter(ByRef Value() As Double, DelayRemovedToItem As Integer) As Double() Implements IFilter.Filter
 		Throw New NotImplementedException()
 	End Function
 

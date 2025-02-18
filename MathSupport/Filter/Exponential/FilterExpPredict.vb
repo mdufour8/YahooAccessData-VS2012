@@ -2,6 +2,13 @@
 Imports YahooAccessData.MathPlus.Filter
 
 
+
+''' <summary>
+'''	Brown 's double exponential smoothing is a powerful and versatile method for time series forecasting. It captures both the level and 
+'''	trend of the series, smooths out short-term fluctuations, adapts to changes, and is simple to implement and computationally efficient. 
+'''	These advantages make it a popular choice for practitioners in various fields who need to produce reliable forecasts with limited data 
+'''	and computational resources.
+''' </summary>
 Public Class FilterExpPredict
 	Implements IFilterRun
 	Implements IFilter
@@ -13,21 +20,19 @@ Public Class FilterExpPredict
 	Private MyFilterBLast As Double
 	Private ABRatio As Double
 	Private FilterValueLastK1 As Double
-
-	Private FilterValuePredictH1 As Double     'future 1 point
-	Private FilterValuePredictH1Last As Double
-	Private MyFilterPredictionGainYearlyLast As Double
 	Private FilterValueLast As Double
 	Private ValueLast As Double
 	Private ValueLastK1 As Double
-	Private MyStatisticalForGain As FilterStatistical
 	Private MyFilter As IFilter
 	Private MyFilterY As IFilter
 	Private MyNumberToPredict As Double
-	Private MyInputValue() As Double
 	Private IsReset As Boolean
 
-	Protected Sub New(ByVal NumberToPredict As Double, ByVal FilterHead As IFilter, ByVal FilterBase As IFilter)
+	Public Sub New(ByVal FilterHead As IFilter, ByVal FilterBase As IFilter)
+		Me.New(NumberToPredict:=0, FilterHead:=FilterHead, FilterBase:=FilterBase)
+	End Sub
+
+	Public Sub New(ByVal NumberToPredict As Double, ByVal FilterHead As IFilter, ByVal FilterBase As IFilter)
 		Dim A As Double
 		Dim B As Double
 
@@ -36,6 +41,7 @@ Public Class FilterExpPredict
 			'filter cannot be nothing a reference is needed for the filter rate
 			Throw New ArgumentException("Invalid Filter type FilterHead in FilterExpPredict!")
 		End If
+		'FilterHead determine the filter rate
 		If TypeOf FilterHead Is IFilterControl Then
 			MyFilterRate = DirectCast(FilterHead, IFilterControl).FilterRate
 		Else
@@ -56,8 +62,6 @@ Public Class FilterExpPredict
 		If ThisFilterRateForStatistical < YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_MONTH Then
 			ThisFilterRateForStatistical = YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_MONTH
 		End If
-
-		MyStatisticalForGain = New FilterStatistical(CInt(ThisFilterRateForStatistical))
 		FilterValueLast = 0
 		FilterValueLastK1 = 0
 		ValueLast = 0
@@ -74,12 +78,9 @@ Public Class FilterExpPredict
 		Dim Bp As Double
 		Dim Result As Double
 		Dim ResultY As Double
-		Dim ThisFilterPredictionGainYearly As Double
-		Dim ThisGainStandardDeviation As Double
 		If IsReset Then
 			'initialization
 			FilterValueLast = Value
-			FilterValuePredictH1Last = Value
 			IsReset = False
 		End If
 		FilterValueLastK1 = FilterValueLast
@@ -89,20 +90,20 @@ Public Class FilterExpPredict
 		Bp = ABRatio * (Result - ResultY)
 		MyFilterALast = Ap
 		MyFilterBLast = Bp
-		FilterValuePredictH1 = Ap + Bp
 		'note that Bp is the average trend
 		FilterValueLast = Ap + Bp * MyNumberToPredict
-		MyStatisticalForGain.Filter(Measure.Measure.GainLog(Value:=FilterValuePredictH1, ValueRef:=Ap))
-		ThisFilterPredictionGainYearly = MyStatisticalForGain.FilterLast.ToGaussianScale(ScaleToSignedUnit:=True)
-
-		MyFilterPredictionGainYearlyLast = ThisFilterPredictionGainYearly
-		FilterValuePredictH1Last = FilterValuePredictH1
+		'do not use the gainLog here 
+		'it is important for a low level filter not to assume that the signal is only positive
+		'this filter want to be generic for any range of signal input. Instead return teh B value and leave the 
+		'usee to deal with any other type of processing
+		'MyStatisticalForGain.Filter(Measure.Measure.GainLog(Value:=FilterValuePredictH1, ValueRef:=Ap))
+		'ThisFilterPredictionGainYearly = MyStatisticalForGain.FilterLast.ToGaussianScale(ScaleToSignedUnit:=True)
 		ValueLastK1 = ValueLast
 		ValueLast = Value
 		Return FilterValueLast
 	End Function
 
-	Private Function Filter(Value As Double, FilterPLLDetector As IFilterPLLDetector) As Double Implements IFilterRun.FilterRun
+	Private Function IFilterRun_FilterRun(Value As Double, FilterPLLDetector As IFilterPLLDetector) As Double Implements IFilterRun.FilterRun
 		Throw New NotImplementedException()
 	End Function
 
@@ -112,7 +113,21 @@ Public Class FilterExpPredict
 		End Get
 	End Property
 
-	Public ReadOnly Property FilterSlopeLast As Double
+	''' <summary>
+	''' The smooted signal level before the trend is added
+	''' </summary>
+	''' <returns></returns>
+	Public ReadOnly Property FilterLevelLast As Double
+		Get
+			Return MyFilterALast
+		End Get
+	End Property
+
+	''' <summary>
+	''' The filtered trend of the signal or the average trend.
+	''' </summary>
+	''' <returns></returns>
+	Public ReadOnly Property FilterTrendLast As Double
 		Get
 			Return MyFilterBLast
 		End Get
@@ -128,6 +143,10 @@ Public Class FilterExpPredict
 		IsReset = True
 	End Sub
 
+	Public Overrides Function ToString() As String
+		Return $"{Me.GetType().Name}: FilterRate={MyFilterRate}"
+	End Function
+
 #Region "IFilterState"
 	Public Function ASIFilterState() As IFilterState Implements IFilterState.ASIFilterState
 		Return Me
@@ -135,23 +154,25 @@ Public Class FilterExpPredict
 
 	Private MyQueueForState As New Queue(Of Double)
 	Private Sub IFilterState_ReturnPrevious() Implements IFilterState.ReturnPrevious
-		Try
-			If MyQueueForState.Count = 0 Then Return
-			ValueLast = MyQueueForState.Dequeue
-			ValueLastK1 = MyQueueForState.Dequeue
-			FilterValueLast = MyQueueForState.Dequeue
-			FilterValueLastK1 = MyQueueForState.Dequeue
-		Catch ex As InvalidOperationException
-			' Handle error, perhaps log it or rethrow with additional info
-			Throw New Exception($"Failed to restore state from queue in {Me.GetType().Name}. Queue may be empty or corrupted.", ex)
-		End Try
+		Throw New NotImplementedException()
+		'Try
+		'	If MyQueueForState.Count = 0 Then Return
+		'	ValueLast = MyQueueForState.Dequeue
+		'	ValueLastK1 = MyQueueForState.Dequeue
+		'	FilterValueLast = MyQueueForState.Dequeue
+		'	FilterValueLastK1 = MyQueueForState.Dequeue
+		'Catch ex As InvalidOperationException
+		'	' Handle error, perhaps log it or rethrow with additional info
+		'	Throw New Exception($"Failed to restore state from queue in {Me.GetType().Name}. Queue may be empty or corrupted.", ex)
+		'End Try
 	End Sub
 
 	Private Sub IFilterState_Save() Implements IFilterState.Save
-		MyQueueForState.Enqueue(ValueLast)
-		MyQueueForState.Enqueue(ValueLastK1)
-		MyQueueForState.Enqueue(FilterValueLast)
-		MyQueueForState.Enqueue(FilterValueLastK1)
+		Throw New NotImplementedException()
+		'MyQueueForState.Enqueue(ValueLast)
+		'MyQueueForState.Enqueue(ValueLastK1)
+		'MyQueueForState.Enqueue(FilterValueLast)
+		'MyQueueForState.Enqueue(FilterValueLastK1)
 	End Sub
 #End Region
 
@@ -265,7 +286,7 @@ Public Class FilterExpPredict
 	End Function
 
 	Private Function IFilter_ToString() As String Implements IFilter.ToString
-		Return $"FilterExpPredict: {Me.FilterLast}"
+		Return Me.ToString
 	End Function
 #End Region
 End Class

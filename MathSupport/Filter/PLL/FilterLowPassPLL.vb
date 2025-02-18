@@ -457,6 +457,9 @@ Namespace MathPlus.Filter
 			MyFilterPLL.ASIFilterState.ReturnPrevious()
 			Return ThisFilterValueLast
 		End Function
+		Private Function IFilter_ToString() As String Implements IFilter.ToString
+			Return ToString()
+		End Function
 
 		''' <summary>
 		''' This function calculate the filtered value for the provided input using  the current filter state.
@@ -537,10 +540,6 @@ Namespace MathPlus.Filter
 		End Property
 
 		Public Property Tag As String Implements IFilter.Tag
-
-		Public Overrides Function ToString() As String Implements IFilter.ToString
-			Return Me.FilterLast.ToString
-		End Function
 
 		Public ReadOnly Property ToList() As IList(Of Double) Implements IFilter.ToList
 			Get

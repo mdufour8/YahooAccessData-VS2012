@@ -229,7 +229,6 @@
     <Compile Include="MathSupport\Filter\PLL\FilterLowPassPLLPredict.vb" />
     <Compile Include="MathSupport\Filter\PLL\FilterLowPassPLL.vb" />
     <Compile Include="MathSupport\Filter\PLL\FilterPLL.vb" />
-    <Compile Include="MathSupport\Filter\PLL\FilterPLLTest.vb" />
     <Compile Include="MathSupport\Filter\Volatility\FilterVolatility.vb" />
     <Compile Include="MathSupport\Filter\Volatility\FilterVolatilityYangZhang.vb" />
     <Compile Include="MathSupport\MathPlus.vb" />

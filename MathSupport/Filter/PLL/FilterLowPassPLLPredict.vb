@@ -32,5 +32,10 @@ Namespace MathPlus.Filter
 				FilterHead:=FilterHead,
 				FilterBase:=FilterBase)
 		End Sub
+
+		Public Overrides Function ToString() As String
+			Return $"{Me.GetType().Name}: FilterRate={Me.FilterRate}"
+		End Function
+
 	End Class
 End Namespace
