@@ -176,9 +176,19 @@ Namespace MathPlus.Filter
 			FilterValueLast = Ap + Bp * MyNumberToPredict
 			MyListOfValue.Add(FilterValueLast)
 
-			MyStatisticalForGain.Filter(GainLog(Value:=FilterValuePredictH1, ValueRef:=Ap))
+			Dim ThisGainLog = GainLog(Value:=FilterValuePredictH1, ValueRef:=Ap)
+			Dim ThisGain As Double
+			If Ap <> 0 Then
+				ThisGain = Bp / Ap
+			Else
+				If MyStatisticalForGain.Count > 0 Then
+					ThisGain = MyStatisticalForGain.FilterLast.ValueLast
+				Else
+					ThisGain = 0
+				End If
+			End If
+			MyStatisticalForGain.Filter(ThisGain)
 			ThisFilterPredictionGainYearly = MyStatisticalForGain.FilterLast.ToGaussianScale(ScaleToSignedUnit:=True)
-			'ThisFilterPredictionGainYearly = Measure.Measure.ProbabilityToGaussianScale((Me.ToGaussianScale + 1, GaussianPropabilityRangeOfX)
 
 			MyStatisticalForPredictionError.Filter(GainLog(Value:=(Value - FilterValuePredictH1Last), ValueRef:=Ap))
 			ThisGainStandardDeviation = MyStatisticalForPredictionError.FilterLast.ToGaussianScale(ScaleToSignedUnit:=True)

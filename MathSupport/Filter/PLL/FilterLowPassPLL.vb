@@ -247,7 +247,7 @@ Namespace MathPlus.Filter
 		End Sub
 
 		Public Overridable Function Filter(ByVal Value As Double, ByVal FilterPLLDetector As IFilterPLLDetector) As Double
-
+			Throw New NotImplementedException
 		End Function
 
 
