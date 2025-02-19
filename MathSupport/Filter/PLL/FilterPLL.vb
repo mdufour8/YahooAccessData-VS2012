@@ -65,7 +65,7 @@ Public Class FilterPLL
 		SamplingPeriod = 1 / FreqDigital
 		FrequencyNaturel = 1 / MyFilterRate
 		'C2 = 2 * MyDampingFactor * (2 * Math.PI) * FreqDigital
-		C2 = 2 * MyDampingFactor * (2 * Math.PI * MyFilterRate) * SamplingPeriod / Math.PI
+		C2 = 2 * MyDampingFactor * (2 * Math.PI * FrequencyNaturel) * SamplingPeriod / Math.PI
 
 
 		C1 = (C2 ^ 2) / (4 * (MyDampingFactor ^ 2))

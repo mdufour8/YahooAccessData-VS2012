@@ -80,6 +80,12 @@ Public Class FilterExpPredict
 		Dim ResultY As Double
 		If IsReset Then
 			'initialization
+			If TypeOf MyFilter Is IFilterRun Then
+				DirectCast(MyFilter, IFilterRun).Reset()
+			End If
+			If TypeOf MyFilterY Is IFilterRun Then
+				DirectCast(MyFilterY, IFilterRun).Reset()
+			End If
 			FilterValueLast = Value
 			IsReset = False
 		End If
