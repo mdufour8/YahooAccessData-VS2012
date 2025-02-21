@@ -31,8 +31,8 @@ Public Class FilterStochasticBrownianModulated
     'Me.IsFilterPeak = IsFilterPeakEnabled
     'If FilterOutputRate < 1 Then FilterOutputRate = 1
     'MyQueueOfDailyRangeSigmaExcess = New Queue(Of Tuple(Of Integer, Integer, Integer))(capacity:=MyRateForVolatility)
-    'MyFilterVolatilityForBrownianStatistic = New FilterVolatilityYangZhang(MyRateForVolatility, FilterVolatility.enuVolatilityStatisticType.Exponential, IsUseLastSampleHighLowTrail:=False)
-    'MyFilterVolatilityForBrownianStatisticLastPointTrail = New FilterVolatilityYangZhang(MyRateForVolatility, FilterVolatility.enuVolatilityStatisticType.Exponential, IsUseLastSampleHighLowTrail:=True)
+    'MyFilterVolatilityYangZhangForStatistic = New FilterVolatilityYangZhang(MyRateForVolatility, FilterVolatility.enuVolatilityStatisticType.Exponential, IsUseLastSampleHighLowTrail:=False)
+    'MyFilterVolatilityYangZhangForStatisticLastPointTrail = New FilterVolatilityYangZhang(MyRateForVolatility, FilterVolatility.enuVolatilityStatisticType.Exponential, IsUseLastSampleHighLowTrail:=True)
     'MyFilterLPForPrice = New FilterLowPassPLL(FilterRate, NumberOfPredictionOutput:=0)
 
     'MyFilterPLLForGain = New FilterLowPassPLL(FilterRate, IsPredictionEnabled:=True)

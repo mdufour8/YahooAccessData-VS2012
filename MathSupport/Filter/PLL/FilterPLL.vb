@@ -88,7 +88,7 @@ Public Class FilterPLL
 			MyFilterValueLast = MyFilterValuek0
 			'MyRefValue is the first reference sample value and never change annymore
 			MyRefValue = Value
-			MyVCOk0 = 0
+			MyVCOk0 = Value
 			IsReset = False
 		End If
 		'just the standard PLL here
@@ -230,7 +230,7 @@ Public Class FilterPLL
 	End Property
 
 	Public Overrides Function ToString() As String
-		Return $"{Me.GetType().Name}: FilterRate={MyFilterRate}"
+		Return $"{Me.GetType().Name}: FilterRate={MyFilterRate},{Me.FilterLast}"
 	End Function
 
 #Region "IFilterState"

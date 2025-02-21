@@ -82,8 +82,11 @@ Namespace MathPlus.Filter
     Private MyFilterExpForPositiveVariance As Filter.FilterLowPassExp
     Private MyFilterExpForNegativeVariance As Filter.FilterLowPassExp
 
-    Private MyStatisticalForVRSHighAsClose As IFilter(Of IStatistical)    'for Rogers and Satchell statistic
-    Private MyStatisticalForVRSLowAsClose As IFilter(Of IStatistical)    'for Rogers and Satchell statistic
+		'Rogers-Satchell is an estimator for measuring the volatility of securities
+		'with an average return not equal to zero. Unlike Parkinson and Garman-Klass estimators,
+		'Rogers-Satchell incorporates a drift term (mean return not equal to zero).2022
+		Private MyStatisticalForVRSHighAsClose As IFilter(Of IStatistical)    'for Rogers and Satchell statistic
+		Private MyStatisticalForVRSLowAsClose As IFilter(Of IStatistical)    'for Rogers and Satchell statistic
     Private MyStatisticalForVRSHigh As IFilter(Of IStatistical)    'for Rogers and Satchell statistic
     Private MyStatisticalForVRSLow As IFilter(Of IStatistical)    'for Rogers and Satchell statistic
     Private MyStatisticalForVRSTotal As IFilter(Of IStatistical)    'for Rogers and Satchell statistic

@@ -204,6 +204,8 @@
     <Compile Include="FileSupport\RecordIndex.vb" />
     <Compile Include="FileSupport\TimePeriodOverlap.vb" />
     <Compile Include="FileSupport\TreeNodeList.vb" />
+    <Compile Include="MathSupport\Filter\Statistic\StatisticalData.vb" />
+    <Compile Include="MathSupport\Filter\Statistic\FilterStatistical.vb" />
     <Compile Include="MathSupport\FilterCorrelation.vb" />
     <Compile Include="MathSupport\Filter\Exponential\FilterExp.vb" />
     <Compile Include="MathSupport\Filter\Exponential\FilterExpPredict.vb" />
@@ -216,6 +218,7 @@
     <Compile Include="MathSupport\Filter\Gain\StochasticPriceGain.vb" />
     <Compile Include="MathSupport\Filter\Interface\IFilterRun.vb" />
     <Compile Include="MathSupport\Filter\Interface\Interface.vb" />
+    <Compile Include="MathSupport\Filter\ListWindowsFrame\ListWIndowsFrame.vb" />
     <Compile Include="MathSupport\Filter\Oscillator\FilterPLLDetector\FilterPLLDetectorForCDFToZero.vb" />
     <Compile Include="MathSupport\Filter\Oscillator\FilterPLLDetector\FilterPLLDetectorForVolatilitySigma.vb" />
     <Compile Include="MathSupport\Filter\Oscillator\FilterPLLDetector\FilterPLLDetectorForVolatilitySigmaAsync.vb" />
@@ -229,6 +232,8 @@
     <Compile Include="MathSupport\Filter\PLL\FilterLowPassPLLPredict.vb" />
     <Compile Include="MathSupport\Filter\PLL\FilterLowPassPLL.vb" />
     <Compile Include="MathSupport\Filter\PLL\FilterPLL.vb" />
+    <Compile Include="MathSupport\Filter\Statistic\FilterStatisticalExp.vb" />
+    <Compile Include="MathSupport\Filter\Statistic\IStatistical.vb" />
     <Compile Include="MathSupport\Filter\Volatility\FilterVolatility.vb" />
     <Compile Include="MathSupport\Filter\Volatility\FilterVolatilityYangZhang.vb" />
     <Compile Include="MathSupport\MathPlus.vb" />

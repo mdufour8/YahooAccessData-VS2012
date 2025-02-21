@@ -262,7 +262,7 @@ Namespace MathPlus.Filter
 				MyFilterValueLast = MyFilterValuek0
 				'MyRefValue is the first reference sample value and never change annymore
 				MyRefValue = Value
-				MyVCOk0 = 0
+				MyVCOk0 = Value
 			End If
 			'comparaison signal input difference
 
@@ -392,6 +392,10 @@ Namespace MathPlus.Filter
 				Next
 			End If
 			Return ThisValues
+		End Function
+
+		Public Overrides Function ToString() As String
+			Return $"{Me.GetType().Name}: FilterRate={Me.Rate},{Me.FilterLast}"
 		End Function
 #End Region
 

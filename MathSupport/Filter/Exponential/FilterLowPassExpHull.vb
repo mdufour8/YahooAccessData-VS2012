@@ -243,7 +243,7 @@ Namespace MathPlus.Filter
 
 
 		Public Overrides Function ToString() As String Implements IFilter.ToString
-			Return $"{Me.GetType().Name}: FilterRate={MyFilterRate}"
+			Return $"{Me.GetType().Name}: FilterRate={MyFilterRate},{Me.FilterLast}"
 		End Function
 
 #Region "IFilterPrediction"

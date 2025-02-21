@@ -150,7 +150,7 @@ Public Class FilterExpPredict
 	End Sub
 
 	Public Overrides Function ToString() As String
-		Return $"{Me.GetType().Name}: FilterRate={MyFilterRate}"
+		Return $"{Me.GetType().Name}: FilterRate={MyFilterRate},{Me.FilterLast}"
 	End Function
 
 #Region "IFilterState"

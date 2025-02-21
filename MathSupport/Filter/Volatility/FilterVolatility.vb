@@ -130,19 +130,28 @@ Namespace MathPlus.Filter
           End If
         End If
       End If
-      If IsSpecialDividendPayoutLocal Then
-        'ignore the current data and use the previous calculation
-        IsSpecialDividendPayoutLocal = False
-        ThisReturnLog = MyStatistical.Last
-      Else
+			If IsSpecialDividendPayoutLocal Then
+				'ignore the current data and use the previous calculation
+				IsSpecialDividendPayoutLocal = False
+				ThisReturnLog = MyStatistical.Last
+			Else
 				'same thing shoudl be fixed
 				'ThisReturnLog = GainLog(Value, ValueRef)  
 				ThisReturnLog = LogPriceReturn(Value, ValueRef)
 			End If
-      MyStatistical.Filter(ThisReturnLog)
-      FilterValueLastK1 = FilterValueLast
-      'correct the value for the yearly variation
-      FilterValueLast = MyFilterVolatilityYearlyCorrection * MyStatistical.FilterLast.StandardDeviation
+			If MyStatistical.Count = 0 Then
+				'start filtering only if the first valid data i.e. not zero
+				'thsi help to eliminate the first day of trading when there is no data from the previous day
+				If ThisReturnLog <> 0 Then
+					'first valid measurement of volatility
+					MyStatistical.Filter(ThisReturnLog)
+				End If
+			Else
+				MyStatistical.Filter(ThisReturnLog)
+			End If
+			FilterValueLastK1 = FilterValueLast
+			'correct the value for the yearly variation
+			FilterValueLast = MyFilterVolatilityYearlyCorrection * MyStatistical.FilterLast.StandardDeviation
       MyListOfValue.Add(FilterValueLast)
       'calculate the next sample 2 sigma normal last price range
       If MyListOfValue.Count > 0 Then
@@ -176,50 +185,59 @@ Namespace MathPlus.Filter
     End Function
 
 
-    Public Function Filter(Value As IPriceVol) As Double Implements IFilter.Filter
-      IsSpecialDividendPayoutLocal = Value.IsSpecialDividendPayout
-      Return Me.Filter(CDbl(Value.Last))
-    End Function
+		Public Function Filter(Value As IPriceVol) As Double Implements IFilter.Filter
+			IsSpecialDividendPayoutLocal = Value.IsSpecialDividendPayout
+			If Value.Vol > 0 Then
+				Return Me.Filter(CDbl(Value.Last), ValueLast)
+			Else
+				'no volume mean no volatility
+				'and the point should not be included in the calculation
+				MyListOfValue.Add(Me.FilterValueLast)
+				ValueLastK1 = ValueLast
+				ValueLast = Value.Last
+				Return Me.FilterValueLast
+			End If
+		End Function
 
-    ' ''' <summary>
-    ' ''' Compute the yearly Volatility based on the Garman and Klauss estimator taking in account the high and low
-    ' ''' </summary>
-    ' ''' <param name="Value"></param>
-    ' ''' <param name="ValueHigh"></param>
-    ' ''' <param name="ValueLow"></param>
-    ' ''' <returns></returns>
-    ' ''' <remarks></remarks>
-    'Public Function Filter(ByVal Value As YahooAccessData.IPriceVol) As Double
-    '  Dim ThisReturnLog As Double
-    '  Dim ThisReturnLogHighLow As Double
+		' ''' <summary>
+		' ''' Compute the yearly Volatility based on the Garman and Klauss estimator taking in account the high and low
+		' ''' </summary>
+		' ''' <param name="Value"></param>
+		' ''' <param name="ValueHigh"></param>
+		' ''' <param name="ValueLow"></param>
+		' ''' <returns></returns>
+		' ''' <remarks></remarks>
+		'Public Function Filter(ByVal Value As YahooAccessData.IPriceVol) As Double
+		'  Dim ThisReturnLog As Double
+		'  Dim ThisReturnLogHighLow As Double
 
 
-    '  Throw New NotImplementedException
-    '  'If MyListOfValue.Count = 0 Then
-    '  '  FilterValueLast = Value.Last
-    '  'End If
-    '  'If ValueLast <= 0 Then
-    '  '  ThisReturnLog = 0
-    '  '  ThisReturnLogHighLow = 0
-    '  'Else
-    '  '  If Value <= 0 Then
-    '  '    ThisReturnLog = 0
-    '  '    ThisReturnLogHighLow = 0
-    '  '  Else
-    '  '    ThisReturnLog = Math.Log(Value / ValueLast)
-    '  '  End If
-    '  'End If
-    '  'MyStatistical.Filter(ThisReturnLog)
-    '  'FilterValueLastK1 = FilterValueLast
-    '  ''correct the value for the yearly variation
-    '  'FilterValueLast = MyFilterVolatilityYearlyCorrection * MyStatistical.FilterLast.StandardDeviation
-    '  'MyListOfValue.Add(FilterValueLast)
-    '  'ValueLastK1 = ValueLast
-    '  'ValueLast = Value
-    '  'Return FilterValueLast
-    'End Function
+		'  Throw New NotImplementedException
+		'  'If MyListOfValue.Count = 0 Then
+		'  '  FilterValueLast = Value.Last
+		'  'End If
+		'  'If ValueLast <= 0 Then
+		'  '  ThisReturnLog = 0
+		'  '  ThisReturnLogHighLow = 0
+		'  'Else
+		'  '  If Value <= 0 Then
+		'  '    ThisReturnLog = 0
+		'  '    ThisReturnLogHighLow = 0
+		'  '  Else
+		'  '    ThisReturnLog = Math.Log(Value / ValueLast)
+		'  '  End If
+		'  'End If
+		'  'MyStatistical.Filter(ThisReturnLog)
+		'  'FilterValueLastK1 = FilterValueLast
+		'  ''correct the value for the yearly variation
+		'  'FilterValueLast = MyFilterVolatilityYearlyCorrection * MyStatistical.FilterLast.StandardDeviation
+		'  'MyListOfValue.Add(FilterValueLast)
+		'  'ValueLastK1 = ValueLast
+		'  'ValueLast = Value
+		'  'Return FilterValueLast
+		'End Function
 
-    Public Function Filter(ByRef Value() As Double) As Double() Implements IFilter.Filter
+		Public Function Filter(ByRef Value() As Double) As Double() Implements IFilter.Filter
       Dim ThisValue As Double
       For Each ThisValue In Value
         Me.Filter(ThisValue)

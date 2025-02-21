@@ -34,8 +34,7 @@ Namespace MathPlus.Filter
 		End Sub
 
 		Public Overrides Function ToString() As String
-			Return $"{Me.GetType().Name}: FilterRate={Me.FilterRate}"
+			Return $"{Me.GetType().Name}: FilterRate={Me.FilterRate},{Me.FilterLast}"
 		End Function
-
 	End Class
 End Namespace
