@@ -176,6 +176,10 @@
     <Reference Include="System.Xml" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
+    <Reference Include="WebEODData, Version=1.0.0.2, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\WebEODData\WebEODData\bin\Release\WebEODData.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Import Include="Microsoft.VisualBasic" />
@@ -344,15 +348,10 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="MathSupport\Filter\Oscillator\FilterPLLDetector\Price Probability Zero Stochatic Crossing PLL Filter.jpg" />
+    <Content Include="MathSupport\Filter\Statistic\AAPL N50.png" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Information\" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\WebEODData\WebEODData\WebEODData.vbproj">
-      <Project>{fec4af11-6db7-468b-bec5-36a60339374c}</Project>
-      <Name>WebEODData</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

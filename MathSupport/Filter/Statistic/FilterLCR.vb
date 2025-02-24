@@ -1,32 +1,25 @@
 ﻿Imports YahooAccessData.MathPlus.Filter
 
-
-
-
-
-''' <summary>
-''' The FilterStatistical class calculates the mean, variance, and standard deviation of a series of values.
-''' It uses a sliding window approach if a FilterRate is specified.
-''' </summary>
-<Serializable()>
-Public Class FilterStatistical
+Public Class FilterLCR
 	Implements IFilter(Of IStatistical)
-	Implements IRegisterKey(Of String)
-
 
 	Private MyRate As Integer
 	Private FilterValueLastK1 As IStatistical
 	Private FilterValueLast As IStatistical
 	Private MyStartPoint As Integer
+	Private MyVarianceCorrection As Double
 	Private IsRunReady As Boolean
 
 	Private ValueLast As Double
 	Private ValueLastK1 As Double
 	Private IsValueInitial As Boolean
-	Private MyListOfValue As List(Of Double)
-	Private MyListOfValueSquare As List(Of Double)
-	Private MySumOfValue As Double
-	Private MySumOfValueSquare As Double
+	'Private MyListOfValue As List(Of Double)
+	'Private MyListOfValueSquare As List(Of Double)
+	'Private MySumOfValue As Double
+	'Private MySumOfValueSquare As Double
+	Private MyFilterExpMean As FilterExp
+	Private MyFilterExpSquare As FilterExp
+
 	Private MyListOfValueStatistical As List(Of IStatistical)
 
 	''' <summary>
@@ -34,7 +27,7 @@ Public Class FilterStatistical
 	''' </summary>
 	''' <remarks></remarks>
 	Public Sub New()
-		Me.New(1)
+		Me.New(3)
 	End Sub
 
 	''' <summary>
@@ -48,10 +41,15 @@ Public Class FilterStatistical
 		'MyListOfValue = New List(Of Double)
 		'MyListOfValueSquare = New List(Of Double)
 		MyListOfValueStatistical = New List(Of IStatistical)
-		MyListOfValue = New List(Of Double)
-		MyListOfValueSquare = New List(Of Double)
-		If FilterRate < 2 Then FilterRate = 2
+		'MyListOfValue = New List(Of Double)
+		'MyListOfValueSquare = New List(Of Double)
+		If FilterRate < 3 Then FilterRate = 3
 		MyRate = CInt(FilterRate)
+		'the -1 is for the finite number of samples correction from an infinite number of samples
+		MyVarianceCorrection = MyRate / (MyRate - 1)
+		MyFilterExpMean = New FilterExp(FilterRate)
+		MyFilterExpSquare = New FilterExp(FilterRate)
+
 		FilterValueLast = New StatisticalData(0, 0, 0)
 		FilterValueLastK1 = New StatisticalData(0, 0, 0)
 		ValueLast = 0
@@ -66,7 +64,7 @@ Public Class FilterStatistical
 	''' <param name="FilterRate"></param>
 	''' Should be greater than one, otherwise the calculation is done on all the data
 	''' <param name="StartPoint">
-	''' THe startPoint wher teh calculation is started
+	''' The startPoint where the calculation is started
 	''' </param>
 	''' The startpoin
 	''' <remarks></remarks>
@@ -76,38 +74,14 @@ Public Class FilterStatistical
 		IsRunReady = True
 	End Sub
 
-	''' <summary>
-	''' ''' The Filter function:
-	''' - Initializes the filter with the first value and sets MyStartPoint to 0 if IsRunReady is False.
-	''' - If IsRunReady is False and the new value is different from ValueLast, it sets MyStartPoint to the current count of MyListOfValueStatistical and marks IsRunReady as True.
-	''' - Uses a sliding window approach if IsRunReady is True and the count of MyListOfValueStatistical is greater than or equal to MyStartPoint.
-	''' - Removes the oldest value and adds the new value, updating the sum and mean accordingly if the count of MyListOfValue is greater than or equal to MyRate.
-	''' - Calculates the variance using the sum of squared differences from the mean, applying Bessel's correction (MyRate - 1).
-	''' - Sets the mean to the current value and variance to 0 if IsRunReady is False.
-	''' - Handles edge cases, such as when the count of MyListOfValue is 0 or 1, correctly.
-	''' 
-	''' ''' Potential improvements:
-	''' - Add additional comments explaining each step, especially the logic for handling the sliding window and variance calculation.
-	''' - Ensure that the function handles edge cases, such as when the count of MyListOfValue is 0 or 1, correctly.
-	''' - Optimize the function by using a circular buffer or deque for better performance.
-	''' 
-	''' References:
-	''' http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
-	''' https://en.wikipedia.org/wiki/Bessel%27s_correction
-	''' 
-	''' </summary>
-	''' <param name="Value"></param>
-	''' <returns></returns>
 	Public Function Filter(Value As Double) As IStatistical Implements IFilter(Of IStatistical).Filter
-		Dim ThisValueToRemove As Double
-		Dim ThisValueSquareToRemove As Double
 		Dim ThisM2 As Double
 		Dim ThisMean As Double
 		Dim ThisVariance As Double
 
 		If MyListOfValueStatistical.Count = 0 Then
 			'initialization
-			FilterValueLast = New StatisticalData(Value, 0, 1)
+			FilterValueLast = New StatisticalData(Mean:=Value, Variance:=0, NumberPoint:=1)
 			If IsRunReady = False Then
 				MyStartPoint = 0
 			End If
@@ -119,47 +93,66 @@ Public Class FilterStatistical
 				End If
 			End If
 		End If
-		FilterValueLastK1 = FilterValueLast.Copy
+		'	For J = StartPoint To StopPoint
+		'    NewPowerLevel = FFTdB(J)
+		'    If NewPowerLevel > NoiseThresholddB Then
+		'      CountHit = CountHit + 1
+		'    End If
+
+		'	'bound the input value to a valid range
+		'	If NewPowerLevel < LCRLBound Then
+		'      NewPowerLevel = LCRLBound
+		'    ElseIf NewPowerLevel > LCRUBound Then
+		'      NewPowerLevel = LCRUBound
+		'    End If
+		'	'check the input range value
+		'	If NewPowerLevel > PowerMax Then
+		'	'clear the LCR array
+		'	For K = PowerMax + 1 To NewPowerLevel
+		'        LCR(K) = 0
+		'        #If PDFNoiseMeasurement Then
+		'          PDF(K) = 0
+		'          CDF(K) = 0
+		'        #End If
+		'      Next
+		'      PowerMax = NewPowerLevel
+		'    ElseIf NewPowerLevel < PowerMin Then
+		'	'clear the LCR array
+		'	For K = NewPowerLevel To PowerMin - 1
+		'        LCR(K) = 0
+		'        #If PDFNoiseMeasurement Then
+		'          PDF(K) = 0
+		'          CDF(K) = 0
+		'        #End If
+		'      Next
+		'      PowerMin = NewPowerLevel
+		'    End If
+		'#If PDFNoiseMeasurement Then
+		'      PDF(NewPowerLevel) = PDF(NewPowerLevel) + 1
+		'#End If
+		'	'calculate the positive and negative LCR
+		'	If NewPowerLevel > LastPowerLevel Then
+		'	For K = LastPowerLevel To NewPowerLevel - 1
+		'        LCR(K) = LCR(K) + 1
+		'      Next
+		'	ElseIf NewPowerLevel < LastPowerLevel Then
+		'	For K = NewPowerLevel + 1 To LastPowerLevel
+		'        LCR(K) = LCR(K) + 1
+		'      Next
+		'	End If
+		'    LastPowerLevel = NewPowerLevel
+		'  Next
+
+
 		If IsRunReady Then
-			If MyListOfValueStatistical.Count >= MyStartPoint Then
-				If MyListOfValue.Count >= MyRate Then
-					ThisValueToRemove = MyListOfValue(0)
-					MyListOfValue.RemoveAt(0)
-					MyListOfValue.Add(Value)
-					MySumOfValue = MySumOfValue + Value - ThisValueToRemove
-					ThisMean = MySumOfValue / MyRate
-
-					ThisM2 = (Value - ThisMean) ^ 2
-					ThisValueSquareToRemove = MyListOfValueSquare(0)
-					MyListOfValueSquare.RemoveAt(0)
-					MyListOfValueSquare.Add(ThisM2)
-					MySumOfValueSquare = MySumOfValueSquare + ThisM2 - ThisValueSquareToRemove
-					'the -1 is for the finite number of samples correction from an infinite number of samples
-					ThisVariance = MySumOfValueSquare / (MyRate - 1)
-				Else
-					MyListOfValue.Add(Value)
-					MySumOfValue = MySumOfValue + Value
-					ThisMean = MySumOfValue / MyListOfValue.Count
-
-					ThisM2 = (Value - ThisMean) ^ 2
-					MyListOfValueSquare.Add(ThisM2)
-					MySumOfValueSquare = MySumOfValueSquare + ThisM2
-					If MyListOfValue.Count > 1 Then
-						'-1 take care of the finite population effect
-						ThisVariance = MySumOfValueSquare / (MyListOfValue.Count - 1)
-					Else
-						ThisVariance = MySumOfValueSquare
-					End If
-				End If
-			Else
-				ThisMean = Value
-				ThisVariance = 0
-			End If
+			ThisMean = MyFilterExpMean.FilterRun(Value)
+			ThisM2 = (Value - ThisMean) ^ 2
+			ThisVariance = MyVarianceCorrection * MyFilterExpSquare.FilterRun(ThisM2)
 		Else
 			ThisMean = Value
 			ThisVariance = 0
 		End If
-		FilterValueLast = New StatisticalData(ThisMean, ThisVariance, MyListOfValue.Count) With {.ValueLast = Value}
+		FilterValueLast = New StatisticalData(ThisMean, ThisVariance, MyListOfValueStatistical.Count + 1)
 		MyListOfValueStatistical.Add(FilterValueLast)
 		ValueLastK1 = ValueLast
 		ValueLast = Value
@@ -288,6 +281,9 @@ Public Class FilterStatistical
 		Return FilterValueLast
 	End Function
 
+	''' <summary>
+	''' </summary>
+	''' <returns>Return the last input value</returns>
 	Public Function Last() As Double Implements IFilter(Of IStatistical).Last
 		Return ValueLast
 	End Function
@@ -351,21 +347,4 @@ Public Class FilterStatistical
 	Public Overrides Function ToString() As String Implements IFilter(Of IStatistical).ToString
 		Return Me.FilterLast.ToString
 	End Function
-
-#Region "IRegisterKey"
-	Public Function AsIRegisterKey() As IRegisterKey(Of String)
-		Return Me
-	End Function
-	Private Property IRegisterKey_KeyID As Integer Implements IRegisterKey(Of String).KeyID
-	Dim MyKeyValue As String
-	Private Property IRegisterKey_KeyValue As String Implements IRegisterKey(Of String).KeyValue
-		Get
-			Return MyKeyValue
-		End Get
-		Set(value As String)
-			MyKeyValue = value
-		End Set
-	End Property
-#End Region
 End Class
-'End Namespace

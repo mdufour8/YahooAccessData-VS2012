@@ -2,29 +2,28 @@
 Imports YahooAccessData.MathPlus.Filter
 
 
-Namespace MathPlus
-	''' <summary>
-	''' The FilterStatisticalExp class calculates the mean and variance of a series of values using exponential smoothing.
-	''' This method provides a more responsive estimate compared to a simple moving average.
-	''' 
-	''' The Filter function:
-	''' - Initializes the filter with the first value and sets MyStartPoint to 0 if IsRunReady is False.
-	''' - If IsRunReady is False and the new value is different from ValueLast, it sets MyStartPoint to the current count of MyListOfValueStatistical and marks IsRunReady as True.
-	''' - Uses exponential smoothing to calculate the mean and variance if IsRunReady is True.
-	''' - The mean is calculated using MyFilterExpMean.FilterRun(Value).
-	''' - The variance is calculated using the squared differences from the mean, smoothed by MyFilterExpSquare.FilterRun(ThisM2), and corrected by MyVarianceCorrection.
-	''' - Sets the mean to the current value and variance to 0 if IsRunReady is False.
-	''' - Handles edge cases, such as when the count of MyListOfValueStatistical is 0 or 1, correctly.
-	''' 
-	''' Potential improvements:
-	''' - Add additional comments explaining each step, especially the logic for handling the exponential smoothing and variance calculation.
-	''' - Ensure that the function handles edge cases, such as when the count of MyListOfValueStatistical is 0 or 1, correctly.
-	''' 
-	''' References:
-	''' - http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
-	''' - https://en.wikipedia.org/wiki/Bessel%27s_correction
-	''' </summary>
-	Public Class FilterStatisticalExp
+''' <summary>
+''' The FilterStatisticalExp class calculates the mean and variance of a series of values using exponential smoothing.
+''' This method provides a more responsive estimate compared to a simple moving average.
+''' 
+''' The Filter function:
+''' - Initializes the filter with the first value and sets MyStartPoint to 0 if IsRunReady is False.
+''' - If IsRunReady is False and the new value is different from ValueLast, it sets MyStartPoint to the current count of MyListOfValueStatistical and marks IsRunReady as True.
+''' - Uses exponential smoothing to calculate the mean and variance if IsRunReady is True.
+''' - The mean is calculated using MyFilterExpMean.FilterRun(Value).
+''' - The variance is calculated using the squared differences from the mean, smoothed by MyFilterExpSquare.FilterRun(ThisM2), and corrected by MyVarianceCorrection.
+''' - Sets the mean to the current value and variance to 0 if IsRunReady is False.
+''' - Handles edge cases, such as when the count of MyListOfValueStatistical is 0 or 1, correctly.
+''' 
+''' Potential improvements:
+''' - Add additional comments explaining each step, especially the logic for handling the exponential smoothing and variance calculation.
+''' - Ensure that the function handles edge cases, such as when the count of MyListOfValueStatistical is 0 or 1, correctly.
+''' 
+''' References:
+''' - http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+''' - https://en.wikipedia.org/wiki/Bessel%27s_correction
+''' </summary>
+Public Class FilterStatisticalExp
 		Implements IFilter(Of IStatistical)
 		Implements IRegisterKey(Of String)
 
@@ -339,4 +338,3 @@ Namespace MathPlus
 		End Property
 #End Region
 	End Class
-End Namespace
