@@ -682,29 +682,64 @@ Namespace MathPlus
         Return InverseNormal(ProbabilityValue, 3.0)
       End Function
 
-      ''' <summary>
-      ''' Calculate the InverseNormal (Mean=0, Sigma=1) over a range of x value from -RangeX to +RangeX.
-      ''' </summary>
-      ''' <param name="ProbabilityValue"></param>
-      ''' <param name="RangeOfX">The range of X from -RangeX to +RangeX</param>
-      ''' <returns></returns>
-      Public Shared Function InverseNormal(ByVal ProbabilityValue As Double, ByVal RangeOfX As Double) As Double
-        Dim ThisResult As Double
-        ThisResult = MathNet.Numerics.Distributions.Normal.InvCDF(mean:=0, stddev:=1.0, ProbabilityValue)
-        If ThisResult > RangeOfX Then
-          ThisResult = RangeOfX
-        ElseIf ThisResult < -RangeOfX Then
-          ThisResult = -RangeOfX
-        End If
-        Return ThisResult
-      End Function
+			''' <summary>
+			''' Calculate the InverseNormal (Mean=0, Sigma=1) over a range of x value from -RangeX to +RangeX.
+			''' </summary>
+			''' <param name="ProbabilityValue"></param>
+			''' <param name="RangeOfX">The range of X from -RangeX to +RangeX</param>
+			''' <returns></returns>
+			Public Shared Function InverseNormal(ByVal ProbabilityValue As Double, ByVal RangeOfX As Double) As Double
+				Dim ThisResult As Double
+				ThisResult = MathNet.Numerics.Distributions.Normal.InvCDF(mean:=0, stddev:=1.0, ProbabilityValue)
+				If ThisResult > RangeOfX Then
+					ThisResult = RangeOfX
+				ElseIf ThisResult < -RangeOfX Then
+					ThisResult = -RangeOfX
+				End If
+				Return ThisResult
+			End Function
 
-      Public Shared Function LogNormal(ByVal Mu As Double, ByVal Sigma As Double, ByVal NumberOfPoint As Integer) As Double()
-        Dim ThisArray(0 To NumberOfPoint - 1) As Double
-        Dim LogNormalDist As Distributions.LogNormal = New MathNet.Numerics.Distributions.LogNormal(Mu, Sigma)
-        LogNormalDist.Samples(ThisArray)
-        Return ThisArray
-      End Function
+			''' <summary>
+			''' Calculate the value in the Log-Normal distribution corresponding to the probability {p}
+			''' It is equivalent to calculate the inverse of the Log-Normal distribution with a mu and sigma respectivly of 0 and 1	
+			''' </summary>
+			''' <param name="ProbabilityValue"></param>
+			''' <returns></returns>
+			Public Shared Function InverseLogNormal(ByVal ProbabilityValue As Double) As Double
+				' Parameters of the underlying normal distribution
+				Dim mu As Double = 0.0 ' Mean
+				Dim sigma As Double = 1.0 ' Standard deviation
+
+				Dim ThisResult As Double
+				ThisResult = MathNet.Numerics.Distributions.LogNormal.InvCDF(mu:=0.0, sigma:=1.0, ProbabilityValue)
+
+				Return ThisResult
+			End Function
+
+
+			Public Shared Function InverseLogNormal(ByVal ProbabilityValue As Double, Mean As Double, Sigma As Double) As Double
+				' Parameters of the underlying normal distribution
+
+				Dim ThisResult As Double
+				ThisResult = MathNet.Numerics.Distributions.LogNormal.InvCDF(mu:=Mean, sigma:=Sigma, ProbabilityValue)
+				Return ThisResult
+			End Function
+
+			''' <summary>
+			''' Return a sample of a log normal distribution
+			''' </summary>
+			''' <param name="Mu"></param>
+			''' <param name="Sigma"></param>
+			''' <param name="NumberOfPoint"></param>
+			''' <returns></returns>
+			Public Shared Function LogNormal(ByVal Mu As Double, ByVal Sigma As Double, ByVal NumberOfPoint As Integer) As Double()
+				Dim ThisArray(0 To NumberOfPoint - 1) As Double
+				Dim LogNormalDist As Distributions.LogNormal = New MathNet.Numerics.Distributions.LogNormal(Mu, Sigma)
+				LogNormalDist.Samples(ThisArray)
+				Return ThisArray
+			End Function
+
+
 
 			''' <summary>
 			''' Calculate the approximative logarithm gain using and squared data approximation that eliminate the problem of negative value but

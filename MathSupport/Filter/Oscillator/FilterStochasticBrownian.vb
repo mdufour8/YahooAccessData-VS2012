@@ -220,7 +220,6 @@ Namespace MathPlus.Filter
 			MyPLLErrorDetectorForPriceStochacticMedianWithGainNoFilter = New FilterPLLDetectorForCDFToZero(FilterRate, ToCountLimit:=20, ToErrorLimit:=0.0001)
 			MyPLLErrorDetectorForPriceStochacticMedianWithGainPredictionNoFilter = New FilterPLLDetectorForCDFToZero(FilterRate, ToCountLimit:=20, ToErrorLimit:=0.0001)
 
-			'MyPLLErrorDetectorForVolatilityPredictionFromPreviousCloseToCloseWithGain = New FilterPLLDetectorForVolatilitySigma(FilterRate, ToCountLimit:=20, ToErrorLimit:=0.0001)
 			MyPLLErrorDetectorForVolatilityPredictionFromPreviousCloseToCloseWithGain = New FilterPLLDetectorForVolatilitySigma(
 				FilterRate,
 				ToCountLimit:=FILTER_PLL_DETECTOR_COUNT_LIMIT,
@@ -476,6 +475,10 @@ Namespace MathPlus.Filter
 																																													Volatility:=ThisFilterBasedVolatilityTotal,
 																																													ProbabilityOfInterval:=GAUSSIAN_PROBABILITY_SIGMA1) With {.VolatilityMaximum = ThisFilterBasedVolatilityFromLastPointTrailing, .IsVolatilityMaximumEnabled = True}
 
+
+			If Me.Count = 500 Then
+				I = I
+			End If
 			'same but including the gain 
 			Dim ThisVolatilityPredictionFromPreviousCloseToCloseWithGain = New StockPriceVolatilityPredictionBand(
 																																													 NumberTradingDays:=1,
@@ -485,6 +488,8 @@ Namespace MathPlus.Filter
 																																													 GainDerivative:=ThisGainPerYearDerivative,
 																																													 Volatility:=ThisFilterBasedVolatilityTotal,
 																																													 ProbabilityOfInterval:=GAUSSIAN_PROBABILITY_SIGMA1) With {.VolatilityMaximum = ThisFilterBasedVolatilityFromLastPointTrailing, .IsVolatilityMaximumEnabled = True}
+
+
 
 			'this one is based on the previous close to open price volatility with no gain
 			Dim ThisVolatilityPredictionPreviousCloseToOpenNoGain = New StockPriceVolatilityPredictionBand(
@@ -515,6 +520,7 @@ Namespace MathPlus.Filter
 			'StockPriceVolatilityPredictionBand input object and modify it with a new volatility
 			'to make that clear .Update on the object should return the input object when called (to do later)
 			MyPLLErrorDetectorForVolatilityPredictionFromPreviousCloseToCloseWithGain.Update(ThisVolatilityPredictionFromPreviousCloseToCloseWithGain)
+			'ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.Refresh(0.0)
 			'save the result in a list
 			MyListOfVolatilityRegulatedFromPreviousCloseToCloseWithGain.Add(ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.VolatilityTotal)
 			'filter the result for prediction purpose
@@ -522,6 +528,7 @@ Namespace MathPlus.Filter
 
 			'run the PLL error volatility correction method from the previous close to open
 			MyPLLErrorDetectorForVolatilityPredictionFromPreviousCloseToOpenWithGain.Update(ThisVolatilityPredictionPreviousCloseToOpenWithGain)
+			'ThisVolatilityPredictionPreviousCloseToOpenWithGain.Refresh(0.0)
 			'save the result in a list
 			MyListForVolatilityRegulatedPreviousCloseToOpenWithGain.Add(ThisVolatilityPredictionPreviousCloseToOpenWithGain.VolatilityTotal)
 			'Note:this should be change for the exact calculation 

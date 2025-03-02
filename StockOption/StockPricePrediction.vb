@@ -6,9 +6,9 @@ Namespace OptionValuation
   Public Class StockPriceVolatilityPredictionBand
     Implements IStockPriceVolatilityPredictionBand
 
-    Private VOLATILITY_TOTAL_MINIMUM As Double = 0.01
+		Private Const VOLATILITY_TOTAL_MINIMUM As Double = 0.01
 
-    Private MyVolatilityPredictionBandType As IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType
+		Private MyVolatilityPredictionBandType As IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType
     Private MyVolatilityDelta As Double
     Private MyStockPrice As IPriceVol
     Private MyStockPriceFutur As IPriceVol
@@ -68,15 +68,18 @@ Namespace OptionValuation
 
       MyNumberTradingDays = NumberTradingDays
       MyStockPrice = StockPrice
-      MyStockPriceStartValue = StockPriceStartValue
-      MyGain = Gain
+			MyStockPriceStartValue = StockPriceStartValue
+			MyStockPriceHighValue = Double.MaxValue
+			MyStockPriceLowValue = 0.0
+			MyGain = Gain
       MyGainDerivative = GainDerivative
-      MyVolatility = Volatility
-      MyProbabilityOfInterval = ProbabilityOfInterval
-      MyProbabilityHigh = 0.5 + ProbabilityOfInterval / 2
+			MyVolatility = Volatility
+			MyProbabilityOfInterval = ProbabilityOfInterval
+			MyProbabilityHigh = 0.5 + ProbabilityOfInterval / 2
       MyProbabilityLow = 0.5 - ProbabilityOfInterval / 2
-      MyVolatilityDelta = 0.0
-      Me.IsVolatilityMaximumEnabled = False
+			MyVolatilityDelta = 0.0
+			MyVolatilityTotal = MyVolatility
+			Me.IsVolatilityMaximumEnabled = False
       IsStockPriceValueRealEnabledLocal = False
       MyStockPriceLowValueReal = 0.0
       MyStockPriceHighValueReal = 0.0
@@ -203,12 +206,8 @@ Namespace OptionValuation
       Dim ThisProbabilityOfPriceHighExcessVolatilityRatio As Double
       Dim ThisProbabilityOfPriceLowExcessVolatilityRatio As Double
 
-      'Dim ThisVolatilityChangePerCent = VolatilityDelta / MyVolatility
-      'ThisVolatilityChangePerCent = MathPlus.WaveForm.SignalLimit(ThisVolatilityChangePerCent, MinScale:=-1.0, MaxScale:=1, Offset:=0)
-      'VolatilityDelta = ThisVolatilityChangePerCent * MyVolatility
 
-
-      MyVolatilityDelta = VolatilityDelta
+			MyVolatilityDelta = VolatilityDelta
       MyVolatilityTotal = MyVolatility + MyVolatilityDelta
       'If Me.IsVolatilityMaximumEnabled Then
       '  If MyVolatilityTotal > Me.VolatilityMaximum Then
@@ -224,41 +223,41 @@ Namespace OptionValuation
       Dim ThisStockPriceSample As Double
 
       If MyVolatilityTotal < 0 Then
-        MyVolatilityTotal = MyVolatilityTotal
-      End If
+				MyVolatilityTotal = 0.0
+			End If
       If MyVolatilityTotal < VOLATILITY_TOTAL_MINIMUM Then
-        'add some noise to shake the data with 1% additional noise
-        ThisStockPriceSample = StockOption.StockPricePredictionSample(
-        MyNumberTradingDays,
-        MyStockPriceStartValue,
-        MyGain,
-        MyGainDerivative,
-        VOLATILITY_TOTAL_MINIMUM)
-      Else
+				'add some noise to shake the data with 1% additional noise
+				ThisStockPriceSample = StockOption.StockPricePredictionSample(
+					MyNumberTradingDays,
+					MyStockPriceStartValue,
+					MyGain,
+					MyGainDerivative,
+					VOLATILITY_TOTAL_MINIMUM)
+			Else
         ThisStockPriceSample = MyStockPriceStartValue
       End If
       ThisStockPriceSample = MyStockPriceStartValue
 
-
-
-      MyStockPriceHighValue = StockOption.StockPricePrediction(
-        MyNumberTradingDays,
-        ThisStockPriceSample,
-        MyGain,
-        MyGainDerivative,
-        MyVolatilityTotal,
-        MyProbabilityHigh)
-
-      MyStockPriceLowValue = StockOption.StockPricePrediction(
-        MyNumberTradingDays,
-        ThisStockPriceSample,
-        MyGain,
-        MyGainDerivative,
-        MyVolatilityTotal,
-        MyProbabilityLow)
-
-      'calculate the standard high and low
-      If MyVolatility = MyVolatilityTotal Then
+			If MyVolatilityTotal > VOLATILITY_TOTAL_MINIMUM Then
+				MyStockPriceHighValue = StockOption.StockPricePrediction(
+					MyNumberTradingDays,
+					ThisStockPriceSample,
+					MyGain,
+					MyGainDerivative,
+					MyVolatilityTotal,
+					MyProbabilityHigh)
+				MyStockPriceLowValue = StockOption.StockPricePrediction(
+					MyNumberTradingDays,
+					ThisStockPriceSample,
+					MyGain,
+					MyGainDerivative,
+					MyVolatilityTotal,
+					MyProbabilityLow)
+			Else
+				'Keep the last value
+			End If
+			'calculate the standard high and low
+			If MyVolatility = MyVolatilityTotal Then
         MyStockPriceHighValueStandard = MyStockPriceHighValue
         MyStockPriceLowValueStandard = MyStockPriceLowValue
       Else
@@ -536,13 +535,16 @@ Namespace OptionValuation
         Probability)
     End Function
 
+		Public Function Refresh() As Boolean Implements IStockPriceVolatilityPredictionBand.Refresh
+			Me.Refresh(VolatilityDelta:=0.0)
+		End Function
 
-    Public ReadOnly Property VolatilityPredictionBandType As IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType Implements IStockPriceVolatilityPredictionBand.VolatilityPredictionBandType
-      Get
-        Return MyVolatilityPredictionBandType
-      End Get
-    End Property
-  End Class
+		Public ReadOnly Property VolatilityPredictionBandType As IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType Implements IStockPriceVolatilityPredictionBand.VolatilityPredictionBandType
+			Get
+				Return MyVolatilityPredictionBandType
+			End Get
+		End Property
+	End Class
 
   Public Interface IStockPriceVolatilityPredictionBand
     Enum EnuVolatilityPredictionBandType
@@ -583,6 +585,7 @@ Namespace OptionValuation
     Function StockPriceFutur() As IPriceVol
     Function Refresh(ByVal VolatilityDelta As Double, ByRef StockPriceFuture As IPriceVol) As Boolean
     Sub Refresh(ByRef StockPriceFuture As IPriceVol)
-    Function Refresh(ByVal VolatilityDelta As Double) As Boolean
-  End Interface
+		Function Refresh(ByVal VolatilityDelta As Double) As Boolean
+		Function Refresh() As Boolean
+	End Interface
 End Namespace

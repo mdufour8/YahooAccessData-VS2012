@@ -46,22 +46,22 @@ Public Class FilterStatisticalExp
 
 		Private MyListOfValueStatistical As List(Of IStatistical)
 
-		''' <summary>
-		''' Calculate the statistical information from all value 
-		''' </summary>
-		''' <remarks></remarks>
-		Public Sub New()
-			Me.New(3)
-		End Sub
+	''' <summary>
+	''' Calculate the statistical information from all value 
+	''' </summary>
+	''' <remarks></remarks>
+	Public Sub New()
+		Me.New(FilterRate:=3)
+	End Sub
 
-		''' <summary>
-		''' Calculate the statistical information based on a windows of size given by FilterRate
-		''' </summary>
-		''' <param name="FilterRate">
-		''' Should be greater than one, otherwise the calculation is done on all the data
-		''' </param>
-		''' <remarks></remarks>
-		Public Sub New(ByVal FilterRate As Integer)
+	''' <summary>
+	''' Calculate the statistical information based on a windows of size given by FilterRate
+	''' </summary>
+	''' <param name="FilterRate">
+	''' Should be greater than one, otherwise the calculation is done on all the data
+	''' </param>
+	''' <remarks></remarks>
+	Public Sub New(ByVal FilterRate As Integer)
 			'MyListOfValue = New List(Of Double)
 			'MyListOfValueSquare = New List(Of Double)
 			MyListOfValueStatistical = New List(Of IStatistical)
