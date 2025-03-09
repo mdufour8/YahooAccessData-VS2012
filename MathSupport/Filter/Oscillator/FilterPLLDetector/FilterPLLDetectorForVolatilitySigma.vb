@@ -10,7 +10,7 @@ Namespace MathPlus.Filter
 	Public Class FilterPLLDetectorForVolatilitySigma
 		Implements IFilterPLLDetector
 
-		Public Const RATIO_OF_VOLATILITY_RATE_TO_BUFFER_SIZE As Double = 1
+		Public Const RATIO_OF_VOLATILITY_RATE_TO_BUFFER_SIZE As Double = 1.0
 		Public Const BUFFER_SIZE_FOR_VOLATILITY_FEEDBACK_STABILIZED As Integer = 20
 
 		Private MyRate As Integer
@@ -22,6 +22,15 @@ Namespace MathPlus.Filter
 		Private MyValueInit As Double
 		Private MyValueOutput As Double
 		Private MyQueueForSigmaStatisticDaily As Queue(Of IStockPriceVolatilityPredictionBand)
+		Private MyQueueForSigmaStatisticDailyVolPlus As Queue(Of IStockPriceVolatilityPredictionBand)
+		Private MyQueueForSigmaStatisticDailyVolMinus As Queue(Of IStockPriceVolatilityPredictionBand)
+		Private MyFilterExpForQueuePLE As FilterExp
+		Private MyFilterExpForQueuePLEVolPlus As FilterExp
+		Private MyFilterExpForQueuePLEVolMinus As FilterExp
+
+		Private MyQueueSumOfExcess As Double
+		Private MyQueueSumOfExcessVolPlus As Double
+		Private MyQueueSumOfExcessVolMinus As Double
 		Private MySumForSigmaStatisticDaily As Double
 		Private MyCountOfPLLRun As Integer
 		Private MyStatus As Boolean
@@ -40,6 +49,9 @@ Namespace MathPlus.Filter
 
 		Public Sub New(ByVal Rate As Integer, Optional ByVal ToCountLimit As Integer = 1, Optional ToErrorLimit As Double = 0.001)
 			MyRate = Rate
+			If MyRate < BUFFER_SIZE_FOR_VOLATILITY_FEEDBACK_STABILIZED Then
+				MyRate = BUFFER_SIZE_FOR_VOLATILITY_FEEDBACK_STABILIZED
+			End If
 			Me.IsUseFeedbackRegulatedVolatilityFastAttackEvent = False    'by default
 			MyToCountLimit = ToCountLimit
 			MyToCountLimitSelected = ToCountLimit
@@ -48,7 +60,12 @@ Namespace MathPlus.Filter
 			MyValueInit = 0
 			MyCountOfPLLRun = 0
 			MyStatus = False
-			MyQueueForSigmaStatisticDaily = New Queue(Of IStockPriceVolatilityPredictionBand)(capacity:=CInt(BUFFER_SIZE_FOR_VOLATILITY_FEEDBACK_STABILIZED))
+			MyQueueForSigmaStatisticDaily = New Queue(Of IStockPriceVolatilityPredictionBand)(capacity:=CInt(MyRate))
+			MyQueueForSigmaStatisticDailyVolPlus = New Queue(Of IStockPriceVolatilityPredictionBand)(capacity:=CInt(MyRate))
+			MyQueueForSigmaStatisticDailyVolMinus = New Queue(Of IStockPriceVolatilityPredictionBand)(capacity:=CInt(MyRate))
+			MyFilterExpForQueuePLE = New FilterExp(FilterRate:=MyRate)
+			MyFilterExpForQueuePLEVolPlus = New FilterExp(FilterRate:=MyRate)
+			MyFilterExpForQueuePLEVolMinus = New FilterExp(FilterRate:=MyRate)
 			MyFilterPLL = New FilterPLL(FilterRate:=7, DampingFactor:=1.0)
 			MyListOfConvergence = New List(Of Double)
 			MyListOfProbabilityOfExcess = New List(Of Double)
@@ -146,7 +163,6 @@ Namespace MathPlus.Filter
 
 					ThisProbOfBandExceedExpected = 1 - MyQueueForSigmaStatisticDaily(0).ProbabilityOfInterval
 
-					Dim ThisCountThresholdForFastAttack As Integer = CInt(0.8 * BUFFER_SIZE_FOR_VOLATILITY_FEEDBACK_STABILIZED)
 					For I = 0 To MyQueueForSigmaStatisticDaily.Count - 1
 						ThisStockPriceVolatilityPredictionBand = MyQueueForSigmaStatisticDaily(I)
 						ThisWeight = ThisWeight + ThisWeightStep
@@ -162,15 +178,7 @@ Namespace MathPlus.Filter
 									Else
 										IsBandExceededLast = True
 									End If
-									If IsUseFeedbackRegulatedVolatilityFastAttackEventLocal Then
-										If I >= ThisCountThresholdForFastAttack Then
-											MySumForSigmaStatisticDaily = MySumForSigmaStatisticDaily + .VolatilityExcessRatio
-										Else
-											MySumForSigmaStatisticDaily = MySumForSigmaStatisticDaily + 1
-										End If
-									Else
-										MySumForSigmaStatisticDaily = MySumForSigmaStatisticDaily + 1
-									End If
+									MySumForSigmaStatisticDaily = MySumForSigmaStatisticDaily + 1
 									If .IsBandExceededHigh Then
 										MyDetectorBandExcessBalanceSum = MyDetectorBandExcessBalanceSum + 1
 									End If
@@ -224,7 +232,7 @@ Namespace MathPlus.Filter
 					'.Refresh(ThisQueueDataLast.VolatilityDelta, StockPriceVolatilityPredictionBand.StockPrice)
 				End With
 			End If
-			If MyQueueForSigmaStatisticDaily.Count = BUFFER_SIZE_FOR_VOLATILITY_FEEDBACK_STABILIZED Then
+			If MyQueueForSigmaStatisticDaily.Count = MyRate Then
 				ThisQueueDataRemoved = MyQueueForSigmaStatisticDaily.Dequeue
 				ThisQueueDataRemovedDate = ThisQueueDataRemoved.StockPrice.DateDay
 			End If
@@ -247,48 +255,76 @@ Namespace MathPlus.Filter
 			Dim ThisVolatilityDelta As Double
 			Dim ThisQueueDataLastDate As Date
 			Dim ThisQueueDataRemovedDate As Date
+			Dim ThisProbabilityOfExcess As Double
 
-			MyCountOfPLLRun = 0
 			MyCount = MyCount + 1
-			If MyQueueForSigmaStatisticDaily.Count > 0 Then
-				ThisQueueDataLast = MyQueueForSigmaStatisticDaily.Last
-				ThisQueueDataLastDate = ThisQueueDataLast.StockPrice.DateDay
-				'so  update the last PriceVoaltility with the actual price 
-				With ThisQueueDataLast
-					.Refresh(ThisQueueDataLast.VolatilityDelta, StockPriceVolatilityPredictionBand.StockPrice)
-				End With
-			End If
-			If MyQueueForSigmaStatisticDaily.Count = BUFFER_SIZE_FOR_VOLATILITY_FEEDBACK_STABILIZED Then
-				ThisQueueDataRemoved = MyQueueForSigmaStatisticDaily.Dequeue
-				ThisQueueDataRemovedDate = ThisQueueDataRemoved.StockPrice.DateDay
-			End If
-			MyToCountLimitSelected = MyToCountLimit
-			MyQueueForSigmaStatisticDaily.Enqueue(StockPriceVolatilityPredictionBand)
 
-			ThisVolatilityDelta = MyFilterPLL.FilterRun(StockPriceVolatilityPredictionBand.Volatility, Me)
-			MyListOfValueOutput.Add(ThisVolatilityDelta)
-			Me.IFilterPLLDetector_RunErrorDetector(StockPriceVolatilityPredictionBand.Volatility, ThisVolatilityDelta)
-			StockPriceVolatilityPredictionBand.Refresh(VolatilityDelta:=ThisVolatilityDelta)
+			QueueUpdate(StockPriceVolatilityPredictionBand, QueueSource:=MyQueueForSigmaStatisticDaily, FilterForPLE:=MyFilterExpForQueuePLE)
+
+
+
+
+
+			MyToCountLimitSelected = MyToCountLimit
+
+			'ThisVolatilityDelta = MyFilterPLL.FilterRun(StockPriceVolatilityPredictionBand.Volatility, Me)
+			'MyListOfValueOutput.Add(ThisVolatilityDelta)
+
+			'Me.IFilterPLLDetector_RunErrorDetector(StockPriceVolatilityPredictionBand.Volatility, ThisVolatilityDelta)
+
+			'StockPriceVolatilityPredictionBand.Refresh(VolatilityDelta:=ThisVolatilityDelta)
 
 			MyListOfProbabilityOfExcess.Add(MyProbabilityOfExcessMeasuredLast)
 			MyListOfProbabilityOfExcessBalance.Add(MyDetectorBalanceLast)
 			MyToCountLimitSelected = MyToCountLimit
 		End Sub
 
+		Private Sub QueueUpdate(
+			StockPriceVolatilityPredictionBand As IStockPriceVolatilityPredictionBand,
+			QueueSource As Queue(Of IStockPriceVolatilityPredictionBand),
+			FilterForPLE As IFilterRun)
+
+			Dim ThisQueueDataLastDate As Date = Nothing
+			Dim ThisQueueDataRemovedDate As Date = Nothing
+			Dim ThisQueueDataRemoved As IStockPriceVolatilityPredictionBand = Nothing
+			Dim ThisQueueDataLast As IStockPriceVolatilityPredictionBand = Nothing
+
+			If QueueSource.Count > 0 Then
+				ThisQueueDataLast = QueueSource.Last
+				ThisQueueDataLastDate = ThisQueueDataLast.StockPrice.DateDay
+				With ThisQueueDataLast
+					.Refresh(StockPriceVolatilityPredictionBand.StockPrice)
+					If .IsBandExceeded Then
+						FilterForPLE.FilterRun(1.0)
+					Else
+						FilterForPLE.FilterRun(0.0)
+					End If
+				End With
+			Else
+				FilterForPLE.FilterRun(0.5)
+			End If
+			'so  update the last PriceVolatility with the actual price
+			If QueueSource.Count = MyRate Then
+				ThisQueueDataRemoved = MyQueueForSigmaStatisticDaily.Dequeue
+				ThisQueueDataRemovedDate = ThisQueueDataRemoved.StockPrice.DateDay
+			End If
+			QueueSource.Enqueue(StockPriceVolatilityPredictionBand)
+		End Sub
+
 		Private IsUseFeedbackRegulatedVolatilityFastAttackEventLocal As Boolean
+
+		''' <summary>
+		''' not in used
+		''' </summary>
+		''' <returns></returns>
 		Public Property IsUseFeedbackRegulatedVolatilityFastAttackEvent As Boolean
 			Get
 				Return IsUseFeedbackRegulatedVolatilityFastAttackEventLocal
 			End Get
 			Set(value As Boolean)
 				IsUseFeedbackRegulatedVolatilityFastAttackEventLocal = value
-				If IsUseFeedbackRegulatedVolatilityFastAttackEventLocal Then
-					MyFastAttackCountForBandExceededHigh = 1.5
-					MyFastAttackCountForBandExceededLow = 3
-				Else
-					MyFastAttackCountForBandExceededLow = 1
-					MyFastAttackCountForBandExceededHigh = 1
-				End If
+				MyFastAttackCountForBandExceededLow = 1
+				MyFastAttackCountForBandExceededHigh = 1
 			End Set
 		End Property
 

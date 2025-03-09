@@ -50,8 +50,10 @@ Namespace MathPlus.Filter
                   Optional ByVal ToCountLimit As Integer = 1,
                   Optional ToErrorLimit As Double = 0.001)
 
-      Dim ThisStartPointInInputArray As Integer
-      Dim ThisStopPointInInputArray As Integer
+			Throw New NotImplementedException
+
+			Dim ThisStartPointInInputArray As Integer
+			Dim ThisStopPointInInputArray As Integer
       Dim ThisPointInInputArray As Integer
       Dim ThisPointInWorkArray As Integer
 

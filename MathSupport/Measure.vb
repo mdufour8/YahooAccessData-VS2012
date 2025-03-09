@@ -726,6 +726,21 @@ Namespace MathPlus
 			End Function
 
 			''' <summary>
+			''' Return the lognormal CDF distributions
+			''' </summary>
+			''' <param name="x"></param>
+			''' <param name="Mean"></param>
+			''' <param name="Sigma"></param>
+			''' <returns></returns>
+			Public Shared Function LogNormalCDF(x As Double, Mean As Double, Sigma As Double) As Double
+				' Parameters of the underlying normal distribution
+
+				Dim ThisResult As Double
+				ThisResult = MathNet.Numerics.Distributions.LogNormal.CDF(mu:=Mean, sigma:=Sigma, x:=x)
+				Return ThisResult
+			End Function
+
+			''' <summary>
 			''' Return a sample of a log normal distribution
 			''' </summary>
 			''' <param name="Mu"></param>

@@ -1785,6 +1785,8 @@ Namespace MathPlus.Filter
 			Dim ThisFilterPLLDetectorForVolatilitySigmaCloseToOpenAsync As FilterPLLDetectorForVolatilitySigmaAsync
 			Dim I As Integer
 
+
+			Throw New NotImplementedException
 			'adjust the the number of threading based on the number of points
 			If ThisNumberPoint > MyProcessorCount Then
 				ThisNumberOfPointPerThread = ThisNumberPoint \ MyProcessorCount

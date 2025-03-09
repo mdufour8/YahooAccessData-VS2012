@@ -91,54 +91,35 @@ Namespace OptionValuation
       MyVolatilityPredictionBandType = VolatilityPredictionBandType
     End Sub
 
-    Public Sub New(
-                  ByVal NumberTradingDays As Double,
-                  ByVal StockPriceStartValue As Double,
-                  ByVal Gain As Double,
-                  ByVal GainDerivative As Double,
-                  ByVal Volatility As Double,
-                  ByVal ProbabilityOfInterval As Double)
+		Public Sub New(
+									ByVal NumberTradingDays As Double,
+									ByVal StockPriceStartValue As Double,
+									ByVal Gain As Double,
+									ByVal GainDerivative As Double,
+									ByVal Volatility As Double,
+									ByVal ProbabilityOfInterval As Double,
+									ByVal VolatilityPredictionBandType As IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType)
 
-      Me.New(
-        NumberTradingDays,
-        New PriceVol(CSng(StockPriceStartValue)),
-        StockPriceStartValue,
-        Gain,
-        GainDerivative,
-        Volatility,
-        ProbabilityOfInterval,
-        VolatilityPredictionBandType:=IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType.FromCloseToClose)
-    End Sub
-
-    Public Sub New(
-                  ByVal NumberTradingDays As Double,
-                  ByVal StockPriceStartValue As Double,
-                  ByVal Gain As Double,
-                  ByVal GainDerivative As Double,
-                  ByVal Volatility As Double,
-                  ByVal ProbabilityOfInterval As Double,
-                  ByVal VolatilityPredictionBandType As IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType)
-
-      Me.New(
-        NumberTradingDays,
-        New PriceVol(CSng(StockPriceStartValue)),
-        StockPriceStartValue,
-        Gain,
-        GainDerivative,
-        Volatility,
-        ProbabilityOfInterval,
-        VolatilityPredictionBandType)
-    End Sub
+			Me.New(
+				NumberTradingDays,
+				New PriceVol(CSng(StockPriceStartValue)),
+				StockPriceStartValue,
+				Gain,
+				GainDerivative,
+				Volatility,
+				ProbabilityOfInterval,
+				VolatilityPredictionBandType)
+		End Sub
 
 
-    ''' <summary>
-    ''' Create a copy of the original input object
-    ''' </summary>
-    ''' <param name="StockPriceVolatilityPredictionBand">
-    ''' The object that will be copied from 
-    ''' </param>
-    ''' <remarks></remarks>
-    Public Sub New(ByVal StockPriceVolatilityPredictionBand As IStockPriceVolatilityPredictionBand, ByVal VolatilityPredictionBandType As IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType)
+		''' <summary>
+		''' Create a copy of the original input object
+		''' </summary>
+		''' <param name="StockPriceVolatilityPredictionBand">
+		''' The object that will be copied from 
+		''' </param>
+		''' <remarks></remarks>
+		Public Sub New(ByVal StockPriceVolatilityPredictionBand As IStockPriceVolatilityPredictionBand, ByVal VolatilityPredictionBandType As IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType)
       Me.New(
         StockPriceVolatilityPredictionBand.NumberTradingDays,
         StockPriceVolatilityPredictionBand.StockPrice,

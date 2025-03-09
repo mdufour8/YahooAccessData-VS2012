@@ -301,6 +301,8 @@
     <Compile Include="StockOption\IStockOption.vb" />
     <Compile Include="StockOption\StockOption.vb" />
     <Compile Include="StockOption\StockPricePrediction.vb" />
+    <Compile Include="StockOption\StockPricePredictionData.vb" />
+    <Compile Include="StockOption\StockPricePredictionRun.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="My Project\Resources.resx">
@@ -316,6 +318,7 @@
     </None>
     <None Include="MathSupport\Filter\Exponential\ADPLL_Filtering_Summary.docx" />
     <None Include="MathSupport\Filter\Oscillator\Gaussian LogNormal Statistic.pdf" />
+    <None Include="MathSupport\Filter\Oscillator\Lognormal_Distribution.pdf" />
     <None Include="MathSupport\Filter\PLL\ADPLL_Filtering_Summary.docx" />
     <None Include="MathSupport\Filter\PLL\ADPLL_Filtering_Summary.pdf" />
     <None Include="MathSupport\Filter\PLL\Brown_LES_Annualized_Trend.docx" />

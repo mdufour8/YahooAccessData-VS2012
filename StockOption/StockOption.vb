@@ -1262,68 +1262,67 @@ Namespace OptionValuation
     End Function
 
 
-    ''' <summary>
-    ''' Calculate the expected stock price for a given number of trading day and probability
-    ''' see: 
-    ''' https://en.wikipedia.org/wiki/Geometric_Brownian_motion
-    ''' for lab experiment see this excellent demo: 
-    ''' http://www.math.uah.edu/stat/apps/GeometricBrownianMotion.html
-    ''' See also for more general interest on statistic analysis and definition:
-    ''' http://www.math.uah.edu/stat/brown/index.html
-    ''' https://en.wikipedia.org/wiki/Log-normal_distribution
-    ''' </summary>
-    ''' <param name="NumberTradingDays"></param>
-    ''' <param name="StockPrice"></param>
-    ''' <param name="Gain"></param>
-    ''' <param name="Volatility"></param>
-    ''' <param name="Probability"></param>
-    ''' <returns></returns>
-    ''' <remarks></remarks>
-    Public Shared Function StockPricePrediction(
-                                               ByVal NumberTradingDays As Double,
-                                               ByVal StockPrice As Double,
-                                               ByVal Gain As Double,
-                                               ByVal GainDerivative As Double,
-                                               ByVal Volatility As Double,
-                                               ByVal Probability As Double) As Double
+		''' <summary>
+		''' Calculate the expected stock price for a given number of trading day and probability
+		''' see: 
+		''' https://en.wikipedia.org/wiki/Geometric_Brownian_motion
+		''' for lab experiment see this excellent demo: 
+		''' http://www.math.uah.edu/stat/apps/GeometricBrownianMotion.html
+		''' See also for more general interest on statistic analysis and definition:
+		''' http://www.math.uah.edu/stat/brown/index.html
+		''' https://en.wikipedia.org/wiki/Log-normal_distribution
+		''' </summary>
+		''' <param name="NumberTradingDays"></param>
+		''' <param name="StockPrice"></param>
+		''' <param name="Gain"></param>
+		''' <param name="Volatility"></param>
+		''' <param name="Probability"></param>
+		''' <returns></returns>
+		''' <remarks></remarks>
+		Public Shared Function StockPricePrediction(
+																							 ByVal NumberTradingDays As Double,
+																							 ByVal StockPrice As Double,
+																							 ByVal Gain As Double,
+																							 ByVal GainDerivative As Double,
+																							 ByVal Volatility As Double,
+																							 ByVal Probability As Double) As Double
 
-      Dim ThisResult As Double
-      Dim ThisTimeInYear As Double = NumberTradingDays / YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR
-      Dim ThisGain As Double = Gain * (1 + ThisTimeInYear * GainDerivative)
-      'Dim ThisPricePrediction As Double = StockOption.StockPricePrediction(NumberTradingDays, StockPrice, Gain)
-      'Dim ThisPricePredictionMedian As Double = StockOption.StockPricePredictionMedian(NumberTradingDays, StockPrice, Gain, Volatility)
+			Dim ThisResult As Double
+			Dim ThisTimeInYear As Double = NumberTradingDays / YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR
+			Dim ThisGain As Double = Gain * (1 + ThisTimeInYear * GainDerivative)
+			'Dim ThisPricePrediction As Double = StockOption.StockPricePrediction(NumberTradingDays, StockPrice, Gain)
+			'Dim ThisPricePredictionMedian As Double = StockOption.StockPricePredictionMedian(NumberTradingDays, StockPrice, Gain, Volatility)
 
-      'Since the variable Ut=(μ−σ2/2)t+σZt has the normal distribution with mean (μ−σ2/2)t and standard deviation σ√t, 
-      'it follows that Xt=exp(Ut) has the lognormal distribution with these parameters. 
-      'These result for the PDF then follow directly from the corresponding results for the lognormal PDF.
-      Dim ThisMu As Double = (ThisGain - Volatility ^ 2 / 2) * ThisTimeInYear
-      Dim ThisSigma As Double = Volatility * Math.Sqrt(ThisTimeInYear)
+			'Since the variable Ut=(μ−σ2/2)t+σZt has the normal distribution with mean (μ−σ2/2)t and standard deviation σ√t, 
+			'it follows that Xt=exp(Ut) has the lognormal distribution with these parameters. 
+			'These result for the PDF then follow directly from the corresponding results for the lognormal PDF.
+			Dim ThisMu As Double = (ThisGain - Volatility ^ 2 / 2) * ThisTimeInYear
+			Dim ThisSigma As Double = Volatility * Math.Sqrt(ThisTimeInYear)
 
-      If ThisSigma > 0 Then
-        ThisResult = StockPrice * Distributions.LogNormal.InvCDF(ThisMu, ThisSigma, Probability)
-      Else
-        ThisResult = StockPrice
-      End If
-      Return ThisResult
-    End Function
+			If ThisSigma > 0 Then
+				ThisResult = StockPrice * Distributions.LogNormal.InvCDF(ThisMu, ThisSigma, Probability)
+			Else
+				ThisResult = StockPrice
+			End If
+			Return ThisResult
+		End Function
 
-    ''' <summary>
-    ''' Calculate a random log normal sample
-    ''' see: 
-    ''' https://en.wikipedia.org/wiki/Geometric_Brownian_motion
-    ''' for lab experiment see this excellent demo: 
-    ''' http://www.math.uah.edu/stat/apps/GeometricBrownianMotion.html
-    ''' See also for more general interest on statistic analysis and definition:
-    ''' http://www.math.uah.edu/stat/brown/index.html
-    ''' https://en.wikipedia.org/wiki/Log-normal_distribution
-    ''' </summary>
-    ''' <param name="NumberTradingDays"></param>
-    ''' <param name="StockPrice"></param>
-    ''' <param name="Gain"></param>
-    ''' <param name="Volatility"></param>
-    ''' <returns>A random lognormal sample</returns>
-    ''' <remarks></remarks>
-    Public Shared Function StockPricePredictionSample(
+		''' Calculate a random log normal sample
+		''' see: 
+		''' https://en.wikipedia.org/wiki/Geometric_Brownian_motion
+		''' for lab experiment see this excellent demo: 
+		''' http://www.math.uah.edu/stat/apps/GeometricBrownianMotion.html
+		''' See also for more general interest on statistic analysis and definition:
+		''' http://www.math.uah.edu/stat/brown/index.html
+		''' https://en.wikipedia.org/wiki/Log-normal_distribution
+		''' </summary>
+		''' <param name="NumberTradingDays"></param>
+		''' <param name="StockPrice"></param>
+		''' <param name="Gain"></param>
+		''' <param name="Volatility"></param>
+		''' <returns>A random lognormal sample</returns>
+		''' <remarks></remarks>
+		Public Shared Function StockPricePredictionSample(
                                                ByVal NumberTradingDays As Double,
                                                ByVal StockPrice As Double,
                                                ByVal Gain As Double,
@@ -1409,58 +1408,60 @@ Namespace OptionValuation
       Return StockPricePredictionInverse(CDbl(NumberTradingDays), StockPriceStart, Gain, Volatility, StockPriceEnd)
     End Function
 
-    ''' <summary>
-    ''' Return the probability that the signal is lower than the StockPriceEnd value after the Number of trading days specified.
-    ''' </summary>
-    ''' <param name="NumberTradingDays"></param>
-    ''' <param name="StockPriceStart"></param>
-    ''' <param name="Gain"></param>
-    ''' <param name="GainDerivative"></param>
-    ''' <param name="Volatility"></param>
-    ''' <param name="StockPriceEnd"></param>
-    ''' <returns></returns>
-    ''' <remarks></remarks>
-    Public Shared Function StockPricePredictionInverse(
-                                                      ByVal NumberTradingDays As Double,
-                                                      ByVal StockPriceStart As Double,
-                                                      ByVal Gain As Double,
-                                                      ByVal GainDerivative As Double,
-                                                      ByVal Volatility As Double,
-                                                      ByVal StockPriceEnd As Double) As Double
-      Dim ThisResult As Double
-      Dim ThisTimeInYear As Double = NumberTradingDays / YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR
-      Dim ThisGain As Double = Gain + (ThisTimeInYear * GainDerivative)
-      'Dim ThisPricePrediction As Double = StockOption.StockPricePrediction(NumberTradingDays, StockPrice, Gain)
-      'Dim ThisPricePredictionMedian As Double = StockOption.StockPricePredictionMedian(NumberTradingDays, StockPrice, Gain, Volatility)
+		''' <summary>
+		''' Return the probability that the signal is lower than the StockPriceEnd value after the Number of trading days specified.
+		''' </summary>
+		''' <param name="NumberTradingDays"></param>
+		''' <param name="StockPriceStart"></param>
+		''' <param name="Gain"></param>
+		''' <param name="GainDerivative"></param>
+		''' <param name="Volatility"></param>
+		''' <param name="StockPriceEnd"></param>
+		''' <returns></returns>
+		''' <remarks></remarks>
+		Public Shared Function StockPricePredictionInverse(
+																											ByVal NumberTradingDays As Double,
+																											ByVal StockPriceStart As Double,
+																											ByVal Gain As Double,
+																											ByVal GainDerivative As Double,
+																											ByVal Volatility As Double,
+																											ByVal StockPriceEnd As Double) As Double
+			Dim ThisResult As Double
+			Dim ThisTimeInYear As Double = NumberTradingDays / YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR
+			Dim ThisGain As Double = Gain + (ThisTimeInYear * GainDerivative)
+			'Dim ThisPricePrediction As Double = StockOption.StockPricePrediction(NumberTradingDays, StockPrice, Gain)
+			'Dim ThisPricePredictionMedian As Double = StockOption.StockPricePredictionMedian(NumberTradingDays, StockPrice, Gain, Volatility)
 
-      'Since the variable Ut=(μ−σ2/2)t+σZt has the normal distribution with mean (μ−σ2/2)t and standard deviation σ√t, 
-      'it follows that Xt=exp(Ut) has the lognormal distribution with these parameters. 
-      'These result for the PDF then follow directly from the corresponding results for the lognormal PDF.
-      Dim ThisMu As Double = (ThisGain - Volatility ^ 2 / 2) * ThisTimeInYear
-      Dim ThisSigma As Double = Volatility * Math.Sqrt(ThisTimeInYear)
+			'Since the variable Ut=(μ−σ2/2)t+σZt has the normal distribution with mean (μ−σ2/2)t and standard deviation σ√t, 
+			'it follows that Xt=exp(Ut) has the lognormal distribution with these parameters. 
+			'These result for the PDF then follow directly from the corresponding results for the lognormal PDF.
+			Dim ThisMu As Double = (ThisGain - Volatility ^ 2 / 2) * ThisTimeInYear
+			Dim ThisSigma As Double = Volatility * Math.Sqrt(ThisTimeInYear)
 
-      If ThisSigma > 0 Then
-        ThisResult = Distributions.LogNormal.CDF(ThisMu, ThisSigma, StockPriceEnd / StockPriceStart)
-      Else
-        ThisResult = 0.5
-      End If
-      'Dim ThisMu1 As Double = (-ThisGain - Volatility ^ 2 / 2) * ThisTimeInYear
-      'ThisStockPriceStartAtMedian = StockPriceEnd * Distributions.LogNormal.InvCDF(ThisMu1, ThisSigma, 0.5)
-      Return ThisResult
-    End Function
+			If ThisSigma > 0 Then
+				'Should be the Log(StockPriceEnd / StockPriceStart) but the result is not correct
+				ThisResult = Distributions.LogNormal.CDF(ThisMu, ThisSigma, StockPriceEnd / StockPriceStart)
+			Else
+				ThisResult = 0.5
+			End If
+			'Dim ThisMu1 As Double = (-ThisGain - Volatility ^ 2 / 2) * ThisTimeInYear
+			'ThisStockPriceStartAtMedian = StockPriceEnd * Distributions.LogNormal.InvCDF(ThisMu1, ThisSigma, 0.5)
+			Return ThisResult
+		End Function
 
-    ''' <summary>
-    ''' Return the probability that the signal is lower than the StockPriceEnd value after the Number of trading days specified.
-    ''' </summary>
-    ''' <param name="NumberTradingDays"></param>
-    ''' <param name="StockPriceStart"></param>
-    ''' <param name="Gain"></param>
-    ''' <param name="GainDerivative"></param>
-    ''' <param name="Volatility"></param>
-    ''' <param name="StockPriceEnd"></param>
-    ''' <returns></returns>
-    ''' <remarks></remarks>
-    Public Shared Function StockPricePredictionInverse(
+
+		''' <summary>
+		''' Return the probability that the signal is lower than the StockPriceEnd value after the Number of trading days specified.
+		''' </summary>
+		''' <param name="NumberTradingDays"></param>
+		''' <param name="StockPriceStart"></param>
+		''' <param name="Gain"></param>
+		''' <param name="GainDerivative"></param>
+		''' <param name="Volatility"></param>
+		''' <param name="StockPriceEnd"></param>
+		''' <returns></returns>
+		''' <remarks></remarks>
+		Public Shared Function StockPricePredictionInverse(
                                                       ByVal NumberTradingDays As Integer,
                                                       ByVal StockPriceStart As Double,
                                                       ByVal Gain As Double,
@@ -1516,11 +1517,16 @@ Namespace OptionValuation
         If ThisResult > 0.999 Then
           ThisResult = 0.999
         End If
-        If ThisResult < 0.001 Then
-          ThisResult = 0.001
-        End If
-        ThisVolatilityRatio = (Distributions.LogNormal.InvCDF(ThisMu, ThisSigma, ThisResult) - Distributions.LogNormal.InvCDF(ThisMu, ThisSigma, 1 - ThisResult)) / (Distributions.LogNormal.InvCDF(ThisMu, ThisSigma, Measure.GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA1) - Distributions.LogNormal.InvCDF(ThisMu, ThisSigma, Measure.GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA1))
-      Else
+				If ThisResult < 0.001 Then
+					ThisResult = 0.001
+				End If
+				Dim ThisProbStart = Distributions.LogNormal.InvCDF(ThisMu, ThisSigma, ThisResult)
+				Dim ThisProbStop = Distributions.LogNormal.InvCDF(ThisMu, ThisSigma, 1 - ThisResult)
+				Dim ThisProbStartAtSigma1 = Distributions.LogNormal.InvCDF(ThisMu, ThisSigma, Measure.GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA1)
+				Dim ThisProbStopAtSigma1 = Distributions.LogNormal.InvCDF(ThisMu, ThisSigma, Measure.GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA1)
+
+				ThisVolatilityRatio = (ThisProbStart - ThisProbStop) / (ThisProbStartAtSigma1 - ThisProbStopAtSigma1)
+			Else
         ThisVolatilityRatio = 1.0
       End If
       If ThisVolatilityRatio < 0.0 Then
