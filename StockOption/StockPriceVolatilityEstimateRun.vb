@@ -21,7 +21,7 @@ Namespace OptionValuation
 		Private MyQueue As Queue(Of StockPriceVolatilityEstimateData)
 		Private MySumOfThresholdExcess As Integer
 		Private MyProbabilityOfThresholdExcess As Double
-
+		Private MyFilterForProbability As FilterExp
 		''' <summary>
 		''' 
 		''' </summary>
@@ -37,8 +37,11 @@ Namespace OptionValuation
 
 			MyNumberTradingDays = NumberTradingDays
 			MyProbabilityOfInterval = ProbabilityOfInterval
+			MyProbabilityOfThresholdExcess = MyProbabilityOfInterval
 			MyVolatilityPredictionBandType = VolatilityPredictionBandType
 			MyVolatilityMeasurementPeriod = VolatilityMeasurementPeriodInDays
+			MyFilterForProbability = New FilterExp(FilterRate:=VolatilityMeasurementPeriodInDays)
+			MyQueue = New Queue(Of StockPriceVolatilityEstimateData)(capacity:=VolatilityMeasurementPeriodInDays)
 		End Sub
 
 		''' <summary>
@@ -48,11 +51,12 @@ Namespace OptionValuation
 		''' <param name="Gain"></param>
 		''' <param name="GainDerivative"></param>
 		''' <param name="Volatility"></param>
-		Public Sub Add(
+		''' <returns></returns>
+		Public Function Add(
 			ByVal StockPrice As IPriceVol,
 			ByVal Gain As Double,
 			ByVal GainDerivative As Double,
-			ByVal Volatility As Double)
+			ByVal Volatility As Double) As Double
 
 			Dim ThisQueueDataLastDate As Date = Nothing
 			Dim ThisQueueDataRemovedDate As Date = Nothing
@@ -60,6 +64,9 @@ Namespace OptionValuation
 			Dim ThisQueueDataRemoved As StockPriceVolatilityEstimateData
 			Dim ThisStockPricePredictionData As StockPriceVolatilityEstimateData
 
+			If (StockPrice.Vol = 0) OrElse (Volatility = 0) Then
+				Return MyProbabilityOfThresholdExcess
+			End If
 			' Create a new StockPricePredictionData instance with the provided parameters
 			ThisStockPricePredictionData = New StockPriceVolatilityEstimateData(
 				NumberTradingDays:=MyNumberTradingDays,
@@ -108,16 +115,13 @@ Namespace OptionValuation
 			MyQueue.Enqueue(ThisStockPricePredictionData)
 			If ThisStockPricePredictionData.IsBandExceeded Then
 				MySumOfThresholdExcess = MySumOfThresholdExcess + 1
+				MyFilterForProbability.FilterRun(1.0)
+			Else
+				MyFilterForProbability.FilterRun(0.0)
 			End If
 			MyProbabilityOfThresholdExcess = MySumOfThresholdExcess / MyVolatilityMeasurementPeriod
-		End Sub
-
-		Public Function Refresh() As Boolean
-			Return Me.Refresh(VolatilityDelta:=0.0)
-		End Function
-
-		Public Function Refresh(VolatilityDelta As Double) As Boolean
-
+			'MyProbabilityOfThresholdExcess = MyFilterForProbability.FilterLast
+			Return MyProbabilityOfThresholdExcess
 		End Function
 	End Class
 End Namespace
