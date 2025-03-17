@@ -28,6 +28,14 @@ Public Class FilterExpPredict
 	Private MyNumberToPredict As Double
 	Private IsReset As Boolean
 
+	Public Sub New(ByVal FilterRate As Double)
+		Me.New(NumberToPredict:=0, FilterHead:=New FilterExp(FilterRate), FilterBase:=New FilterExp(FilterRate))
+	End Sub
+
+	Public Sub New(ByVal FilterRate As Double, ByVal NumberToPredict As Double)
+		Me.New(NumberToPredict:=NumberToPredict, FilterHead:=New FilterExp(FilterRate), FilterBase:=New FilterExp(FilterRate))
+	End Sub
+
 	Public Sub New(ByVal FilterHead As IFilter, ByVal FilterBase As IFilter)
 		Me.New(NumberToPredict:=0, FilterHead:=FilterHead, FilterBase:=FilterBase)
 	End Sub
@@ -130,12 +138,22 @@ Public Class FilterExpPredict
 	End Property
 
 	''' <summary>
-	''' The filtered trend of the signal or the average trend.
+	''' The filtered trend or slope of the signal over the filtered sample.
 	''' </summary>
 	''' <returns></returns>
 	Public ReadOnly Property FilterTrendLast As Double
 		Get
 			Return MyFilterBLast
+		End Get
+	End Property
+
+	''' <summary>
+	''' The logarithmic gain of the signal.
+	''' </summary>
+	''' <returns></returns>
+	Public ReadOnly Property GainLog As Double
+		Get
+			Return Measure.Measure.GainLog(MyFilterALast + MyFilterBLast, MyFilterALast)
 		End Get
 	End Property
 
@@ -225,7 +243,7 @@ Public Class FilterExpPredict
 		End Get
 	End Property
 
-	Private Property IFilter_Tag As String Implements IFilter.Tag
+	Public Property Tag As String Implements IFilter.Tag
 
 	Private Function IFilter_Filter(Value As Double) As Double Implements IFilter.Filter
 		Return Me.FilterRun(Value)

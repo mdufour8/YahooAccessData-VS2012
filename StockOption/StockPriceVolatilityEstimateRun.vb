@@ -1,6 +1,7 @@
 ﻿
 Imports YahooAccessData.MathPlus.Measure
 Imports MathNet.Numerics
+Imports YahooAccessData.MathPlus
 
 
 Namespace OptionValuation
@@ -12,6 +13,8 @@ Namespace OptionValuation
 	''' </summary>
 	Public Class StockPriceVolatilityEstimateRun
 
+		Private Const FILTER_RATE_FOR_GAIN As Integer = 5
+
 		Private _stockPricePredictionData As StockPriceVolatilityEstimateData
 
 		Private MyNumberTradingDays As Double
@@ -20,8 +23,16 @@ Namespace OptionValuation
 		Private MyVolatilityPredictionBandType As IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType
 		Private MyQueue As Queue(Of StockPriceVolatilityEstimateData)
 		Private MySumOfThresholdExcess As Integer
+		Private MySumOfThresholdExcessHigh As Integer
+		Private MySumOfThresholdExcessLow As Integer
 		Private MyProbabilityOfThresholdExcess As Double
+		Private MyProbabilityOfThresholdExcessHigh As Double
+		Private MyProbabilityOfThresholdExcessLow As Double
 		Private MyFilterForProbability As FilterExp
+		Private MyStatisticalOfProbOfExcesDeltaHighLow As FilterStatisticalExp
+		Private MyFilterBPrediction As Filter.FilterLowPassExpPredict
+		Private MyFilterBPredictionDerivative As Filter.FilterLowPassPLLPredict
+
 		''' <summary>
 		''' 
 		''' </summary>
@@ -38,10 +49,22 @@ Namespace OptionValuation
 			MyNumberTradingDays = NumberTradingDays
 			MyProbabilityOfInterval = ProbabilityOfInterval
 			MyProbabilityOfThresholdExcess = MyProbabilityOfInterval
+			MyProbabilityOfThresholdExcessHigh = MyProbabilityOfInterval / 2
+			MyProbabilityOfThresholdExcessLow = MyProbabilityOfInterval / 2
 			MyVolatilityPredictionBandType = VolatilityPredictionBandType
 			MyVolatilityMeasurementPeriod = VolatilityMeasurementPeriodInDays
 			MyFilterForProbability = New FilterExp(FilterRate:=VolatilityMeasurementPeriodInDays)
 			MyQueue = New Queue(Of StockPriceVolatilityEstimateData)(capacity:=VolatilityMeasurementPeriodInDays)
+			MyStatisticalOfProbOfExcesDeltaHighLow = New FilterStatisticalExp(FilterRate:=VolatilityMeasurementPeriodInDays)
+			'this is base on a	Brown exponential filter to calculate the gain and the derivative of the stock price
+			'this Is Use if the user does Not provide a value for the Gain And its derivative
+			'MyFilterBPrediction = New Filter.FilterLowPassExpPredict(
+			'	NumberToPredict:=0,
+			'	FilterHead:=New FilterPLL(FilterRate:=FILTER_RATE_FOR_GAIN))
+			'MyFilterBPredictionDerivative = New Filter.FilterLowPassPLLPredict(
+			'	NumberToPredict:=0,
+			'	FilterHead:=New FilterPLL(FilterRate:=FILTER_RATE_FOR_GAIN),
+			'	FilterBase:=New FilterPLL(FilterRate:=FILTER_RATE_FOR_GAIN))
 		End Sub
 
 		''' <summary>
@@ -63,6 +86,7 @@ Namespace OptionValuation
 			Dim ThisQueueDataLast As StockPriceVolatilityEstimateData
 			Dim ThisQueueDataRemoved As StockPriceVolatilityEstimateData
 			Dim ThisStockPricePredictionData As StockPriceVolatilityEstimateData
+			Dim ThisEstimateOfError As Double
 
 			If (StockPrice.Vol = 0) OrElse (Volatility = 0) Then
 				Return MyProbabilityOfThresholdExcess
@@ -92,36 +116,95 @@ Namespace OptionValuation
 					'and the result may change over one days
 					If .IsBandExceeded Then
 						MySumOfThresholdExcess = MySumOfThresholdExcess - 1
+						If .IsBandExceededHigh Then
+							MySumOfThresholdExcessHigh = MySumOfThresholdExcessHigh - 1
+						End If
+						If .IsBandExceededLow Then
+							MySumOfThresholdExcessLow = MySumOfThresholdExcessLow - 1
+						End If
 					End If
 					.StockPriceNext = StockPrice
 					.Refresh()
 					If .IsBandExceeded Then
 						MySumOfThresholdExcess = MySumOfThresholdExcess + 1
+						If .IsBandExceededHigh Then
+							MySumOfThresholdExcessHigh = MySumOfThresholdExcessHigh + 1
+						End If
+						If .IsBandExceededLow Then
+							MySumOfThresholdExcessLow = MySumOfThresholdExcessLow + 1
+						End If
 					End If
 				End With
 			End If
-			' Update the queue by removing the oldest item if the queue has reached its maximum size
+			'Update the queue by removing the oldest item if the queue has reached its maximum size
 			If MyQueue.Count = MyVolatilityMeasurementPeriod Then
 				ThisQueueDataRemoved = MyQueue.Dequeue
 				With ThisQueueDataRemoved
 					'adjust the sum for the removed item
 					If .IsBandExceeded Then
 						MySumOfThresholdExcess = MySumOfThresholdExcess - 1
+						If .IsBandExceededHigh Then
+							MySumOfThresholdExcessHigh = MySumOfThresholdExcessHigh - 1
+						End If
+						If .IsBandExceededLow Then
+							MySumOfThresholdExcessLow = MySumOfThresholdExcessLow - 1
+						End If
 					End If
 					ThisQueueDataRemovedDate = .StockPrice.DateDay
 				End With
 			End If
 			' Add the new data to the queue
 			MyQueue.Enqueue(ThisStockPricePredictionData)
-			If ThisStockPricePredictionData.IsBandExceeded Then
-				MySumOfThresholdExcess = MySumOfThresholdExcess + 1
-				MyFilterForProbability.FilterRun(1.0)
-			Else
-				MyFilterForProbability.FilterRun(0.0)
-			End If
+			With ThisStockPricePredictionData
+				If .IsBandExceeded Then
+					MySumOfThresholdExcess = MySumOfThresholdExcess + 1
+					MyFilterForProbability.FilterRun(1.0)
+					If .IsBandExceededHigh Then
+						MySumOfThresholdExcessHigh = MySumOfThresholdExcessHigh + 1
+					End If
+					If .IsBandExceededLow Then
+						MySumOfThresholdExcessLow = MySumOfThresholdExcessLow + 1
+					End If
+				Else
+					MyFilterForProbability.FilterRun(0.0)
+				End If
+			End With
 			MyProbabilityOfThresholdExcess = MySumOfThresholdExcess / MyVolatilityMeasurementPeriod
-			'MyProbabilityOfThresholdExcess = MyFilterForProbability.FilterLast
+			MyProbabilityOfThresholdExcessHigh = MySumOfThresholdExcessHigh / MyVolatilityMeasurementPeriod
+			MyProbabilityOfThresholdExcessLow = MySumOfThresholdExcessLow / MyVolatilityMeasurementPeriod
+			' Estimate the error in the probability of threshold excess
+			'leave the error to zero until ther is enough data to estimate it accuratly
+			If MyQueue.Count = MyVolatilityMeasurementPeriod Then
+				ThisEstimateOfError = (MyProbabilityOfThresholdExcessHigh - MyProbabilityOfThresholdExcessLow) / (MyProbabilityOfThresholdExcessHigh + MyProbabilityOfThresholdExcessLow)
+				MyStatisticalOfProbOfExcesDeltaHighLow.Filter(ThisEstimateOfError)
+			Else
+				MyStatisticalOfProbOfExcesDeltaHighLow.Filter(0.0)
+			End If
 			Return MyProbabilityOfThresholdExcess
 		End Function
+
+		Public ReadOnly Property ProbabilityOfThresholdExcess As Double
+			Get
+				Return MyProbabilityOfThresholdExcess
+			End Get
+		End Property
+
+		Public ReadOnly Property ProbabilityOfThresholdExcessHigh As Double
+			Get
+				Return MyProbabilityOfThresholdExcessHigh
+			End Get
+		End Property
+
+		Public ReadOnly Property ProbabilityOfThresholdExcessLow As Double
+			Get
+				Return MyProbabilityOfThresholdExcessLow
+			End Get
+		End Property
+
+		Public ReadOnly Property StatisticEstimateOfError As IStatistical
+			Get
+				Return MyStatisticalOfProbOfExcesDeltaHighLow.FilterLast
+			End Get
+		End Property
 	End Class
 End Namespace

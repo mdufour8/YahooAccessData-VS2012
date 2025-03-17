@@ -228,7 +228,7 @@ Namespace MathPlus.Filter
 			'the computation fail for small positive and negative value but the degradation is predictable and the derivative exist.
 			'the intend is not to have an exact gain measurement but a closed form that behave on a predictable value
 
-			ThisFilterPredictionGainYearly = (MathPlus.General.NUMBER_WORKDAY_PER_YEAR * MathPlus.Measure.Measure.GainLog(MyFilterValuek0, MyFilterValuek1))
+			ThisFilterPredictionGainYearly = (MathPlus.General.NUMBER_TRADINGDAY_PER_YEAR * MathPlus.Measure.Measure.GainLog(MyFilterValuek0, MyFilterValuek1))
 			ThisFilterPredictionGainYearly = MathPlus.WaveForm.SignalLimit(ThisFilterPredictionGainYearly, 1)
 			MyListOfFilterErrorValue.Add(ThisFilterPredictionGainYearly)
 

@@ -94,16 +94,22 @@ Namespace MathPlus.Filter
 			MyNumberToPredict = NumberToPredict
 			MyListOfValue = New YahooAccessData.ListScaled
 			MyListOfPredictionGainPerYear = New YahooAccessData.ListScaled
-
-			Dim ThisFilterRateForStatistical As Double = 5 * MyFilterRate
+			Dim ThisFilterRateForStatistical As Double
+			'make sure that the filter rate is at least 5 times the filter rate or 
+			'at minimum superior to the number of trading days per month
+			ThisFilterRateForStatistical = 5 * MyFilterRate
 			If ThisFilterRateForStatistical < YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_MONTH Then
 				ThisFilterRateForStatistical = YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_MONTH
 			End If
+			'or just fix the value to teh numebr of trading days per month
+			'should be enogh for a good estimate of the variance to limit and evaluate the gain
+			'ThisFilterRateForStatistical = YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_MONTH
 
 			MyStatisticalForPredictionError = New FilterStatistical(CInt(ThisFilterRateForStatistical))
 			MyStatisticalForGain = New FilterStatistical(CInt(ThisFilterRateForStatistical))
 			'MyListOfStatisticalExp = New FilterStatisticalExp(MyRate)
 			MyListOfStatisticalVarianceError = New YahooAccessData.ListScaled
+
 			MyListOfAFilter = New List(Of Double)
 			MyListOfBFilter = New List(Of Double)
 
@@ -172,7 +178,7 @@ Namespace MathPlus.Filter
 			If MyListOfPredictionGainPerYear.Count = 0 Then
 				FilterValuePredictH1Last = Value
 			End If
-			'note that B is the average trend
+			'note that B is the average trend over the filtering range
 			FilterValueLast = Ap + Bp * MyNumberToPredict
 			MyListOfValue.Add(FilterValueLast)
 
