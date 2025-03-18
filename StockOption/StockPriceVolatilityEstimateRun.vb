@@ -2,6 +2,7 @@
 Imports YahooAccessData.MathPlus.Measure
 Imports MathNet.Numerics
 Imports YahooAccessData.MathPlus
+Imports YahooAccessData.MathPlus.Filter
 
 
 Namespace OptionValuation
@@ -22,6 +23,7 @@ Namespace OptionValuation
 		Private MyProbabilityOfInterval As Double
 		Private MyVolatilityPredictionBandType As IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType
 		Private MyQueue As Queue(Of StockPriceVolatilityEstimateData)
+		Private MySumOfGainLog As Double
 		Private MySumOfThresholdExcess As Integer
 		Private MySumOfThresholdExcessHigh As Integer
 		Private MySumOfThresholdExcessLow As Integer
@@ -30,8 +32,9 @@ Namespace OptionValuation
 		Private MyProbabilityOfThresholdExcessLow As Double
 		Private MyFilterForProbability As FilterExp
 		Private MyStatisticalOfProbOfExcesDeltaHighLow As FilterStatisticalExp
-		Private MyFilterBPrediction As Filter.FilterLowPassExpPredict
-		Private MyFilterBPredictionDerivative As Filter.FilterLowPassPLLPredict
+		Private MyFilterBrownExpPredict As FilterExpPredict
+		Private MyFilterBrownExpPredictDerivative As FilterExpPredict
+		Private MyFilterVolatilityYZ As FilterVolatilityYangZhang
 
 		''' <summary>
 		''' 
@@ -56,16 +59,61 @@ Namespace OptionValuation
 			MyFilterForProbability = New FilterExp(FilterRate:=VolatilityMeasurementPeriodInDays)
 			MyQueue = New Queue(Of StockPriceVolatilityEstimateData)(capacity:=VolatilityMeasurementPeriodInDays)
 			MyStatisticalOfProbOfExcesDeltaHighLow = New FilterStatisticalExp(FilterRate:=VolatilityMeasurementPeriodInDays)
-			'this is base on a	Brown exponential filter to calculate the gain and the derivative of the stock price
-			'this Is Use if the user does Not provide a value for the Gain And its derivative
-			'MyFilterBPrediction = New Filter.FilterLowPassExpPredict(
-			'	NumberToPredict:=0,
-			'	FilterHead:=New FilterPLL(FilterRate:=FILTER_RATE_FOR_GAIN))
-			'MyFilterBPredictionDerivative = New Filter.FilterLowPassPLLPredict(
-			'	NumberToPredict:=0,
-			'	FilterHead:=New FilterPLL(FilterRate:=FILTER_RATE_FOR_GAIN),
-			'	FilterBase:=New FilterPLL(FilterRate:=FILTER_RATE_FOR_GAIN))
+			'this Is base on a	Brown exponential filter to calculate the gain And the derivative of the stock price
+			'this Is use when the user does not provide a value for the Gain And its derivative
+			MyFilterBrownExpPredict = New FilterExpPredict(FilterRate:=FILTER_RATE_FOR_GAIN) With {.Tag = "StockPriceVolatilityEstimateRun_BrownExpPredict"}
+			MyFilterBrownExpPredictDerivative = New FilterExpPredict(FilterRate:=FILTER_RATE_FOR_GAIN) With {.Tag = "StockPriceVolatilityEstimateRun_BrownExpPredictDerivarive"}
+			MyFilterVolatilityYZ = New FilterVolatilityYangZhang(FilterRate:=VolatilityMeasurementPeriodInDays, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Standard)
 		End Sub
+
+		''' <summary>
+		''' Add an element in the Queue use for volatility estimation. 
+		''' This method will calculate the gain and its derivative with the volatility using a Brown exponential filter and the powerful Yang-Zhang volatility measurements method. It is recommended to use
+		''' this method when the user does not want to provide a value for the voaltility, Gain and Gain derivative . The method provide a very good estimate 
+		''' of the gain and its derivative but also of the volatility. 
+		''' </summary>
+		''' <param name="StockPrice"></param>
+		''' <returns></returns>
+		Public Function Add(
+			ByVal StockPrice As IPriceVol) As Double
+			MyFilterVolatilityYZ.Filter(StockPrice)
+			Return Me.Add(StockPrice, MyFilterVolatilityYZ.FilterLast)
+		End Function
+
+		''' <summary>
+		''' Add an element in the Queue use for volatility estimation. 
+		''' This method will calculate the gain and its derivative using a Brown exponential filter. It is recommended to use
+		''' this method when the user does not provide a value for the Gain and its derivative. The method provide a very good estimate 
+		''' of the gain and its derivative. 
+		''' </summary>
+		''' <param name="StockPrice">The surrent stock price</param>
+		''' <param name="Volatility">The current volatility</param>
+		''' <returns></returns>
+		Public Function Add(
+			ByVal StockPrice As IPriceVol,
+			ByVal Volatility As Double) As Double
+
+			Dim ThisGainDailyLog As Double
+			Dim ThisGainYearlyLog As Double
+			Dim ThisGainDailyLogDerivative As Double
+			Dim ThisGainYearlyLogDerivative As Double
+
+			With MyFilterBrownExpPredict
+				.FilterRun(StockPrice.Last)
+				ThisGainDailyLog = .GainLog
+				ThisGainYearlyLog = MathPlus.General.NUMBER_TRADINGDAY_PER_YEAR * ThisGainDailyLog
+			End With
+			With MyFilterBrownExpPredictDerivative
+				.FilterRun(ThisGainYearlyLog)
+				ThisGainDailyLogDerivative = .GainLog
+				ThisGainYearlyLogDerivative = MathPlus.General.NUMBER_TRADINGDAY_PER_YEAR * ThisGainDailyLogDerivative
+			End With
+			Return Me.Add(
+				StockPrice:=StockPrice,
+				Gain:=ThisGainYearlyLog,
+				GainDerivative:=ThisGainYearlyLogDerivative,
+				Volatility:=Volatility)
+		End Function
 
 		''' <summary>
 		''' Add an element in the Queue use for volatility estimation
@@ -91,6 +139,16 @@ Namespace OptionValuation
 			If (StockPrice.Vol = 0) OrElse (Volatility = 0) Then
 				Return MyProbabilityOfThresholdExcess
 			End If
+			ThisQueueDataLast = MyQueue.Last
+
+			If MyQueue.Count > 0 Then
+				ThisQueueDataLast = MyQueue.Last
+				'it is important to make sure the previous last value is updated so that the log normal GainLog property parameters
+				'in StockPriceVolatilityEstimateData is calculated correctly
+				StockPrice.LastPrevious = ThisQueueDataLast.StockPrice.Last
+			Else
+				StockPrice.LastPrevious = StockPrice.Last
+			End If
 			' Create a new StockPricePredictionData instance with the provided parameters
 			ThisStockPricePredictionData = New StockPriceVolatilityEstimateData(
 				NumberTradingDays:=MyNumberTradingDays,
@@ -107,7 +165,6 @@ Namespace OptionValuation
 
 			' If there are items in the queue, update the last item with the current stock price
 			If MyQueue.Count > 0 Then
-				ThisQueueDataLast = MyQueue.Last
 				ThisQueueDataLastDate = ThisQueueDataLast.StockPrice.DateDay
 				' The last data in the queue does not have the current data yet, so we need to update it.
 				' For the last data in the queue, this new data is updated via the StockPriceNext property.
@@ -172,6 +229,8 @@ Namespace OptionValuation
 			MyProbabilityOfThresholdExcess = MySumOfThresholdExcess / MyVolatilityMeasurementPeriod
 			MyProbabilityOfThresholdExcessHigh = MySumOfThresholdExcessHigh / MyVolatilityMeasurementPeriod
 			MyProbabilityOfThresholdExcessLow = MySumOfThresholdExcessLow / MyVolatilityMeasurementPeriod
+			'Measure.InverseLogNormal()
+
 			' Estimate the error in the probability of threshold excess
 			'leave the error to zero until ther is enough data to estimate it accuratly
 			If MyQueue.Count = MyVolatilityMeasurementPeriod Then

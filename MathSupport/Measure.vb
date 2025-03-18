@@ -717,11 +717,11 @@ Namespace MathPlus
 			End Function
 
 
-			Public Shared Function InverseLogNormal(ByVal ProbabilityValue As Double, Mean As Double, Sigma As Double) As Double
+			Public Shared Function InverseLogNormal(ByVal ProbabilityValue As Double, Mu As Double, Sigma As Double) As Double
 				' Parameters of the underlying normal distribution
 
 				Dim ThisResult As Double
-				ThisResult = MathNet.Numerics.Distributions.LogNormal.InvCDF(mu:=Mean, sigma:=Sigma, ProbabilityValue)
+				ThisResult = MathNet.Numerics.Distributions.LogNormal.InvCDF(mu:=Mu, sigma:=Sigma, ProbabilityValue)
 				Return ThisResult
 			End Function
 

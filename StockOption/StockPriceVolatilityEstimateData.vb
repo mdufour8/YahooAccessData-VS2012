@@ -1,4 +1,5 @@
-﻿Namespace OptionValuation
+﻿
+Namespace OptionValuation
 	Public Class StockPriceVolatilityEstimateData
 		Implements IStockPriceVolatilityEstimateData
 
@@ -21,6 +22,7 @@
 		Private _IsBandExceeded As Boolean
 		Private _IsBandExceededHigh As Boolean
 		Private _IsBandExceededLow As Boolean
+		Private MyGainLog As Double
 
 
 		''' <summary>
@@ -56,6 +58,7 @@
 			MyVolatilityPredictionBandType = VolatilityPredictionBandType
 			MyProbabilityHigh = 0.5 + MyProbabilityOfInterval / 2
 			MyProbabilityLow = 0.5 - MyProbabilityOfInterval / 2
+			MyGainLog = MathPlus.Measure.Measure.GainLog(MyStockPrice.Last, MyStockPrice.LastPrevious)
 		End Sub
 
 		Public ReadOnly Property NumberTradingDays As Double Implements IStockPriceVolatilityEstimateData.NumberTradingDays
@@ -211,6 +214,12 @@
 				Return _IsBandExceededLow
 			End Get
 		End Property
+
+		Public ReadOnly Property GainLog As Double Implements IStockPriceVolatilityEstimateData.GainLog
+			Get
+				Return MyGainLog
+			End Get
+		End Property
 	End Class
 End Namespace
 
@@ -220,6 +229,7 @@ Namespace OptionValuation
 		ReadOnly Property StockPrice As IPriceVol
 		Property StockPriceNext As IPriceVol
 		ReadOnly Property StockPriceStartValue As Double
+		ReadOnly Property GainLog As Double
 		ReadOnly Property Gain As Double
 		ReadOnly Property GainDerivative As Double
 		ReadOnly Property Volatility As Double
