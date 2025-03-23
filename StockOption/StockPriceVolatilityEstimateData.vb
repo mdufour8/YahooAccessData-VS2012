@@ -155,12 +155,6 @@ Namespace OptionValuation
 			Me.Refresh()
 		End Sub
 
-		Public ReadOnly Property VolatilityTotal As Double Implements IStockPriceVolatilityEstimateData.VolatilityTotal
-			Get
-				Return MyVolatilityTotal
-			End Get
-		End Property
-
 		Public ReadOnly Property StockPriceStartValue As Double Implements IStockPriceVolatilityEstimateData.StockPriceStartValue
 			Get
 				Return MyStockPriceStartValue
@@ -182,6 +176,12 @@ Namespace OptionValuation
 		Public ReadOnly Property Volatility As Double Implements IStockPriceVolatilityEstimateData.Volatility
 			Get
 				Return MyVolatility
+			End Get
+		End Property
+
+		Public ReadOnly Property VolatilityTotal As Double Implements IStockPriceVolatilityEstimateData.VolatilityTotal
+			Get
+				Return MyVolatilityTotal
 			End Get
 		End Property
 

@@ -41,8 +41,10 @@ Namespace MathPlus.Filter
       OpenToHighClose
       OpenToLowClose
       OpenToHighToLowCloseRatio
-      OpenToHighToLowCloseRatioFiltered
-    End Enum
+			OpenToHighToLowCloseRatioFiltered
+			Rogers_Satchell_Yoon_Vrs
+			Parkison_Vp
+		End Enum
 
     Private Const FILTER_RATE_DEFAULT As Integer = MathPlus.NUMBER_TRADINGDAY_PER_YEAR \ 12
     Private MyFilterDirection As FilterRSI.SlopeDirection
@@ -176,9 +178,9 @@ Namespace MathPlus.Filter
     Public Function Filter(ByVal Value As YahooAccessData.IPriceVol, ByVal IsVolatityHoldToLast As Boolean) As Double
       Dim ThisResult As Double
       If Value.IsSpecialDividendPayout Or IsVolatityHoldToLast Then
-        ThisResult = Me.CalculateFilterLocal(Me.LastToPriceVol, False)
-        'restore the correct value for the last parameters
-        MyValueLast = Value
+				ThisResult = Me.CalculateFilterLocal(MyValueLast, False)
+				'restore the correct value for the last parameters
+				MyValueLast = Value
         MyValueLastK1 = MyValueLast
       Else
         ThisResult = Me.CalculateFilterLocal(Value, False)

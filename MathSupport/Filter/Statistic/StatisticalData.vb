@@ -113,4 +113,29 @@ Public Class StatisticalData
 		End If
 		Return ThisGaussianRatio
 	End Function
+
+	'''' <summary>
+	'''' Calculate the LogNormal Mu parameter. This function is valid if teh function follow a logmal distribution
+	'''' see: https://en.wikipedia.org/wiki/Log-normal_distribution
+	'''' </summary>
+	'Private _LogNormalMu As Double?
+	'Public Function LogNormalMu() As Double Implements IStatistical.LogNormalMu
+	'	If _LogNormalMu.HasValue Then
+	'		Return _LogNormalMu.Value
+	'	End If
+	'	_LogNormalMu = Math.Log(Me.Mean / Math.Sqrt((Me.Variance / Me.Mean ^ 2)) + 1)
+	'	Return _LogNormalMu.Value
+	'End Function
+
+	'''' <summary>
+	'''' Calculate the LogNormal Sigma parameter. This function is valid if the function follow a logmal distribution
+	'''' </summary>
+	'Private _LogNormalSigma As Double?
+	'Public Function LogNormalSigma() As Double Implements IStatistical.LogNormalSigma
+	'	If _LogNormalSigma.HasValue Then
+	'		Return _LogNormalSigma.Value
+	'	End If
+	'	_LogNormalSigma = Math.Sqrt(Math.Log(Math.Sqrt((Me.Variance / Me.Mean ^ 2)) + 1))
+	'	Return _LogNormalSigma.Value
+	'End Function
 End Class

@@ -18,6 +18,8 @@ Public Class FilterExpPredict
 	Private MyFilterRate As Double
 	Private MyFilterALast As Double
 	Private MyFilterBLast As Double
+	Private MyFilterDeltaBLast As Double
+	Private MyFilterDeltaALast As Double
 	Private ABRatio As Double
 	Private FilterValueLastK1 As Double
 	Private FilterValueLast As Double
@@ -102,6 +104,8 @@ Public Class FilterExpPredict
 		ResultY = MyFilterY.Filter(Result)
 		Ap = (2 * Result) - ResultY
 		Bp = ABRatio * (Result - ResultY)
+		MyFilterDeltaALast = Ap - MyFilterALast
+		MyFilterDeltaBLast = Bp - MyFilterBLast
 		MyFilterALast = Ap
 		MyFilterBLast = Bp
 		'note that Bp is the average trend
@@ -154,6 +158,16 @@ Public Class FilterExpPredict
 	Public ReadOnly Property GainLog As Double
 		Get
 			Return Measure.Measure.GainLog(MyFilterALast + MyFilterBLast, MyFilterALast)
+		End Get
+	End Property
+
+	''' <summary>
+	''' The logarithmic gain derivative of the signal.
+	''' </summary>
+	''' <returns></returns>
+	Public ReadOnly Property GainLogDerivative As Double
+		Get
+			Return Measure.Measure.GainLog(MyFilterALast + MyFilterDeltaBLast, MyFilterALast)
 		End Get
 	End Property
 
