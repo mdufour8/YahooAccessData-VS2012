@@ -17,8 +17,8 @@ Namespace OptionValuation
 	''' </summary>
 	Public Class StockPriceVolatilityEstimateRun
 
-		Private Const FILTER_RATE_FOR_GAIN As Integer = 10
-		Private Const FILTER_RATE_FOR_VOLATILITY_CORRECTION As Integer = 10
+		Private Const FILTER_RATE_FOR_GAIN As Integer = 5
+		Private Const FILTER_RATE_FOR_VOLATILITY_CORRECTION As Integer = 20
 
 		Private _stockPricePredictionData As StockPriceVolatilityEstimateData
 		Private _StockPriceLast As IPriceVol
@@ -35,6 +35,10 @@ Namespace OptionValuation
 		Private MyProbabilityOfThresholdExcess As Double
 		Private MyProbabilityOfThresholdExcessHigh As Double
 		Private MyProbabilityOfThresholdExcessLow As Double
+		Private MyProbabilityHigh As Double
+		Private MyProbabilityLow As Double
+		Private MyProbabilityRatioToSigma As Double
+
 		Private MyFilterForProbability As FilterExp
 		Private MyStatisticalOfProbOfExcesDeltaHighLow As FilterStatisticalExp
 		Private MyFilterBrownExpPredict As FilterExpPredict
@@ -65,6 +69,10 @@ Namespace OptionValuation
 			MyProbabilityOfThresholdExcess = MyProbabilityOfInterval
 			MyProbabilityOfThresholdExcessHigh = MyProbabilityOfInterval / 2
 			MyProbabilityOfThresholdExcessLow = MyProbabilityOfInterval / 2
+			MyProbabilityHigh = 0.5 + MyProbabilityOfThresholdExcessHigh
+			MyProbabilityLow = 0.5 - MyProbabilityOfThresholdExcessLow
+			MyProbabilityRatioToSigma = MyProbabilityHigh / Measure.GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA1
+
 			MyVolatilityPredictionBandType = VolatilityPredictionBandType
 			MyVolatilityMeasurementPeriod = VolatilityMeasurementPeriodInDays
 			MyFilterForProbability = New FilterExp(FilterRate:=VolatilityMeasurementPeriodInDays)
@@ -233,23 +241,30 @@ Namespace OptionValuation
 					'Note the use of the exponential here rather than the inverse InverseLogNormal
 					'as the exponential is 7 time faster and it give the same result as the InverseLogNormal above
 					'this is possible because we already have the exact measure of the Mu and Sigma for the current data windows buffer
-					ThisValueExpHigh = Math.Exp(.Mean + .StandardDeviation)
-					ThisValueExpLow = Math.Exp(.Mean - .StandardDeviation)
+					'ThisValueExpHigh = Measure.InverseLogNormal(MyProbabilityHigh, .Mean, .StandardDeviation)
+					'ThisValueExpLow = Measure.InverseLogNormal(MyProbabilityLow, .Mean, .StandardDeviation)
+					ThisValueExpHigh = Math.Exp(.Mean + (MyProbabilityRatioToSigma * .StandardDeviation))
+					ThisValueExpLow = Math.Exp(.Mean - (MyProbabilityRatioToSigma * .StandardDeviation))
 				End With
 				'take the average of the error of the high and low probabilty of excess and adjust the volatility of the lognormal to reflect
 				'the measured excess probability
 				'this give us a better estimate of the volatility and the risk assciated with the stock price estimate in the day.
 				ThisVolatilityDeltaHigh = MathPlus.General.STATISTICAL_SIGMA_DAILY_TO_YEARLY_RATIO * (ThisValueExpHigh - ThisValueHigh)
 				ThisVolatilityDeltaLow = MathPlus.General.STATISTICAL_SIGMA_DAILY_TO_YEARLY_RATIO * (ThisValueLow - ThisValueExpLow)
+
 				'second order filter to quickly bring the volatility to the right level	as far a excess stock price probability is concerned
 				'this fast tracking filter help the smooth the variation in the measured probability of excess 
 				MyVolatilityDelta = MyFilterPLL.FilterRun((ThisVolatilityDeltaHigh + ThisVolatilityDeltaLow) / 2)
+
+				'MyVolatilityDelta = MyFilterPLL.FilterRun((ThisVolatilityDeltaHigh + ThisVolatilityDeltaLow) / 2)
+				'MyVolatilityDelta = 0 'for testing
 				MyVolatilitySumOfError = MyVolatilitySumOfError + MyVolatilityDelta
 				With CalculateThresholdExcess(MyVolatilityDelta)
 					MyProbabilityOfThresholdExcess = .ProbabilityOfThresholdExcess
 					MyProbabilityOfThresholdExcessHigh = .ProbabilityOfThresholdExcessHigh
 					MyProbabilityOfThresholdExcessLow = .MyProbabilityOfThresholdExcessLow
 				End With
+				Console.WriteLine($"MyProbabilityOfThresholdExcess: {MyProbabilityOfThresholdExcess}, VolatilityDelta: {MyVolatilityDelta}t")
 				'Test code for speed evaluation
 				'Dim ThisStopWatch As New Stopwatch
 				'ThisStopWatch.Start()

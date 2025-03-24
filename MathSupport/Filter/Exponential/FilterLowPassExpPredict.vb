@@ -30,26 +30,28 @@ Namespace MathPlus.Filter
 
 		Private MyRate As Integer
 		Private MyFilterRate As Double
-    Private AFilterLast As Double
-    Private BFilterLast As Double
-    Private ABRatio As Double
+		Private MyFilterALast As Double
+		Private MyFilterBLast As Double
+		Private MyFilterDeltaBLast As Double
+		Private MyFilterDeltaALast As Double
+		Private ABRatio As Double
 		Private FilterValueLastK1 As Double
 
 		Private FilterValuePredictH1 As Double     'future 1 point
-    Private FilterValuePredictH1Last As Double
-    Private MyFilterPredictionGainYearlyLast As Double
-    Private MyGainStandardDeviationLast As Double
-    Private FilterValueLast As Double
-    Private FilterValueLastY As Double
-    Private FilterValueSlopeLastK1 As Double
-    Private FilterValueSlopeLast As Double
-    Private ValueLast As Double
-    Private ValueLastK1 As Double
+		Private FilterValuePredictH1Last As Double
+		Private MyFilterPredictionGainYearlyLast As Double
+		Private MyGainStandardDeviationLast As Double
+		Private FilterValueLast As Double
+		Private FilterValueLastY As Double
+		Private FilterValueSlopeLastK1 As Double
+		Private FilterValueSlopeLast As Double
+		Private ValueLast As Double
+		Private ValueLastK1 As Double
 		Private MyListOfValue As ListScaled
 		Private MyListOfPredictionGainPerYear As ListScaled
 		Private MyListOfStatisticalVarianceError As ListScaled
 		Private MyListOfAFilter As List(Of Double)
-    Private MyListOfBFilter As List(Of Double)
+		Private MyListOfBFilter As List(Of Double)
 		Private MyStatisticalForPredictionError As FilterStatistical
 		Private MyStatisticalForGain As FilterStatistical
 		Private MyFilter As IFilter
@@ -170,8 +172,8 @@ Namespace MathPlus.Filter
 
 			Ap = (2 * Result) - ResultY
 			Bp = ABRatio * (Result - ResultY)
-			AFilterLast = Ap
-			BFilterLast = Bp
+			MyFilterALast = Ap
+			MyFilterBLast = Bp
 			MyListOfAFilter.Add(Ap)
 			MyListOfBFilter.Add(Bp)
 			FilterValuePredictH1 = Ap + Bp
@@ -182,7 +184,7 @@ Namespace MathPlus.Filter
 			FilterValueLast = Ap + Bp * MyNumberToPredict
 			MyListOfValue.Add(FilterValueLast)
 
-			Dim ThisGainLog = GainLog(Value:=FilterValuePredictH1, ValueRef:=Ap)
+			Dim ThisGainLog = Measure.Measure.GainLog(Value:=FilterValuePredictH1, ValueRef:=Ap)
 			Dim ThisGain As Double
 			If Ap <> 0 Then
 				ThisGain = Bp / Ap
@@ -196,7 +198,7 @@ Namespace MathPlus.Filter
 			MyStatisticalForGain.Filter(ThisGain)
 			ThisFilterPredictionGainYearly = MyStatisticalForGain.FilterLast.ToGaussianScale(ScaleToSignedUnit:=True)
 
-			MyStatisticalForPredictionError.Filter(GainLog(Value:=(Value - FilterValuePredictH1Last), ValueRef:=Ap))
+			MyStatisticalForPredictionError.Filter(Measure.Measure.GainLog(Value:=(Value - FilterValuePredictH1Last), ValueRef:=Ap))
 			ThisGainStandardDeviation = MyStatisticalForPredictionError.FilterLast.ToGaussianScale(ScaleToSignedUnit:=True)
 
 			MyListOfPredictionGainPerYear.Add(ThisFilterPredictionGainYearly)
@@ -270,7 +272,7 @@ Namespace MathPlus.Filter
 		''' <returns></returns>
 		''' <remarks></remarks>
 		Private Function IFilterPrediction_FilterPrediction(ByVal NumberOfPrediction As Integer) As Double Implements IFilterPrediction.FilterPrediction
-			Return AFilterLast + BFilterLast * NumberOfPrediction
+			Return MyFilterALast + MyFilterBLast * NumberOfPrediction
 		End Function
 
 		''' <summary>
@@ -283,7 +285,7 @@ Namespace MathPlus.Filter
 		''' <remarks></remarks>
 		Private Function IFilterPrediction_FilterPrediction(ByVal NumberOfPrediction As Integer, ByVal GainPerYear As Double) As Double Implements IFilterPrediction.FilterPrediction
 			Throw New NotSupportedException
-			Return AFilterLast * (1 + NumberOfPrediction * (Math.Exp(GainPerYear / MathPlus.General.NUMBER_WORKDAY_PER_YEAR) - 1))
+			Return MyFilterALast * (1 + NumberOfPrediction * (Math.Exp(GainPerYear / MathPlus.General.NUMBER_WORKDAY_PER_YEAR) - 1))
 		End Function
 
 		''' <summary>
@@ -359,8 +361,10 @@ Namespace MathPlus.Filter
 
 			Ap = (2 * Result) - ResultY
 			Bp = ABRatio * (Result - ResultY)
-			AFilterLast = Ap
-			BFilterLast = Bp
+			MyFilterDeltaBLast = Bp - MyFilterBLast
+			MyFilterDeltaALast = Ap - MyFilterALast
+			MyFilterALast = Ap
+			MyFilterBLast = Bp
 			MyListOfAFilter.Add(Ap)
 			MyListOfBFilter.Add(Bp)
 			FilterValuePredictH1 = Ap + Bp
@@ -370,7 +374,7 @@ Namespace MathPlus.Filter
 			FilterValueLast = Ap + Bp * MyNumberToPredict
 			MyListOfValue.Add(FilterValueLast)
 
-			ThisFilterPredictionGainYearly = (MathPlus.General.NUMBER_WORKDAY_PER_YEAR * GainLog(FilterValuePredictH1, Ap))
+			ThisFilterPredictionGainYearly = (MathPlus.General.NUMBER_WORKDAY_PER_YEAR * Measure.Measure.GainLog(FilterValuePredictH1, Ap))
 			ThisError = Value - FilterValuePredictH1Last
 			MyStatisticalForPredictionError.Filter(ThisError)
 
@@ -388,6 +392,26 @@ Namespace MathPlus.Filter
 			ValueLast = Value
 			Return FilterValueLast
 		End Function
+
+		''' <summary>
+		''' The logarithmic gain of the signal.
+		''' </summary>
+		''' <returns></returns>
+		Public ReadOnly Property GainLog As Double
+			Get
+				Return Measure.Measure.GainLog(MyFilterALast + MyFilterBLast, MyFilterALast)
+			End Get
+		End Property
+
+		''' <summary>
+		''' The logarithmic gain derivative of the signal.
+		''' </summary>
+		''' <returns></returns>
+		Public ReadOnly Property GainLogDerivative As Double
+			Get
+				Return Measure.Measure.GainLog(MyFilterALast + MyFilterDeltaBLast, MyFilterALast)
+			End Get
+		End Property
 
 		Public Function FilterPredictionNext(ByVal Value As Single) As Double Implements IFilter.FilterPredictionNext
 			Throw New NotImplementedException
@@ -511,173 +535,173 @@ Namespace MathPlus.Filter
 			MyListOfPredictionGainPerYear.Clear()
 			MyStatisticalForPredictionError = New FilterStatistical(YahooAccessData.MathPlus.NUMBER_WORKDAY_PER_YEAR)
 			MyListOfStatisticalVarianceError.Clear()
-      MyListOfAFilter.Clear()
-      MyListOfBFilter.Clear()
+			MyListOfAFilter.Clear()
+			MyListOfBFilter.Clear()
 
-      FilterValueLast = 0
-      FilterValueLastK1 = 0
-      ValueLast = 0
-      ValueLastK1 = 0
-      If TypeOf MyFilter Is IFilterControl Then
-        DirectCast(MyFilter, IFilterControl).Clear()
-      Else
-        Throw New NotSupportedException("Interface IFilterControl not availaible for this filter!")
-      End If
-      If TypeOf MyFilterY Is IFilterControl Then
-        DirectCast(MyFilterY, IFilterControl).Clear()
-      Else
-        Throw New NotSupportedException("Interface IFilterControl not availaible for this filter!")
-      End If
-      IsHere = False
-    End Sub
+			FilterValueLast = 0
+			FilterValueLastK1 = 0
+			ValueLast = 0
+			ValueLastK1 = 0
+			If TypeOf MyFilter Is IFilterControl Then
+				DirectCast(MyFilter, IFilterControl).Clear()
+			Else
+				Throw New NotSupportedException("Interface IFilterControl not availaible for this filter!")
+			End If
+			If TypeOf MyFilterY Is IFilterControl Then
+				DirectCast(MyFilterY, IFilterControl).Clear()
+			Else
+				Throw New NotSupportedException("Interface IFilterControl not availaible for this filter!")
+			End If
+			IsHere = False
+		End Sub
 
-    Private Sub IFilterControl_Refresh(FilterRate As Double) Implements IFilterControl.Refresh
-      Static IsHere As Boolean
+		Private Sub IFilterControl_Refresh(FilterRate As Double) Implements IFilterControl.Refresh
+			Static IsHere As Boolean
 
-      'no re-entrency allowed
-      If IsHere Then Exit Sub
-      IsHere = True
+			'no re-entrency allowed
+			If IsHere Then Exit Sub
+			IsHere = True
 
-      Dim A As Double
-      Dim B As Double
+			Dim A As Double
+			Dim B As Double
 
-      If Me.Count > 0 Then
-        'Clear the filter before changing the rate
-        IFilterControl_Clear()
-      End If
-      'calculate the filter parameters
-      If FilterRate < 2 Then FilterRate = 2
-      MyFilterRate = FilterRate
-      MyRate = CInt(FilterRate)
+			If Me.Count > 0 Then
+				'Clear the filter before changing the rate
+				IFilterControl_Clear()
+			End If
+			'calculate the filter parameters
+			If FilterRate < 2 Then FilterRate = 2
+			MyFilterRate = FilterRate
+			MyRate = CInt(FilterRate)
 
-      A = CDbl((2 / (MyFilterRate + 1)))
-      B = 1 - A
-      ABRatio = A / B
+			A = CDbl((2 / (MyFilterRate + 1)))
+			B = 1 - A
+			ABRatio = A / B
 
-      If TypeOf MyFilter Is IFilterControl Then
-        DirectCast(MyFilter, IFilterControl).Refresh(MyFilterRate)
-      Else
-        Throw New NotSupportedException("Interface IFilterControl not availaible for this filter!")
-      End If
-      If TypeOf MyFilterY Is IFilterControl Then
-        DirectCast(MyFilterY, IFilterControl).Refresh(MyFilterRate)
-      Else
-        Throw New NotSupportedException("Interface IFilterControl not availaible for this filter!")
-      End If
-      'reload the filter if we have the input value
-      If MyInputValue.Length > 0 Then
-        Me.Filter(MyInputValue)
-      End If
-      IsHere = False
-    End Sub
+			If TypeOf MyFilter Is IFilterControl Then
+				DirectCast(MyFilter, IFilterControl).Refresh(MyFilterRate)
+			Else
+				Throw New NotSupportedException("Interface IFilterControl not availaible for this filter!")
+			End If
+			If TypeOf MyFilterY Is IFilterControl Then
+				DirectCast(MyFilterY, IFilterControl).Refresh(MyFilterRate)
+			Else
+				Throw New NotSupportedException("Interface IFilterControl not availaible for this filter!")
+			End If
+			'reload the filter if we have the input value
+			If MyInputValue.Length > 0 Then
+				Me.Filter(MyInputValue)
+			End If
+			IsHere = False
+		End Sub
 
-    Private Sub IFilterControl_Refresh(Rate As Integer) Implements IFilterControl.Refresh
-      IFilterControl_Refresh(CDbl(Rate))
-    End Sub
+		Private Sub IFilterControl_Refresh(Rate As Integer) Implements IFilterControl.Refresh
+			IFilterControl_Refresh(CDbl(Rate))
+		End Sub
 
-    Public ReadOnly Property FilterRate As Double Implements IFilterControl.FilterRate
-      Get
-        Return MyFilterRate
-      End Get
-    End Property
+		Public ReadOnly Property FilterRate As Double Implements IFilterControl.FilterRate
+			Get
+				Return MyFilterRate
+			End Get
+		End Property
 
-    Private Function IFilterControl_InputValue() As Double() Implements IFilterControl.InputValue
-      Return MyInputValue
-    End Function
+		Private Function IFilterControl_InputValue() As Double() Implements IFilterControl.InputValue
+			Return MyInputValue
+		End Function
 
-    Private ReadOnly Property IFilterControl_IsInputEnabled As Boolean Implements IFilterControl.IsInputEnabled
-      Get
-        Return MyInputValue.Length > 0
-      End Get
-    End Property
+		Private ReadOnly Property IFilterControl_IsInputEnabled As Boolean Implements IFilterControl.IsInputEnabled
+			Get
+				Return MyInputValue.Length > 0
+			End Get
+		End Property
 #End Region
 #Region "IFilterControlRate"
-    Public Function AsIFilterControlRate() As IFilterControlRate Implements IFilterControlRate.AsIFilterControlRate
-      Return Me
-    End Function
+		Public Function AsIFilterControlRate() As IFilterControlRate Implements IFilterControlRate.AsIFilterControlRate
+			Return Me
+		End Function
 
-    Private Sub IFilterControlRate_UpdateRate(Rate As Double) Implements IFilterControlRate.UpdateRate
-      Dim A As Double
-      Dim B As Double
+		Private Sub IFilterControlRate_UpdateRate(Rate As Double) Implements IFilterControlRate.UpdateRate
+			Dim A As Double
+			Dim B As Double
 
-      'calculate the filter parameters
-      If Rate < 2 Then Rate = 2
-      MyFilterRate = FilterRate
-      MyRate = CInt(FilterRate)
+			'calculate the filter parameters
+			If Rate < 2 Then Rate = 2
+			MyFilterRate = FilterRate
+			MyRate = CInt(FilterRate)
 
-      A = CDbl((2 / (MyFilterRate + 1)))
-      B = 1 - A
-      ABRatio = A / B
+			A = CDbl((2 / (MyFilterRate + 1)))
+			B = 1 - A
+			ABRatio = A / B
 
-      If TypeOf MyFilter Is IFilterControlRate Then
-        DirectCast(MyFilter, IFilterControlRate).UpdateRate(MyFilterRate)
-      Else
-        Throw New NotSupportedException("Interface IFilterControlRate not availaible for this filter!")
-      End If
-      If TypeOf MyFilterY Is IFilterControlRate Then
-        DirectCast(MyFilterY, IFilterControlRate).UpdateRate(MyFilterRate)
-      Else
-        Throw New NotSupportedException("Interface IFilterControlRate not availaible for this filter!")
-      End If
-    End Sub
+			If TypeOf MyFilter Is IFilterControlRate Then
+				DirectCast(MyFilter, IFilterControlRate).UpdateRate(MyFilterRate)
+			Else
+				Throw New NotSupportedException("Interface IFilterControlRate not availaible for this filter!")
+			End If
+			If TypeOf MyFilterY Is IFilterControlRate Then
+				DirectCast(MyFilterY, IFilterControlRate).UpdateRate(MyFilterRate)
+			Else
+				Throw New NotSupportedException("Interface IFilterControlRate not availaible for this filter!")
+			End If
+		End Sub
 
-    Private Sub IFilterControlRate_UpdateRate(Rate As Integer) Implements IFilterControlRate.UpdateRate
-      IFilterControlRate_UpdateRate(CDbl(Rate))
-    End Sub
+		Private Sub IFilterControlRate_UpdateRate(Rate As Integer) Implements IFilterControlRate.UpdateRate
+			IFilterControlRate_UpdateRate(CDbl(Rate))
+		End Sub
 
-    Private Property IFilterControlRate_Enabled As Boolean Implements IFilterControlRate.Enabled
-      'always true here
-      Get
-        Return True
-      End Get
-      Set(value As Boolean)
+		Private Property IFilterControlRate_Enabled As Boolean Implements IFilterControlRate.Enabled
+			'always true here
+			Get
+				Return True
+			End Get
+			Set(value As Boolean)
 
-      End Set
-    End Property
+			End Set
+		End Property
 #End Region
 
 #Region "IFilterState"
-    Public Function ASIFilterState() As IFilterState Implements IFilterState.ASIFilterState
-      Return Me
-    End Function
+		Public Function ASIFilterState() As IFilterState Implements IFilterState.ASIFilterState
+			Return Me
+		End Function
 
-    Private Sub IFilterState_ReturnPrevious() Implements IFilterState.ReturnPrevious
-      Dim ThisCount As Integer
+		Private Sub IFilterState_ReturnPrevious() Implements IFilterState.ReturnPrevious
+			Dim ThisCount As Integer
 
-      If MyQueueForState.Count = 0 Then Return
+			If MyQueueForState.Count = 0 Then Return
 
-      AFilterLast = MyQueueForState.Dequeue
-      BFilterLast = MyQueueForState.Dequeue
-      ABRatio = MyQueueForState.Dequeue
-      FilterValueLastK1 = MyQueueForState.Dequeue
-      FilterValuePredictH1 = MyQueueForState.Dequeue
-      FilterValuePredictH1Last = MyQueueForState.Dequeue
-      MyFilterPredictionGainYearlyLast = MyQueueForState.Dequeue
-      MyGainStandardDeviationLast = MyQueueForState.Dequeue
-      FilterValueLast = MyQueueForState.Dequeue
-      FilterValueLastY = MyQueueForState.Dequeue
-      FilterValueLastY = MyQueueForState.Dequeue
-      FilterValueSlopeLastK1 = MyQueueForState.Dequeue
-      FilterValueSlopeLast = MyQueueForState.Dequeue
-      ValueLast = MyQueueForState.Dequeue
-      ValueLastK1 = MyQueueForState.Dequeue
-      ThisCount = CInt(MyQueueForState.Dequeue)
-      If MyListOfValue.Count > ThisCount Then
-        Do
-          MyListOfPredictionGainPerYear.RemoveAt(MyListOfPredictionGainPerYear.Count - 1)
-          MyListOfStatisticalVarianceError.RemoveAt(MyListOfStatisticalVarianceError.Count - 1)
-          MyListOfAFilter.RemoveAt(MyListOfAFilter.Count - 1)
-          MyListOfBFilter.RemoveAt(MyListOfBFilter.Count - 1)
-          MyListOfValue.RemoveAt(MyListOfValue.Count - 1)
-        Loop Until MyListOfValue.Count = ThisCount
-      End If
-    End Sub
+			MyFilterALast = MyQueueForState.Dequeue
+			MyFilterBLast = MyQueueForState.Dequeue
+			ABRatio = MyQueueForState.Dequeue
+			FilterValueLastK1 = MyQueueForState.Dequeue
+			FilterValuePredictH1 = MyQueueForState.Dequeue
+			FilterValuePredictH1Last = MyQueueForState.Dequeue
+			MyFilterPredictionGainYearlyLast = MyQueueForState.Dequeue
+			MyGainStandardDeviationLast = MyQueueForState.Dequeue
+			FilterValueLast = MyQueueForState.Dequeue
+			FilterValueLastY = MyQueueForState.Dequeue
+			FilterValueLastY = MyQueueForState.Dequeue
+			FilterValueSlopeLastK1 = MyQueueForState.Dequeue
+			FilterValueSlopeLast = MyQueueForState.Dequeue
+			ValueLast = MyQueueForState.Dequeue
+			ValueLastK1 = MyQueueForState.Dequeue
+			ThisCount = CInt(MyQueueForState.Dequeue)
+			If MyListOfValue.Count > ThisCount Then
+				Do
+					MyListOfPredictionGainPerYear.RemoveAt(MyListOfPredictionGainPerYear.Count - 1)
+					MyListOfStatisticalVarianceError.RemoveAt(MyListOfStatisticalVarianceError.Count - 1)
+					MyListOfAFilter.RemoveAt(MyListOfAFilter.Count - 1)
+					MyListOfBFilter.RemoveAt(MyListOfBFilter.Count - 1)
+					MyListOfValue.RemoveAt(MyListOfValue.Count - 1)
+				Loop Until MyListOfValue.Count = ThisCount
+			End If
+		End Sub
 
-    Private Sub IFilterState_Save() Implements IFilterState.Save
-      MyQueueForState.Enqueue(AFilterLast)
-      MyQueueForState.Enqueue(BFilterLast)
+		Private Sub IFilterState_Save() Implements IFilterState.Save
+			MyQueueForState.Enqueue(MyFilterALast)
+			MyQueueForState.Enqueue(MyFilterBLast)
 
-      MyQueueForState.Enqueue(ABRatio)
+			MyQueueForState.Enqueue(ABRatio)
       MyQueueForState.Enqueue(FilterValueLastK1)
       MyQueueForState.Enqueue(FilterValuePredictH1)
 
@@ -732,9 +756,9 @@ Namespace MathPlus.Filter
       Bp = ABRatio * (ThisResult.Value - ThisResultY.Value)
       ThisFilterValuePredictH1 = Ap + Bp
       ThisFilterResultLast = Ap + Bp * MyNumberToPredict
-      ThisFilterPredictionGainYearly = (MathPlus.General.NUMBER_WORKDAY_PER_YEAR * GainLog(ThisFilterValuePredictH1, Ap))
-      'also limit exponentially the gain value between -1 and +1
-      ThisFilterPredictionGainYearly = MathPlus.WaveForm.SignalLimit(ThisFilterPredictionGainYearly, 1)
+			ThisFilterPredictionGainYearly = (MathPlus.General.NUMBER_WORKDAY_PER_YEAR * Measure.Measure.GainLog(ThisFilterValuePredictH1, Ap))
+			'also limit exponentially the gain value between -1 and +1
+			ThisFilterPredictionGainYearly = MathPlus.WaveForm.SignalLimit(ThisFilterPredictionGainYearly, 1)
       Return New FilterEstimateResult(Value:=ThisFilterResultLast, Gain:=ThisFilterPredictionGainYearly, GainDerivative:=0.0)
     End Function
 
@@ -764,10 +788,10 @@ Namespace MathPlus.Filter
         Ap = (2 * ThisResult.Value) - ThisResultY.Value
         Bp = ABRatio * (ThisResult.Value - ThisResultY.Value)
         ThisFilterResultLast = Ap + Bp * MyNumberToPredict
-        ThisFilterPredictionGainYearly = (MathPlus.General.NUMBER_WORKDAY_PER_YEAR * GainLog(FilterValuePredictH1, Ap))
-        'ThisFilterPredictionGainYearly = (MathPlus.General.NUMBER_WORKDAY_PER_YEAR * Math.Log(((FilterValuePredictH1 ^ 2 + 1) / (Ap ^ 2 + 1)))) / 2
-        'also limit exponentially the gain value between -1 and +1
-        ThisFilterPredictionGainYearly = MathPlus.WaveForm.SignalLimit(ThisFilterPredictionGainYearly, 1)
+				ThisFilterPredictionGainYearly = (MathPlus.General.NUMBER_WORKDAY_PER_YEAR * Measure.Measure.GainLog(FilterValuePredictH1, Ap))
+				'ThisFilterPredictionGainYearly = (MathPlus.General.NUMBER_WORKDAY_PER_YEAR * Math.Log(((FilterValuePredictH1 ^ 2 + 1) / (Ap ^ 2 + 1)))) / 2
+				'also limit exponentially the gain value between -1 and +1
+				ThisFilterPredictionGainYearly = MathPlus.WaveForm.SignalLimit(ThisFilterPredictionGainYearly, 1)
       Next
       'Return New FilterEstimateResult(Value:=ThisFilterResultLast, Gain:=ThisFilterPredictionGainYearly, GainDerivative:=0.0)
     End Function

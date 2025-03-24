@@ -13,8 +13,9 @@ Namespace MathPlus
       End Enum
 
 
-      'See: https://en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule
-      Public Const GAUSSIAN_PROBABILITY_SIGMA1 As Double = 0.682689492137086   'note: inside probability
+			'See: https://en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule
+			Public Const GAUSSIAN_PROBABILITY_MEDIAN_INSIDE As Double = 0.5   'note: inside probability
+			Public Const GAUSSIAN_PROBABILITY_SIGMA1 As Double = 0.682689492137086   'note: inside probability
       Public Const GAUSSIAN_PROBABILITY_SIGMA2 As Double = 0.954499736103642
       Public Const GAUSSIAN_PROBABILITY_SIGMA3 As Double = 0.99730020393674
       Public Const GAUSSIAN_PROBABILITY_SIGMA4 As Double = 0.999936657516334

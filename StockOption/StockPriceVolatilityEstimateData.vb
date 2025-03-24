@@ -132,6 +132,11 @@ Namespace OptionValuation
 					_IsBandExceeded = True
 					_IsBandExceededLow = True
 				End If
+				If _IsBandExceededHigh And _IsBandExceededLow Then
+					If MyStockPrice.Last >= MyStockPrice.Open Then
+						_IsBandExceededLow = False
+					End If
+				End If
 			Else
 				'compare with the current value since the future is not yet available
 				If MyStockPrice.High > MyStockPriceHighValue Then
@@ -141,6 +146,11 @@ Namespace OptionValuation
 				If MyStockPrice.Low < MyStockPriceLowValue Then
 					_IsBandExceeded = True
 					_IsBandExceededLow = True
+				End If
+				If _IsBandExceededHigh And _IsBandExceededLow Then
+					If MyStockPrice.Last >= MyStockPrice.Open Then
+						_IsBandExceededLow = False
+					End If
 				End If
 			End If
 		End Sub
