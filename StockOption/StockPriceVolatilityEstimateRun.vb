@@ -46,9 +46,12 @@ Namespace OptionValuation
 		Private MyFilterVolatilityYZ As FilterVolatilityYangZhang
 		Private MyStatisticalOfStockPriceGain As FilterStatisticalQueue
 		Private MyVolatilityDelta As Double
+		Private MyVolatilityDeltaHigh As Double
+		Private MyVolatilityDeltaLow As Double
 		Private MyVolatilitySumOfError As Double
-		Private MyFilterPLL As FilterPLL
-		Private MyVolatilityAtSigmaLast As Double
+		Private MyFilterPLLHigh As FilterPLL
+		Private MyFilterPLLLow As FilterPLL
+		Private MyVolatilityEstimate As Double
 
 
 		''' <summary>
@@ -86,9 +89,12 @@ Namespace OptionValuation
 			MyFilterBrownExpPredictDerivative = New FilterExpPredict(FilterRate:=FILTER_RATE_FOR_GAIN) With {.Tag = "StockPriceVolatilityEstimateRun_BrownExpPredictDerivarive"}
 
 			MyFilterVolatilityYZ = New FilterVolatilityYangZhang(FilterRate:=VolatilityMeasurementPeriodInDays, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Standard)
-			MyFilterPLL = New FilterPLL(FILTER_RATE_FOR_VOLATILITY_CORRECTION)
+			MyFilterPLLHigh = New FilterPLL(FILTER_RATE_FOR_VOLATILITY_CORRECTION)
+			MyFilterPLLLow = New FilterPLL(FILTER_RATE_FOR_VOLATILITY_CORRECTION)
 			_StockPriceLast = Nothing
 			MyVolatilityDelta = 0
+			MyVolatilityDeltaHigh = 0
+			MyVolatilityDeltaLow = 0
 		End Sub
 
 		''' <summary>
@@ -169,20 +175,22 @@ Namespace OptionValuation
 			Dim ThisEstimateOfError As Double
 			Dim ThisLogNormalMu As Double
 			Dim ThisLogNormalSigma As Double
-			Dim ThisVolatilityAtSigma As Double
+			Dim ThisVolatilityEstimate As Double
 			Dim ThisResult As (ProbabilityOfThresholdExcess As Double, ProbabilityOfThresholdExcessHigh As Double, MyProbabilityOfThresholdExcessLow As Double)
 
 			'Gain = 0
 			'GainDerivative = 0
 			If (StockPrice.Vol = 0) OrElse (Volatility = 0) Then
-				Return MyVolatilityAtSigmaLast
+				Return MyVolatilityEstimate
 			End If
 			If _StockPriceLast Is Nothing Then
 				_StockPriceLast = StockPrice
 			End If
 			'it is important to make sure the previous last value is updated so that the log normal GainLog property parameters
 			'in StockPriceVolatilityEstimateData is calculated correctly before the object is created
-			StockPrice.LastPrevious = _StockPriceLast.Last
+			If StockPrice.LastPrevious = 0 Then
+				StockPrice.LastPrevious = _StockPriceLast.Last
+			End If
 			' Create a new StockPricePredictionData instance with the provided parameters
 			ThisStockPricePredictionData = New StockPriceVolatilityEstimateData(
 				NumberTradingDays:=MyNumberTradingDays,
@@ -254,17 +262,19 @@ Namespace OptionValuation
 
 				'second order filter to quickly bring the volatility to the right level	as far a excess stock price probability is concerned
 				'this fast tracking filter help the smooth the variation in the measured probability of excess 
-				MyVolatilityDelta = MyFilterPLL.FilterRun((ThisVolatilityDeltaHigh + ThisVolatilityDeltaLow) / 2)
-
 				'MyVolatilityDelta = MyFilterPLL.FilterRun((ThisVolatilityDeltaHigh + ThisVolatilityDeltaLow) / 2)
-				'MyVolatilityDelta = 0 'for testing
+
+				MyVolatilityDeltaHigh = MyFilterPLLHigh.FilterRun(ThisVolatilityDeltaHigh)
+				MyVolatilityDeltaLow = MyFilterPLLLow.FilterRun(ThisVolatilityDeltaLow)
+				MyVolatilityDelta = (MyVolatilityDeltaHigh + MyVolatilityDeltaLow) / 2
 				MyVolatilitySumOfError = MyVolatilitySumOfError + MyVolatilityDelta
-				With CalculateThresholdExcess(MyVolatilityDelta)
+				With CalculateThresholdExcess(VolatilityDeltaLow:=MyVolatilityDeltaLow, VolatilityDeltaHigh:=MyVolatilityDeltaHigh)
 					MyProbabilityOfThresholdExcess = .ProbabilityOfThresholdExcess
 					MyProbabilityOfThresholdExcessHigh = .ProbabilityOfThresholdExcessHigh
 					MyProbabilityOfThresholdExcessLow = .MyProbabilityOfThresholdExcessLow
 				End With
-				Console.WriteLine($"MyProbabilityOfThresholdExcess: {MyProbabilityOfThresholdExcess}, VolatilityDelta: {MyVolatilityDelta}t")
+				MyVolatilityEstimate = (MathPlus.General.STATISTICAL_SIGMA_DAILY_TO_YEARLY_RATIO * MyStatisticalOfStockPriceGain.FilterLast.StandardDeviation) + MyVolatilitySumOfError
+				'Console.WriteLine($"MyProbabilityOfThresholdExcess: {MyProbabilityOfThresholdExcess}, VolatilityDeltaLow: {MyVolatilityDeltaLow},VolatilityDeltaHigh: {MyVolatilityDeltaHigh}")
 				'Test code for speed evaluation
 				'Dim ThisStopWatch As New Stopwatch
 				'ThisStopWatch.Start()
@@ -278,33 +288,36 @@ Namespace OptionValuation
 				MyStatisticalOfProbOfExcesDeltaHighLow.Filter(ThisEstimateOfError)
 			Else
 				MyVolatilitySumOfError = 0.0
-				ThisResult = CalculateThresholdExcess(0.0)
-				With ThisResult
-					MyProbabilityOfThresholdExcess = .ProbabilityOfThresholdExcess
-					MyProbabilityOfThresholdExcessHigh = .ProbabilityOfThresholdExcessHigh
-					MyProbabilityOfThresholdExcessLow = .MyProbabilityOfThresholdExcessLow
-				End With
-				MyVolatilityDelta = MyFilterPLL.FilterRun(0.0)
+				If Volatility > StockPriceVolatilityEstimateData.VOLATILITY_TOTAL_MINIMUM Then
+					ThisResult = CalculateThresholdExcess(0.0, 0.0)
+					With ThisResult
+						MyProbabilityOfThresholdExcess = .ProbabilityOfThresholdExcess
+						MyProbabilityOfThresholdExcessHigh = .ProbabilityOfThresholdExcessHigh
+						MyProbabilityOfThresholdExcessLow = .MyProbabilityOfThresholdExcessLow
+					End With
+					MyVolatilityDeltaHigh = MyFilterPLLHigh.FilterRun(0.0)
+					MyVolatilityDeltaLow = MyFilterPLLLow.FilterRun(0.0)
+					MyVolatilityDelta = (MyVolatilityDeltaHigh + MyVolatilityDeltaLow) / 2
+				Else
+					MyProbabilityOfThresholdExcess = MyProbabilityOfInterval
+					MyProbabilityOfThresholdExcessHigh = MyProbabilityOfInterval / 2
+					MyProbabilityOfThresholdExcessLow = MyProbabilityOfInterval / 2
+				End If
 				MyStatisticalOfProbOfExcesDeltaHighLow.Filter(0.0)
+				_StockPriceLast = StockPrice
+				MyVolatilityEstimate = MathPlus.General.STATISTICAL_SIGMA_DAILY_TO_YEARLY_RATIO * MyStatisticalOfStockPriceGain.FilterLast.StandardDeviation
+				'do not reduce the volatility below the measured volatility
 			End If
-			_StockPriceLast = StockPrice
-			ThisVolatilityAtSigma = MathPlus.General.STATISTICAL_SIGMA_DAILY_TO_YEARLY_RATIO * MyStatisticalOfStockPriceGain.FilterLast.StandardDeviation
-			'do not reduce the volatility below the measured volatility
-			If MyVolatilitySumOfError > 0 Then
-				MyVolatilityAtSigmaLast = ThisVolatilityAtSigma + MyVolatilitySumOfError
-			Else
-				MyVolatilityAtSigmaLast = ThisVolatilityAtSigma
-			End If
-			Return MyVolatilityAtSigmaLast
+			Return MyVolatilityEstimate
 		End Function
 
-		Public ReadOnly Property VolatilityAtSigmaLast As Double
+		Public ReadOnly Property VolatilityEstimate As Double
 			Get
-				Return MyVolatilityAtSigmaLast
+				Return MyVolatilityEstimate
 			End Get
 		End Property
 
-		Private Function CalculateThresholdExcess(ByVal VolatilityDelta As Double) As (ProbabilityOfThresholdExcess As Double, ProbabilityOfThresholdExcessHigh As Double, MyProbabilityOfThresholdExcessLow As Double)
+		Private Function CalculateThresholdExcess(VolatilityDeltaLow As Double, VolatilityDeltaHigh As Double) As (ProbabilityOfThresholdExcess As Double, ProbabilityOfThresholdExcessHigh As Double, MyProbabilityOfThresholdExcessLow As Double)
 			Dim ThisProbabilityOfThresholdExcess As Double
 			Dim ThisProbabilityOfThresholdExcessHigh As Double
 			Dim ThisProbabilityOfThresholdExcessLow As Double
@@ -327,7 +340,7 @@ Namespace OptionValuation
 #Else
 			' Synchronous execution
 			For Each ThisStockPricePredictionData In MyQueue
-				ThisStockPricePredictionData.Refresh(VolatilityDelta)
+				ThisStockPricePredictionData.Refresh(VolatilityDeltaLow:=VolatilityDeltaLow, VolatilityDeltaHigh:=VolatilityDeltaHigh)
 				thresholdExcessResults.Add((ThisStockPricePredictionData.IsBandExceeded, ThisStockPricePredictionData.IsBandExceededHigh, ThisStockPricePredictionData.IsBandExceededLow))
 			Next
 #End If

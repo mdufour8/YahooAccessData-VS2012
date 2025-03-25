@@ -3,7 +3,7 @@ Namespace OptionValuation
 	Public Class StockPriceVolatilityEstimateData
 		Implements IStockPriceVolatilityEstimateData
 
-		Private Const VOLATILITY_TOTAL_MINIMUM As Double = 0.01
+		Public Const VOLATILITY_TOTAL_MINIMUM As Double = 0.01
 
 		Private MyNumberTradingDays As Double
 		Private MyStockPrice As IPriceVol
@@ -14,6 +14,8 @@ Namespace OptionValuation
 		Private MyGain As Double
 		Private MyGainDerivative As Double
 		Private MyVolatility As Double
+		Private MyVolatilityTotalHigh As Double
+		Private MyVolatilityTotalLow As Double
 		Private MyVolatilityTotal As Double
 		Private MyProbabilityHigh As Double
 		Private MyProbabilityLow As Double
@@ -54,6 +56,8 @@ Namespace OptionValuation
 			MyGainDerivative = GainDerivative
 			MyVolatility = Volatility
 			MyVolatilityTotal = MyVolatility
+			MyVolatilityTotalHigh = MyVolatility
+			MyVolatilityTotalLow = MyVolatility
 			MyProbabilityOfInterval = ProbabilityOfInterval
 			MyVolatilityPredictionBandType = VolatilityPredictionBandType
 			MyProbabilityHigh = 0.5 + MyProbabilityOfInterval / 2
@@ -90,8 +94,11 @@ Namespace OptionValuation
 		Public Sub Refresh() Implements IStockPriceVolatilityEstimateData.Refresh
 			Dim ThisNumberTradingDays As Double = MyNumberTradingDays
 
-			If MyVolatilityTotal < VOLATILITY_TOTAL_MINIMUM Then
-				MyVolatilityTotal = VOLATILITY_TOTAL_MINIMUM
+			If MyVolatilityTotalHigh < VOLATILITY_TOTAL_MINIMUM Then
+				MyVolatilityTotalHigh = VOLATILITY_TOTAL_MINIMUM
+			End If
+			If MyVolatilityTotalLow < VOLATILITY_TOTAL_MINIMUM Then
+				MyVolatilityTotalLow = VOLATILITY_TOTAL_MINIMUM
 			End If
 			_IsBandExceeded = False
 			_IsBandExceededHigh = False
@@ -112,7 +119,7 @@ Namespace OptionValuation
 					StockPrice:=MyStockPriceStartValue,
 					Gain:=MyGain,
 					GainDerivative:=MyGainDerivative,
-					Volatility:=MyVolatilityTotal,
+					Volatility:=MyVolatilityTotalHigh,
 					Probability:=MyProbabilityHigh)
 
 			MyStockPriceLowValue = StockOption.StockPricePrediction(
@@ -120,7 +127,7 @@ Namespace OptionValuation
 								StockPrice:=MyStockPriceStartValue,
 								Gain:=MyGain,
 								GainDerivative:=MyGainDerivative,
-								Volatility:=MyVolatilityTotal,
+								Volatility:=MyVolatilityTotalLow,
 								Probability:=MyProbabilityLow)
 
 			If MyStockPriceNext IsNot Nothing Then
@@ -156,12 +163,23 @@ Namespace OptionValuation
 		End Sub
 
 		Public Sub Refresh(VolatilityDelta As Double) Implements IStockPriceVolatilityEstimateData.Refresh
+			MyVolatilityTotalHigh += VolatilityDelta
+			MyVolatilityTotalLow += VolatilityDelta
 			MyVolatilityTotal += VolatilityDelta
+			Me.Refresh()
+		End Sub
+
+		Public Sub Refresh(VolatilityDeltaLow As Double, VolatilityDeltaHigh As Double) Implements IStockPriceVolatilityEstimateData.Refresh
+			MyVolatilityTotalHigh += VolatilityDeltaHigh
+			MyVolatilityTotalLow += VolatilityDeltaLow
+			MyVolatilityTotal = (MyVolatilityTotalHigh + MyVolatilityTotalLow) / 2
 			Me.Refresh()
 		End Sub
 
 		Public Sub Reset() Implements IStockPriceVolatilityEstimateData.Reset
 			MyVolatilityTotal = MyVolatility
+			MyVolatilityTotalHigh = MyVolatility
+			MyVolatilityTotalLow = MyVolatility
 			Me.Refresh()
 		End Sub
 
@@ -230,6 +248,18 @@ Namespace OptionValuation
 				Return MyGainLog
 			End Get
 		End Property
+
+		Public ReadOnly Property VolatilityTotalHigh As Double Implements IStockPriceVolatilityEstimateData.VolatilityTotalHigh
+			Get
+				Return MyVolatilityTotalHigh
+			End Get
+		End Property
+
+		Public ReadOnly Property VolatilityTotalLow As Double Implements IStockPriceVolatilityEstimateData.VolatilityTotalLow
+			Get
+				Return MyVolatilityTotalLow
+			End Get
+		End Property
 	End Class
 End Namespace
 
@@ -244,6 +274,8 @@ Namespace OptionValuation
 		ReadOnly Property GainDerivative As Double
 		ReadOnly Property Volatility As Double
 		ReadOnly Property VolatilityTotal As Double
+		ReadOnly Property VolatilityTotalHigh As Double
+		ReadOnly Property VolatilityTotalLow As Double
 		ReadOnly Property ProbabilityOfInterval As Double
 		ReadOnly Property IsBandExceeded As Boolean
 		ReadOnly Property IsBandExceededHigh As Boolean
@@ -251,6 +283,7 @@ Namespace OptionValuation
 		ReadOnly Property VolatilityPredictionBandType As IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType
 		Sub Refresh()
 		Sub Refresh(VolatilityDelta As Double)
+		Sub Refresh(VolatilityDeltaLow As Double, VolatilityDeltaHigh As Double)
 		Sub Reset()
 	End Interface
 End Namespace
