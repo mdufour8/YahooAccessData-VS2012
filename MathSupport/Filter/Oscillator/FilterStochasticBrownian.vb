@@ -519,6 +519,8 @@ Namespace MathPlus.Filter
 			'MyPLLErrorDetectorForVolatilityPredictionFromPreviousCloseToCloseWithGain use the 
 			'StockPriceVolatilityPredictionBand input object and modify it with a new volatility
 			'to make that clear .Update on the object should return the input object when called (to do later)
+
+			'Previous Close to close volatility with gain
 			MyPLLErrorDetectorForVolatilityPredictionFromPreviousCloseToCloseWithGain.Update(ThisVolatilityPredictionFromPreviousCloseToCloseWithGain)
 			'ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.Refresh(0.0)
 			'save the result in a list
@@ -526,7 +528,9 @@ Namespace MathPlus.Filter
 			'filter the result for prediction purpose
 			MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain.Filter(ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.VolatilityTotal)
 
-			'run the PLL error volatility correction method from the previous close to open
+
+
+			'previous close to open
 			MyPLLErrorDetectorForVolatilityPredictionFromPreviousCloseToOpenWithGain.Update(ThisVolatilityPredictionPreviousCloseToOpenWithGain)
 			'ThisVolatilityPredictionPreviousCloseToOpenWithGain.Refresh(0.0)
 			'save the result in a list

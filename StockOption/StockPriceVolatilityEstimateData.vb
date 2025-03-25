@@ -63,6 +63,16 @@ Namespace OptionValuation
 			MyProbabilityHigh = 0.5 + MyProbabilityOfInterval / 2
 			MyProbabilityLow = 0.5 - MyProbabilityOfInterval / 2
 			MyGainLog = MathPlus.Measure.Measure.GainLog(MyStockPrice.Last, MyStockPrice.LastPrevious)
+
+			Select Case MyVolatilityPredictionBandType
+				Case IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType.FromCloseToClose
+					MyStockPriceLowValueReal = StockPriceFuture.Low
+					MyStockPriceHighValueReal = StockPriceFuture.High
+				Case IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType.FromCloseToOpen
+					MyStockPriceLowValueReal = StockPriceFuture.Open
+					MyStockPriceHighValueReal = StockPriceFuture.Open
+				Case IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType.FromOpenToClose
+			End Select
 		End Sub
 
 		Public ReadOnly Property NumberTradingDays As Double Implements IStockPriceVolatilityEstimateData.NumberTradingDays
@@ -285,6 +295,11 @@ Namespace OptionValuation
 		Sub Refresh(VolatilityDelta As Double)
 		Sub Refresh(VolatilityDeltaLow As Double, VolatilityDeltaHigh As Double)
 		Sub Reset()
+	End Interface
+
+	Interface IStockPriceDuplex
+		ReadOnly Property StockPrice As IPriceVol
+		ReadOnly Property StockPriceNext As IPriceVol
 	End Interface
 End Namespace
 
