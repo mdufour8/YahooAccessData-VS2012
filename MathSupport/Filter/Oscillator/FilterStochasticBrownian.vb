@@ -1002,9 +1002,9 @@ Namespace MathPlus.Filter
 			ReDim MyStockPriceVolatilityPredictionBandWithGainCloseToOpen(0 To ReportPrices.NumberPoint - 1)
 
 			If ReportPrices.NumberPoint = 0 Then Exit Sub
-			MyValueLast = ReportPrices.PriceVols(0)
+			MyValueLast = ReportPrices.GetPriceVolInterface(0)
 			For I = 0 To ReportPrices.NumberPoint - 1
-				Value = ReportPrices.PriceVols(I)
+				Value = ReportPrices.GetPriceVolInterface(I)
 				MyListOfValue.Add(Value)
 				MyFilterLPForPrice.Filter(Value.Last)
 				ThisFilterBasedVolatilityTotal = MyFilterVolatilityYangZhangForStatistic.Filter(Value)
@@ -1088,9 +1088,9 @@ Namespace MathPlus.Filter
 						'    J = J
 						'  End If
 						'End If
-						ThisVolatilityPredictionFromPreviousCloseToCloseNoGain.Refresh(.PriceVols(J))
-						ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.Refresh(.PriceVols(J))
-						ThisStockPriceVolatilityPredictionBandWithGainCloseToOpen.Refresh(.PriceVols(J))
+						ThisVolatilityPredictionFromPreviousCloseToCloseNoGain.Refresh(.GetPriceVolInterface(J))
+						ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.Refresh(.GetPriceVolInterface(J))
+						ThisStockPriceVolatilityPredictionBandWithGainCloseToOpen.Refresh(.GetPriceVolInterface(J))
 					End With
 				End If
 				MyListOfPriceRangeVolatility.Add(ThisFilterBasedVolatilityTotal)
@@ -1161,7 +1161,7 @@ Namespace MathPlus.Filter
 			Dim ThisPriceNextDailyLowPreviousCloseToOpenWithGain As Double
 
 			For I = 0 To ReportPrices.NumberPoint - 1
-				Value = ReportPrices.PriceVols(I)
+				Value = ReportPrices.GetPriceVolInterface(I)
 				ThisVolatilityPredictionFromPreviousCloseToCloseNoGain = MyStockPriceVolatilityPredictionBand(I)
 				ThisVolatilityPredictionFromPreviousCloseToCloseWithGain = MyStockPriceVolatilityPredictionBandWithGain(I)
 				ThisStockPriceVolatilityPredictionBandWithGainCloseToOpen = MyStockPriceVolatilityPredictionBandWithGainCloseToOpen(I)
@@ -1753,7 +1753,7 @@ Namespace MathPlus.Filter
 			Dim I As Integer
 
 			For I = 0 To ReportPrices.NumberPoint - 1
-				Me.FilterLocal(ReportPrices.PriceVols(I))
+				Me.FilterLocal(ReportPrices.GetPriceVolInterface(I))
 			Next
 
 			Return True
@@ -1767,7 +1767,7 @@ Namespace MathPlus.Filter
 					Dim I As Integer
 
 					For I = 0 To ReportPrices.NumberPoint - 1
-						Me.FilterLocal(ReportPrices.PriceVols(I))
+						Me.FilterLocal(ReportPrices.GetPriceVolInterface(I))
 					Next
 					Return True
 				End Function)

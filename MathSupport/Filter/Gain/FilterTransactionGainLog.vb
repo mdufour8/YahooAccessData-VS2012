@@ -362,7 +362,7 @@ Namespace MathPlus.Filter
 					Dim IShifted As Integer = ValueTransactionStop.Count - ReportPrices.NumberPoint
 					For I = 0 To ReportPrices.NumberPoint - 1
 						J = I + IShifted
-						Me.Filter(ReportPrices.PriceVols(I), WeightControl(I), ValueTransactionStop(J), PriceRangeHigh(J), PriceRangeLow(J))
+						Me.Filter(ReportPrices.GetPriceVolInterface(I), WeightControl(I), ValueTransactionStop(J), PriceRangeHigh(J), PriceRangeLow(J))
 					Next
 					Return True
 				End Function)
@@ -389,7 +389,7 @@ Namespace MathPlus.Filter
 					Dim IShifted As Integer = ValueTransactionStop.Count - ReportPrices.NumberPoint
 					For I = 0 To ReportPrices.NumberPoint - 1
 						J = I + IShifted
-						Me.Filter1(ReportPrices.PriceVols(I), WeightControl(I), ValueTransactionStop(J), PriceRangeHigh(J), PriceRangeLow(J))
+						Me.Filter1(ReportPrices.GetPriceVolInterface(I), WeightControl(I), ValueTransactionStop(J), PriceRangeHigh(J), PriceRangeLow(J))
 					Next
 					Return True
 				End Function)

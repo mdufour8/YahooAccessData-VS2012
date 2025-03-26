@@ -1460,11 +1460,20 @@ Public Class RecordPrices
   End Property
 
 
-  Public Function PriceVols(ByVal Index As Integer) As PriceVol
-    Return MyPriceVols(Index)
-  End Function
+	Public Function PriceVols(ByVal Index As Integer) As PriceVol
+		Return MyPriceVols(Index)
+	End Function
 
-  Public Sub PriceVolsMultiPly(ByVal Ratio As Single)
+	''' <summary>
+	''' This function allow a direct access to the IpriceVol interface
+	''' </summary>
+	''' <param name="Index"></param>
+	''' <returns></returns>
+	Public Function GetPriceVolInterface(ByVal Index As Integer) As IPriceVol
+		Return MyPriceVols(Index)
+	End Function
+
+	Public Sub PriceVolsMultiPly(ByVal Ratio As Single)
     Me.PriceMin = Single.MaxValue
     Me.PriceMax = Single.MinValue
     Me.VolMax = Integer.MinValue

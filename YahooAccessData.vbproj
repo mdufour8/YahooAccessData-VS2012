@@ -241,6 +241,9 @@
     <Compile Include="MathSupport\Filter\Statistic\StatisticLCR.vb" />
     <Compile Include="MathSupport\Filter\Volatility\FilterVolatility.vb" />
     <Compile Include="MathSupport\Filter\Volatility\FilterVolatilityYangZhang.vb" />
+    <Compile Include="MathSupport\Filter\Volatility\VolatilityEstimator\IStockPriceDuplex.vb" />
+    <Compile Include="MathSupport\Filter\Volatility\VolatilityEstimator\IStockPriceVolatilityEstimateData.vb" />
+    <Compile Include="MathSupport\Filter\Volatility\VolatilityEstimator\StockPriceDuplex.vb" />
     <Compile Include="MathSupport\MathPlus.vb" />
     <Compile Include="MathSupport\MathProcess.vb" />
     <Compile Include="MathSupport\Measure.vb" />
@@ -301,8 +304,8 @@
     <Compile Include="StockOption\IStockOption.vb" />
     <Compile Include="StockOption\StockOption.vb" />
     <Compile Include="StockOption\StockPriceVolatilityPredictionBand.vb" />
-    <Compile Include="StockOption\StockPriceVolatilityEstimateData.vb" />
-    <Compile Include="StockOption\StockPriceVolatilityEstimateRun.vb" />
+    <Compile Include="MathSupport\Filter\Volatility\VolatilityEstimator\StockPriceVolatilityEstimateData.vb" />
+    <Compile Include="MathSupport\Filter\Volatility\VolatilityEstimator\StockPriceVolatilityEstimateRun.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="My Project\Resources.resx">
@@ -359,7 +362,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Information\" />
-    <Folder Include="MathSupport\Filter\Volatility\VolatilityEstimator\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
