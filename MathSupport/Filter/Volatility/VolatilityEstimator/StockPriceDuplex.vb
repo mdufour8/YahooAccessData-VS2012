@@ -1,4 +1,10 @@
 ﻿Namespace OptionValuation
+	''' <summary>
+	''' This class encapsulate teh logic needed to test the stock price volatility prediction band via predicted price high and low.
+	''' The class is used to combine together the stock price and the next stock price and calculate the High and Low in function
+	''' of the Volatility calculation requirement. Note that the StockPriceNext is not mandatory to be set for the class creation since 
+	''' usually it is still an unknown. Later on it can be addded to the same class via the StockPriceNext property.
+	''' </summary>
 	Public Class StockPriceDuplex
 		Implements IStockPriceDuplex
 
@@ -6,10 +12,13 @@
 		Dim MyStockPriceNext As IPriceVol
 
 		Dim MyTimePeriodInDay As Double
+		Dim MyTimePeriodInDayLocal As Double
 		Dim MyStockPriceStart As Double
 		Dim MyStockPriceHigh As Double
 		Dim MyStockPriceLow As Double
+
 		Dim MyVolatilityPredictionBandType As IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType
+		'
 
 
 		''' <summary>
@@ -18,7 +27,9 @@
 		''' usually it is still an unknown. Later on it can be addded to the same class via the StockPriceNext property.
 		''' </summary>
 		''' <param name="StockPrice">The stock price</param>
-		''' <param name="TimePeriodInDay">The time period in day</param>
+		''' <param name="TimePeriodInDay">The default time period in day. This parameter may be internally changed if the StockPriceNext 
+		''' is not yet availaible. In that case the time period calculation is changed to the standard 8.00 hour daily trading period for an 
+		''' intraday measurement range calculation.</param>
 		''' <param name="volatilityPredictionBandType">The volatility prediction band type</param>
 		''' <remarks></remarks>
 		Public Sub New(
@@ -38,18 +49,24 @@
 			MyStockPrice = StockPrice
 			MyStockPriceNext = StockPriceNext
 			MyTimePeriodInDay = TimePeriodInDay
+			MyTimePeriodInDayLocal = MyTimePeriodInDay 'by default the local time period for calculation is the same as the standard user sample time period
 			MyVolatilityPredictionBandType = VolatilityPredictionBandType
 
 			If MyStockPriceNext Is Nothing Then
 				Select Case MyVolatilityPredictionBandType
 					Case IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType.FromCloseToClose
-						'calculate the threshold excess base on the last close since we ddo not have the next sample
-						'also need to reduice the daily period of trading to a inside daily period of trading
-						MyStockPriceStart = MyStockPrice.LastPrevious
+						'since we do not have the next sample calculate the on the open price and teh high and low intraday price	
+						'in thatcase the time period need to be adjusted to the intraday trading period	
+						MyTimePeriodInDayLocal = ReportDate.MARKET_OPEN_TO_CLOSE_PERIOD_DAY_DEFAULT
+						MyStockPriceStart = MyStockPrice.Open
 						MyStockPriceHigh = MyStockPrice.High
 						MyStockPriceLow = MyStockPrice.Low
 					Case IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType.FromCloseToOpen
-
+						''calculate the threshold excess base on the last close since we do not have the next sample
+						'MyTimePeriodInDayLocal =
+						'MyStockPriceStart = MyStockPrice.LastPrevious
+						'MyStockPriceHigh = MyStockPrice.Open
+						'MyStockPriceLow = MyStockPrice.Open
 					Case IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType.FromOpenToClose
 						'calculate the threshold excess base on the intraday stock price range
 						'also need to reduice the daily period of trading to a inside daily period of trading
@@ -58,13 +75,26 @@
 						MyStockPriceHigh = MyStockPrice.High
 						MyStockPriceLow = MyStockPrice.Low
 				End Select
-
-
-
 			Else
-				MyStockPriceStart = MyStockPrice.Last
-				MyStockPriceHigh = MyStockPriceNext.High
-				MyStockPriceLow = MyStockPriceNext.Low
+				Select Case MyVolatilityPredictionBandType
+					Case IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType.FromCloseToClose
+						'calculate the threshold excess base on the last close since we do not have the next sample
+						MyStockPriceStart = MyStockPrice.Last
+						MyStockPriceHigh = MyStockPriceNext.High
+						MyStockPriceLow = MyStockPriceNext.Low
+					Case IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType.FromCloseToOpen
+						'calculate the threshold excess base on the last close since we do not have the next sample
+						MyStockPriceStart = MyStockPrice.Last
+						MyStockPriceHigh = MyStockPrice.Open
+						MyStockPriceLow = MyStockPrice.Open
+					Case IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType.FromOpenToClose
+						'calculate the threshold excess base on the intraday stock price range
+						'also need to reduice the daily period of trading to a inside daily period of trading
+						MyTimePeriodInDay = ReportDate.MARKET_OPEN_TO_CLOSE_PERIOD_DAY_DEFAULT
+						MyStockPriceStart = MyStockPrice.Open
+						MyStockPriceHigh = MyStockPrice.High
+						MyStockPriceLow = MyStockPrice.Low
+				End Select
 			End If
 		End Sub
 
@@ -81,6 +111,25 @@
 			End Get
 			Set(value As IPriceVol)
 				MyStockPriceNext = value
+				Select Case MyVolatilityPredictionBandType
+					Case IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType.FromCloseToClose
+						'calculate the threshold excess base on the last close since we do not have the next sample
+						MyStockPriceStart = MyStockPrice.Last
+						MyStockPriceHigh = MyStockPriceNext.High
+						MyStockPriceLow = MyStockPriceNext.Low
+					Case IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType.FromCloseToOpen
+						'calculate the threshold excess base on the last close since we do not have the next sample
+						MyStockPriceStart = MyStockPrice.Last
+						MyStockPriceHigh = MyStockPrice.Open
+						MyStockPriceLow = MyStockPrice.Open
+					Case IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType.FromOpenToClose
+						'calculate the threshold exc ess base on the intraday stock price range
+						'also need to reduice the daily period of trading to a inside daily period of trading
+						MyTimePeriodInDay = ReportDate.MARKET_OPEN_TO_CLOSE_PERIOD_DAY_DEFAULT
+						MyStockPriceStart = MyStockPrice.Open
+						MyStockPriceHigh = MyStockPrice.High
+						MyStockPriceLow = MyStockPrice.Low
+				End Select
 			End Set
 		End Property
 

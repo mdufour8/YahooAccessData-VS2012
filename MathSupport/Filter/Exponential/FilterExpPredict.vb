@@ -28,7 +28,18 @@ Public Class FilterExpPredict
 	Private MyFilter As IFilter
 	Private MyFilterY As IFilter
 	Private MyNumberToPredict As Double
+	Private MyGainYearlyEstimate As Double
 	Private IsReset As Boolean
+	Private MyStatisticalForGain As FilterStatisticalQueue
+	Private MyFilterRateYearlyScaling As Double
+	Private MyFilterRateYearlyGainVolatilityScaling As Double
+
+
+	''' <summary>
+	'''	Construct a new instance of the FilterExpPredict class with the specified filter rate.
+	''' </summary>
+	''' <param name="FilterRate">The filter rate.</param>
+	''' <remarks></remarks>
 
 	Public Sub New(ByVal FilterRate As Double)
 		Me.New(NumberToPredict:=0, FilterHead:=New FilterExp(FilterRate), FilterBase:=New FilterExp(FilterRate))
@@ -64,9 +75,13 @@ Public Class FilterExpPredict
 			'filter cannot be nothing a reference is needed for the filter rate
 			Throw New ArgumentException("Invalid Filter type FilterHead in FilterExpPredict!")
 		End If
+		MyFilterRateYearlyScaling = YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR / MyFilterRate
+		MyFilterRateYearlyGainVolatilityScaling = Math.Sqrt(MyFilterRateYearlyScaling)
+
+
 		MyFilter = FilterHead
 		MyFilterY = FilterBase
-
+		MyStatisticalForGain = New FilterStatisticalQueue(FilterRate:=CInt(MyFilterRate))
 		MyNumberToPredict = NumberToPredict
 		Dim ThisFilterRateForStatistical As Double = 5 * MyFilterRate
 		If ThisFilterRateForStatistical < YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_MONTH Then
@@ -116,6 +131,26 @@ Public Class FilterExpPredict
 		'usee to deal with any other type of processing
 		'MyStatisticalForGain.Filter(Measure.Measure.GainLog(Value:=FilterValuePredictH1, ValueRef:=Ap))
 		'ThisFilterPredictionGainYearly = MyStatisticalForGain.FilterLast.ToGaussianScale(ScaleToSignedUnit:=True)
+		'While the above is a good idea, we can still provide an estimate of the gain anualized by scaling the filter rate as indicated below:
+		'See description 'Brown_LES_Annualized_Trend.pdf' for more information	
+
+		'Scaling b_t to an Annualized Value
+		'To ensure comparability across different filter rates, we need to scale the trend to a one-year period.
+		'Given that b_t Is averaged over MyFilterRate samples, the appropriate scaling factor Is
+		'f_scale = f_s / MyFilterRate
+		'where:
+		'- f_s = total samples per year (e.g., 252 for daily trading, 52 for weekly
+		'Data).
+		'- MyFilterRate = number of samples in the smoothing window.
+		'Thus, the annualized trend estimate Is computed as
+		'b_annual = b_t * f_scale = b_t * (f_s / MyFilterRate)
+		'
+
+		Dim ThisGainVolatilityCorrected As Double = MyFilterRateYearlyGainVolatilityScaling * MyStatisticalForGain.Filter(Value:=Bp).StandardDeviation
+		MyGainYearlyEstimate = Bp * (YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR) / (1 + ThisGainVolatilityCorrected)
+		'Console.WriteLine(ThisGainVolatilityCorrected)
+
+		'note that the gain is not the same as the gainLog here. This etimate is valid for any range of signal positive or negative
 		ValueLastK1 = ValueLast
 		ValueLast = Value
 		Return FilterValueLast
@@ -162,12 +197,24 @@ Public Class FilterExpPredict
 	End Property
 
 	''' <summary>
-	''' The logarithmic gain derivative of the signal.
+	''' The logarithmic gain derivative of the signal taken immediatly between two consecutive samples.
 	''' </summary>
 	''' <returns></returns>
 	Public ReadOnly Property GainLogDerivative As Double
 		Get
 			Return Measure.Measure.GainLog(MyFilterALast + MyFilterDeltaBLast, MyFilterALast)
+		End Get
+	End Property
+
+	''' <summary>
+	''' Return a yearly estimate of the gain of the signal.
+	''' The gain is scaled to the filter rate and the volatility of the gain.
+	''' The gain is not the same as the gainLog here and the estimate is valid for any range of signal positive or negative	
+	''' </summary>
+	''' <returns></returns>
+	Public ReadOnly Property GainYearlyEstimate As Double
+		Get
+			Return MyGainYearlyEstimate
 		End Get
 	End Property
 

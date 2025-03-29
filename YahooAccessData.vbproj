@@ -320,6 +320,7 @@
       <SubType>Designer</SubType>
     </None>
     <None Include="MathSupport\Filter\Exponential\ADPLL_Filtering_Summary.docx" />
+    <None Include="MathSupport\Filter\Exponential\Brown_LES_Annualized_Trend.pdf" />
     <None Include="MathSupport\Filter\Oscillator\Gaussian LogNormal Statistic.pdf" />
     <None Include="MathSupport\Filter\Oscillator\Lognormal_Distribution.pdf" />
     <None Include="MathSupport\Filter\PLL\ADPLL_Filtering_Summary.docx" />
