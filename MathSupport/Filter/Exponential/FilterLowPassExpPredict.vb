@@ -52,8 +52,8 @@ Namespace MathPlus.Filter
 		Private MyListOfStatisticalVarianceError As ListScaled
 		Private MyListOfAFilter As List(Of Double)
 		Private MyListOfBFilter As List(Of Double)
-		Private MyStatisticalForPredictionError As FilterStatistical
-		Private MyStatisticalForGain As FilterStatistical
+		Private MyStatisticalForPredictionError As FilterStatisticalQueue
+		Private MyStatisticalForGain As FilterStatisticalQueue
 		Private MyFilter As IFilter
 		Private MyFilterY As IFilter
 		Private MyNumberToPredict As Double
@@ -107,8 +107,8 @@ Namespace MathPlus.Filter
 			'should be enogh for a good estimate of the variance to limit and evaluate the gain
 			'ThisFilterRateForStatistical = YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_MONTH
 
-			MyStatisticalForPredictionError = New FilterStatistical(CInt(ThisFilterRateForStatistical))
-			MyStatisticalForGain = New FilterStatistical(CInt(ThisFilterRateForStatistical))
+			MyStatisticalForPredictionError = New FilterStatisticalQueue(CInt(ThisFilterRateForStatistical))
+			MyStatisticalForGain = New FilterStatisticalQueue(CInt(ThisFilterRateForStatistical))
 			'MyListOfStatisticalExp = New FilterStatisticalExp(MyRate)
 			MyListOfStatisticalVarianceError = New YahooAccessData.ListScaled
 
@@ -198,6 +198,7 @@ Namespace MathPlus.Filter
 			MyStatisticalForGain.Filter(ThisGain)
 			ThisFilterPredictionGainYearly = MyStatisticalForGain.FilterLast.ToGaussianScale(ScaleToSignedUnit:=True)
 
+			'measure the error
 			MyStatisticalForPredictionError.Filter(Measure.Measure.GainLog(Value:=(Value - FilterValuePredictH1Last), ValueRef:=Ap))
 			ThisGainStandardDeviation = MyStatisticalForPredictionError.FilterLast.ToGaussianScale(ScaleToSignedUnit:=True)
 
@@ -533,7 +534,7 @@ Namespace MathPlus.Filter
 
 			MyListOfValue.Clear()
 			MyListOfPredictionGainPerYear.Clear()
-			MyStatisticalForPredictionError = New FilterStatistical(YahooAccessData.MathPlus.NUMBER_WORKDAY_PER_YEAR)
+			MyStatisticalForPredictionError = New FilterStatisticalQueue(YahooAccessData.MathPlus.NUMBER_WORKDAY_PER_YEAR)
 			MyListOfStatisticalVarianceError.Clear()
 			MyListOfAFilter.Clear()
 			MyListOfBFilter.Clear()

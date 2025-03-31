@@ -54,8 +54,6 @@ Public Class FilterPLL
 		MyFilterValuek2 = 0
 
 		'original code
-
-
 		FreqDigital = 1 / (Math.PI * MyFilterRate)
 		C = MyVCOPeriod
 		C2 = 2 * MyDampingFactor * (2 * Math.PI) * FreqDigital
