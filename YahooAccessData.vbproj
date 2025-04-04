@@ -113,6 +113,9 @@
     <Reference Include="Ionic.Zip">
       <HintPath>..\..\Commun Work\VB2010\File Compression\DotNetZipLib\DotNetZipLib-DevKit-v1.9\zip-v1.9\Release\Ionic.Zip.dll</HintPath>
     </Reference>
+    <Reference Include="MathNet.Filtering, Version=0.7.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\FilterTest\packages\MathNet.Filtering.0.7.0\lib\net461\MathNet.Filtering.dll</HintPath>
+    </Reference>
     <Reference Include="MathNet.Numerics, Version=5.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\StockView VS2012\packages\MathNet.Numerics.5.0.0\lib\net461\MathNet.Numerics.dll</HintPath>
     </Reference>
@@ -207,6 +210,7 @@
     <Compile Include="FileSupport\RecordIndex.vb" />
     <Compile Include="FileSupport\TimePeriodOverlap.vb" />
     <Compile Include="FileSupport\TreeNodeList.vb" />
+    <Compile Include="MathSupport\Filter\Butterworth\FilterLPButterworth.vb" />
     <Compile Include="MathSupport\Filter\Statistic\FilterStatisticQueue.vb" />
     <Compile Include="MathSupport\Filter\Statistic\StatisticalData.vb" />
     <Compile Include="MathSupport\Filter\Statistic\FilterStatistical.vb" />
@@ -320,17 +324,20 @@
       <SubType>Designer</SubType>
     </None>
     <None Include="MathSupport\Filter\Exponential\ADPLL_Filtering_Summary.docx" />
+    <None Include="MathSupport\Filter\Exponential\Bilinear_Transform_Prewarping_Summary_UPDATED.docx" />
     <None Include="MathSupport\Filter\Exponential\Brown_LES_Annualized_Trend.pdf" />
     <None Include="MathSupport\Filter\Oscillator\Gaussian LogNormal Statistic.pdf" />
     <None Include="MathSupport\Filter\Oscillator\Lognormal_Distribution.pdf" />
+    <None Include="MathSupport\Filter\PLL\ADPLL_3dB_Bandwidth_Analysis.pdf" />
     <None Include="MathSupport\Filter\PLL\ADPLL_Filtering_Summary.docx" />
     <None Include="MathSupport\Filter\PLL\ADPLL_Filtering_Summary.pdf" />
     <None Include="MathSupport\Filter\PLL\Brown_LES_Annualized_Trend.docx" />
     <None Include="MathSupport\Filter\PLL\Brown_LES_Annualized_Trend.pdf" />
+    <None Include="MathSupport\Filter\PLL\DigitalFrequency_vs_AngularFrequency.pdf" />
     <None Include="MathSupport\Filter\PLL\DPLL_Detailed_Frequency_Response_Analysis.pdf" />
     <None Include="MathSupport\Filter\PLL\DPLL_Detailed_Frequency_Response_Analysis_1.pdf" />
-    <None Include="MathSupport\Filter\PLL\DPLL_Frequency_Response_Analysis.pdf" />
     <None Include="MathSupport\Filter\PLL\dpll_ieee.pdf" />
+    <None Include="MathSupport\Filter\PLL\wirelesspi-phase-locked-loop-pll-in-a-software-defined-radio-sdr.pdf" />
     <None Include="MathSupport\Filter\Volatility\Parkinson_Volatility_Estimator_Description.pdf" />
     <None Include="MathSupport\Filter\Volatility\Yang Drift-Independent Volatility .pdf" />
     <None Include="MathSupport\Info\erf-approx.pdf" />

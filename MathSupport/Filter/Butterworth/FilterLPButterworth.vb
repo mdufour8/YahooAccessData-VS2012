@@ -1,9 +1,11 @@
 ﻿Imports YahooAccessData.MathPlus.Filter
+Imports MathNet.Filtering
+Imports MathNet.Filtering.IIR
 
-Public Class FilterExp
+Public Class FilterLPButterworth
 	Implements IFilterRun
 	Implements IFilter
-	Implements IFilterState
+	'Implements IFilterState
 
 	Private MyRate As Integer
 	Private MyFilterRate As Double
@@ -13,33 +15,41 @@ Public Class FilterExp
 	Private FilterValueLast As Double
 	Private ValueLast As Double
 	Private ValueLastK1 As Double
+	Private MyFilter As OnlineFilter
 	Private IsReset As Boolean
 
+	''' <summary>
+	''' Implements a Butterworth Low Pass filter with e 3 dB bandwith of 1/FilterRate
+	''' The filter is implemented using the MathNet library.
+	''' The filter is a second-order low-pass Butterworth filter.
+	''' The filter is initialized with a cutoff frequency of 1/FilterRate Hz and a sample rate of 1 sample.
+	''' The filter can be reset to its initial state.
+	''' </summary>
 	Public Sub New(ByVal FilterRate As Double)
 
-		If FilterRate < 1 Then FilterRate = 1
+		If FilterRate < 1 Then FilterRate = 2
 		MyFilterRate = FilterRate
 		MyRate = CInt(MyFilterRate)
 
-		'this is the factor A that will give the same bandwidth than a moving average with a flat windows of FilterRate points
-		'see https://en.wikipedia.org/wiki/Exponential_smoothing  section: Comparison with moving average
-		'this result come from the fact that the delay for a square window moving average is given by (N+1)/2 and 1/Alpha for an exponential filter
-		'Note this is the noise equivalent bandwidth (NEB), not the 3 dB bandwidth. The NEB is the bandwidth of a brick-wall filter
-		'that would let the same amount of noise through as the filter in question.
-		'see the explication in the file included in this directory 'IIR_Filter_NEB_vs_3dB_Bandwidth_FINAL.pdf'
-		A = CDbl((2 / (MyFilterRate + 1)))   'for MyFilterRate=10 this give A=0.1818
+		' Define the sample rate and the desired cutoff frequency
+		Dim sampleRate As Double = 1.0 ' Sample rate in Hz  
+		Dim cutoffFrequency As Double = 1 / MyFilterRate ' Cutoff frequency in Hz
 
-		'If the user was more interested to calculate the 3dB bandwidth (not yet supported), the formula would be:
-		'A = 1 - Math.Exp(-2 * Math.PI / MyFilterRate)  'for MyFilterRate=10 this give A=0.4665
+		' Create a second-order low-pass Butterworth filter
+		MyFilter = OnlineIirFilter.CreateLowpass(
+				mode:=ImpulseResponse.Infinite,
+				sampleRate:=sampleRate,
+				cutoffRate:=cutoffFrequency,
+				order:=2) ' Order of the filter
 
-		'Seek also:https://en.wikipedia.org/wiki/Low-pass_filter
-		' B = 1 - A is the factor for the previous value
-		B = 1 - A
+
 		FilterValueLast = 0
 		FilterValueLastK1 = 0
 		ValueLast = 0
 		ValueLastK1 = 0
 		IsReset = True
+		MyFilter.Reset()
+		MyFilter.ProcessSample(0.0) ' Initialize the filter with a sample of 0	
 	End Sub
 
 	Public Function FilterRun(Value As Double) As Double Implements IFilterRun.FilterRun
@@ -49,7 +59,7 @@ Public Class FilterExp
 			IsReset = False
 		End If
 		FilterValueLastK1 = FilterValueLast
-		FilterValueLast = A * Value + B * FilterValueLast
+		FilterValueLast = MyFilter.ProcessSample(Value)
 		ValueLastK1 = ValueLast
 		ValueLast = Value
 		Return FilterValueLast
@@ -75,32 +85,32 @@ Public Class FilterExp
 		IsReset = True
 	End Sub
 
-#Region "IFilterState"
-	Public Function ASIFilterState() As IFilterState Implements IFilterState.ASIFilterState
-		Return Me
-	End Function
+	'#Region "IFilterState"
+	'	Public Function ASIFilterState() As IFilterState Implements IFilterState.ASIFilterState
+	'		Return Me
+	'	End Function
 
-	Private MyQueueForState As New Queue(Of Double)
-	Private Sub IFilterState_ReturnPrevious() Implements IFilterState.ReturnPrevious
-		Try
-			If MyQueueForState.Count = 0 Then Return
-			ValueLast = MyQueueForState.Dequeue
-			ValueLastK1 = MyQueueForState.Dequeue
-			FilterValueLast = MyQueueForState.Dequeue
-			FilterValueLastK1 = MyQueueForState.Dequeue
-		Catch ex As InvalidOperationException
-			' Handle error, perhaps log it or rethrow with additional info
-			Throw New Exception($"Failed to restore state from queue in {Me.GetType().Name}. Queue may be empty or corrupted.", ex)
-		End Try
-	End Sub
+	'	Private MyQueueForState As New Queue(Of Double)
+	'	Private Sub IFilterState_ReturnPrevious() Implements IFilterState.ReturnPrevious
+	'		Try
+	'			If MyQueueForState.Count = 0 Then Return
+	'			ValueLast = MyQueueForState.Dequeue
+	'			ValueLastK1 = MyQueueForState.Dequeue
+	'			FilterValueLast = MyQueueForState.Dequeue
+	'			FilterValueLastK1 = MyQueueForState.Dequeue
+	'		Catch ex As InvalidOperationException
+	'			' Handle error, perhaps log it or rethrow with additional info
+	'			Throw New Exception($"Failed to restore state from queue in {Me.GetType().Name}. Queue may be empty or corrupted.", ex)
+	'		End Try
+	'	End Sub
 
-	Private Sub IFilterState_Save() Implements IFilterState.Save
-		MyQueueForState.Enqueue(ValueLast)
-		MyQueueForState.Enqueue(ValueLastK1)
-		MyQueueForState.Enqueue(FilterValueLast)
-		MyQueueForState.Enqueue(FilterValueLastK1)
-	End Sub
-#End Region
+	'	Private Sub IFilterState_Save() Implements IFilterState.Save
+	'		MyQueueForState.Enqueue(ValueLast)
+	'		MyQueueForState.Enqueue(ValueLastK1)
+	'		MyQueueForState.Enqueue(FilterValueLast)
+	'		MyQueueForState.Enqueue(FilterValueLastK1)
+	'	End Sub
+	'#End Region
 
 #Region "IFilter"
 	Private ReadOnly Property IFilter_Rate As Integer Implements IFilter.Rate

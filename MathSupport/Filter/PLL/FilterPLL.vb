@@ -36,6 +36,8 @@ Public Class FilterPLL
 	Private MyFilterRate As Double
 	Private MyDampingFactor As Double
 	Private IsReset As Boolean
+	'note we cannot create another PLL filter without causing stack overflow
+	Private MyFilterForError As FilterExp
 
 	Public Sub New(ByVal FilterRate As Double, Optional DampingFactor As Double = 1.0)
 		Dim ThisFilterRateMinimum As Double
@@ -54,6 +56,30 @@ Public Class FilterPLL
 		MyFilterValuek2 = 0
 
 		'original code
+		'Let explain this relation:
+		'FreqDigital = 1 / (PI * MyFilterRate)
+		'Please refer to the article 'DigitalFrequency_vs_AngularFrequency.pdf' for more information.
+		'In this article the relation bwetween the 3dB bandwidth and the filter resonance frequncy is explained.
+		'It is noted that a formal relation between the 3dB bandwidth and the filter resonance frequency is not given.	
+		'However it can be approxmated with simple relation of 2.0.  
+		'The user provide a filter rate parameters that is effectivly the desired 3dB bandwidth of the filter.
+		'The filter rate is the 3dB bandwidth of the filter but the PLL filter is described by it resonnance frequency:
+		'Fn=Fc/2.0 = 2*PI/2.0*FilterRate)=PI/FilterRate	
+
+		'Note also that the digital frequency Ω is the angular frequency ω (rad/s) times the sampling period T (s/sample),
+		'so the units digital frequency are rad/sample.
+
+		'Ω=ω*T	
+
+		'this is the factor A that will give the same bandwidth than a moving average with a flat windows of FilterRate points
+		'see https://en.wikipedia.org/wiki/Exponential_smoothing  section: Comparison with moving average
+		'this result come from the fact that the delay for a square window moving average is given by (N+1)/2 and 1/Alpha for an exponential filter
+		'A = CDbl((2 / (MyFilterRate + 1)))
+
+		'Seek also:https://en.wikipedia.org/wiki/Low-pass_filter
+		'B = 1 - A
+
+
 		FreqDigital = 1 / (Math.PI * MyFilterRate)
 		C = MyVCOPeriod
 		C2 = 2 * MyDampingFactor * (2 * Math.PI) * FreqDigital
@@ -74,6 +100,7 @@ Public Class FilterPLL
 		End If
 		MySignalDelta = 0
 		MyErrork0 = 0
+		MyFilterForError = New FilterExp(FilterRate:=MyFilterRate)
 		IsReset = True
 	End Sub
 
@@ -87,6 +114,7 @@ Public Class FilterPLL
 			'MyRefValue is the first reference sample value and never change annymore
 			MyRefValue = Value
 			MyVCOk0 = Value
+			MyFilterForError.Reset()
 			IsReset = False
 		End If
 		'just the standard PLL here
@@ -95,6 +123,7 @@ Public Class FilterPLL
 		MyErrork1 = MyErrork0
 		MyErrork0 = (C1 * MySignalDelta) + MyErrork1
 		MyFilterError = (C2 * MySignalDelta) + MyErrork1
+		MyFilterForError.FilterRun(MyFilterError)
 		'calculate the integrator parameters
 		MyVCOk2 = MyVCOk1
 		MyVCOk1 = MyVCOk0
@@ -223,7 +252,7 @@ Public Class FilterPLL
 
 	Public ReadOnly Property FilterError As Double
 		Get
-			Return MyFilterError
+			Return MyFilterForError.FilterLast
 		End Get
 	End Property
 

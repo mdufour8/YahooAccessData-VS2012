@@ -53,7 +53,7 @@ Namespace MathPlus.Filter
 		Private MyListOfFilterErrorValue As ListScaled
 		Private MyFilterBPrediction As Filter.FilterLowPassExpPredict
 		Private MyFilterBPredictionDerivative As Filter.FilterLowPassPLLPredict
-		Private MyFilterForPLLError As Filter.IFilter
+		Private MyFilterForError As Filter.IFilter
 		Private MyDampingFactor As Double
 		Private IsPredictionEnabledLocal As Boolean
 		Private MyInputValue() As Double
