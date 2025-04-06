@@ -9,9 +9,6 @@ Public Class FilterLPButterworth
 
 	Private MyRate As Integer
 	Private MyFilterRate As Double
-	Private A As Double
-	Private B As Double
-	Private FilterValueLastK1 As Double
 	Private FilterValueLast As Double
 	Private ValueLast As Double
 	Private ValueLastK1 As Double
@@ -26,6 +23,8 @@ Public Class FilterLPButterworth
 	''' The filter can be reset to its initial state.
 	''' </summary>
 	Public Sub New(ByVal FilterRate As Double)
+
+		Throw New NotImplementedException
 
 		If FilterRate < 1 Then FilterRate = 2
 		MyFilterRate = FilterRate
@@ -44,11 +43,10 @@ Public Class FilterLPButterworth
 
 
 		FilterValueLast = 0
-		FilterValueLastK1 = 0
 		ValueLast = 0
 		ValueLastK1 = 0
 		IsReset = True
-		MyFilter.Reset()
+		'MyFilter.Reset()
 		MyFilter.ProcessSample(0.0) ' Initialize the filter with a sample of 0	
 	End Sub
 
@@ -58,7 +56,6 @@ Public Class FilterLPButterworth
 			FilterValueLast = Value
 			IsReset = False
 		End If
-		FilterValueLastK1 = FilterValueLast
 		FilterValueLast = MyFilter.ProcessSample(Value)
 		ValueLastK1 = ValueLast
 		ValueLast = Value
