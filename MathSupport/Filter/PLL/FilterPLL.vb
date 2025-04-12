@@ -1,6 +1,5 @@
 ﻿
-Imports Newtonsoft.Json.Linq
-Imports YahooAccessData.MathPlus
+Imports System.Math
 Imports YahooAccessData.MathPlus.Filter
 
 ''' <summary>
@@ -37,13 +36,20 @@ Public Class FilterPLL
 	Private MyDampingFactor As Double
 	Private IsReset As Boolean
 	'note we cannot create another PLL filter without causing stack overflow
-	Private MyFilterForError As FilterExp
+	Private MyFilterForError As FilterExpPredict
 
 	Public Sub New(ByVal FilterRate As Double, Optional DampingFactor As Double = 1.0)
 		Dim ThisFilterRateMinimum As Double
 		Dim FreqDigital As Double
 		Dim SamplingPeriod As Double
 		Dim FrequencyNaturel As Double
+		'Here using special character to better understand the code that follow
+		Dim This_Ts As Double = 1.0    'Sampling rate Is 1 day by Default in all that base code 
+		Dim This_fₙ As Double
+		Dim This_ωₙ As Double
+		Dim This_Ω As Double
+
+		'the ADPLL need the natural frequency of the filter. 
 
 		MyFilterRate = FilterRate
 		MyDampingFactor = DampingFactor
@@ -78,19 +84,16 @@ Public Class FilterPLL
 
 		'Seek also:https://en.wikipedia.org/wiki/Low-pass_filter
 		'B = 1 - A
-
-
-		FreqDigital = 1 / (Math.PI * MyFilterRate)
+		FreqDigital = 1 / (Math.PI * MyFilterRate)  'Digital Frequency: Ω = ω × T
 		C = MyVCOPeriod
 		C2 = 2 * MyDampingFactor * (2 * Math.PI) * FreqDigital
 
 		'see DPLL_Detailed_Frequency_Response_Analysis_1.pdf for explanation
-		FreqDigital = 1.0  '(Sampling rate Is 1.0 day by Default))
-		SamplingPeriod = 1 / FreqDigital
-		FrequencyNaturel = 1 / MyFilterRate
-		'C2 = 2 * MyDampingFactor * (2 * Math.PI) * FreqDigital
-		C2 = 2 * MyDampingFactor * (2 * Math.PI * FrequencyNaturel) * SamplingPeriod / Math.PI
-
+		'FreqDigital = 1.0  '(Sampling rate Is 1.0 Sample/day by Default))
+		'SamplingPeriod = 1 / FreqDigital
+		'FrequencyNaturel = 1 / MyFilterRate
+		''C2 = 2 * MyDampingFactor * (2 * Math.PI) * FreqDigital
+		'C2 = 2 * MyDampingFactor * (2 * Math.PI * FrequencyNaturel) * SamplingPeriod / Math.PI
 
 		C1 = (C2 ^ 2) / (4 * (MyDampingFactor ^ 2))
 		'check stability
@@ -100,7 +103,7 @@ Public Class FilterPLL
 		End If
 		MySignalDelta = 0
 		MyErrork0 = 0
-		MyFilterForError = New FilterExp(FilterRate:=MyFilterRate)
+		MyFilterForError = New FilterExpPredict(FilterRate:=MyFilterRate)
 		IsReset = True
 	End Sub
 
@@ -139,77 +142,6 @@ Public Class FilterPLL
 		Return MyFilterValueLast
 	End Function
 
-	Public Function FilterRun(Value As Double, FilterPLLDetector As IFilterPLLDetector) As Double Implements IFilterRun.FilterRun
-
-		If FilterPLLDetector Is Nothing Then
-			Throw New InvalidConstraintException("FilterPLLDetector is not initialized...")
-		End If
-		If IsReset Then
-			'initialization
-			'initialize the loop with the first time sample
-			'this is to minimize the PLL tracking error
-			MyFilterValuek0 = FilterPLLDetector.ValueInit
-			'MyRefValue is the first reference sample value and never change annymore
-			MyRefValue = MyFilterValuek0
-			MyFilterValueLast = FilterPLLDetector.ValueOutput(Value, MyFilterValuek0)
-			MyVCOk0 = 0
-			IsReset = False
-		End If
-		Dim ThisNumberLoop As Integer = 0
-		Dim ThisValueStart As Double = FilterPLLDetector.ValueOutput(Value, MyFilterValuek0)
-		Dim ThisValueStop As Double
-		Do
-			'If Me.Count >= 100 And Me.Tag = "PriceFilterLowPassPLL" Then
-			'	If ThisFilterPredictionGainYearly = 0.0 Then
-			'		ThisFilterPredictionGainYearly = ThisFilterPredictionGainYearly
-			'	End If
-			'End If
-
-			ThisNumberLoop = ThisNumberLoop + 1
-			MySignalDelta = FilterPLLDetector.RunErrorDetector(Value, MyFilterValuek0)
-			'ignore the error and hold the output if the status is false
-			If FilterPLLDetector.Status = False Then Exit Do
-			'calculate the filter loop parameters
-			MyErrork1 = MyErrork0
-			MyErrork0 = (C1 * MySignalDelta) + MyErrork1
-			MyFilterError = (C2 * MySignalDelta) + MyErrork1
-			'calculate the integrator parameters
-			MyVCOk2 = MyVCOk1
-			MyVCOk1 = MyVCOk0
-			MyVCOk0 = C + MyFilterError + MyVCOk1
-			If FilterPLLDetector.IsMaximum Then
-				MyVCOk0 = WaveForm.SignalLimit(MyVCOk0, FilterPLLDetector.Maximum)
-				'If MyVCOk0 > FilterPLLDetector.Maximum Then
-				'Exit Do
-				'MyVCOk0 = FilterPLLDetector.Maximum
-
-				'End If
-			End If
-			If FilterPLLDetector.IsMinimum Then
-				'If MyVCOk0 < FilterPLLDetector.Minimum Then
-				MyVCOk0 = WaveForm.SignalLimit(MyVCOk0, -FilterPLLDetector.Minimum)
-				'End If
-			End If
-			'in this implementation MyFilterError is the instantaneous slope of the signal output
-			MyFilterValuek2 = MyFilterValuek1
-			MyFilterValuek1 = MyFilterValuek0
-			'MyFilterValuek0 is the next signal predicted value for the next sample
-			MyFilterValuek0 = MyRefValue + MyVCOk0
-			If FilterPLLDetector.ToErrorLimit > 0 Then
-				If Math.Abs(MySignalDelta) < FilterPLLDetector.ToErrorLimit Then
-					'exit but only if we run for at least the filter rate
-					If ThisNumberLoop > Me.Rate Then
-						Exit Do
-					End If
-				End If
-			End If
-		Loop Until ThisNumberLoop >= FilterPLLDetector.ToCount
-		ThisValueStop = FilterPLLDetector.ValueOutput(Value, MyFilterValuek0)
-		FilterPLLDetector.RunConvergence(ThisNumberLoop, ThisValueStart, ThisValueStop)
-		MyFilterValueLast = ThisValueStop
-		Return MyFilterValueLast
-	End Function
-
 	Public ReadOnly Property FilterLast As Double Implements IFilterRun.FilterLast
 		Get
 			Return MyFilterValueLast
@@ -225,6 +157,12 @@ Public Class FilterPLL
 	Public Sub Reset() Implements IFilterRun.Reset
 		IsReset = True
 	End Sub
+
+	Public ReadOnly Property FilterDetails As String Implements IFilterRun.FilterDetails
+		Get
+			Return $"{Me.GetType().Name}({MyFilterRate},{MyDampingFactor})"
+		End Get
+	End Property
 
 	Public ReadOnly Property FilterValuek0 As Double
 		Get
@@ -431,4 +369,123 @@ Public Class FilterPLL
 	End Function
 
 #End Region
+
+	''' <summary>
+	''' Simulates a unit step input to the FilterPLL and prints analysis to console.
+	''' </summary>
+	Public Shared Sub TestUnitStepResponse()
+		Dim pll As New FilterPLL(FilterRate:=20, DampingFactor:=1.0)
+		pll.Reset()
+
+		Dim response As New List(Of Double)
+		For i = 0 To 50
+			response.Add(pll.FilterRun(1.0))
+		Next
+
+		StepResponseAnalyzer.AnalyzeStepResponse(response, samplingInterval:=1.0)
+	End Sub
+
 End Class
+
+Module StepResponseAnalyzer
+
+	''' <summary>
+	''' Should not be use if the damping factor is too close to one 
+	''' </summary>
+	''' <param name="signal"></param>
+	''' <param name="samplingInterval"></param>
+	Public Sub AnalyzeStepResponse(signal As List(Of Double), samplingInterval As Double)
+		If signal Is Nothing OrElse signal.Count < 5 Then
+			Console.WriteLine("Signal too short for analysis.")
+			Return
+		End If
+
+		Dim finalValue As Double = signal.Last()
+		Dim peakValue As Double = signal.Max()
+		Dim peakIndex As Integer = signal.IndexOf(peakValue)
+		Dim timeToPeak As Double = peakIndex * samplingInterval
+
+		Dim overshoot As Double = (peakValue - finalValue) / finalValue
+
+		' Estimate damping factor (zeta)
+		Dim zeta As Double = 0
+		If overshoot > 0 AndAlso overshoot < 1 Then
+			Dim lnMp As Double = Log(overshoot)
+			zeta = -lnMp / Sqrt(Math.PI ^ 2 + lnMp ^ 2)
+		End If
+
+		' Estimate natural frequency (omega_n)
+		Dim omega_n As Double = 0
+		If zeta > 0 AndAlso zeta < 1 Then
+			omega_n = Math.PI / (timeToPeak * Sqrt(1 - zeta ^ 2))
+		End If
+
+		' Print results
+		Console.WriteLine($"Estimated Final Value: {finalValue:F4}")
+		Console.WriteLine($"Peak Value: {peakValue:F4}")
+		Console.WriteLine($"Time to Peak: {timeToPeak:F4} s")
+		Console.WriteLine($"Overshoot: {overshoot:P2}")
+		Console.WriteLine($"Estimated ζ (Damping): {zeta:F4}")
+		Console.WriteLine($"Estimated ωₙ (rad/s): {omega_n:F4}")
+		Console.WriteLine($"Estimated fₙ (Hz): {omega_n / (2 * PI):F4}")
+	End Sub
+
+
+	Public Sub TestPhaseShift()
+		' Parameters
+		Dim frequency As Double = 0.1  ' Hz
+		Dim samplingRate As Double = 1.0  ' Hz
+		Dim omega As Double = 2 * PI * frequency
+		Dim dt As Double = 1.0 / samplingRate
+		Dim totalTime As Double = 100
+		Dim steps As Integer = CInt(totalTime / dt)
+
+		' Filter under test
+		Dim pll As New FilterPLL(FilterRate:=7, DampingFactor:=1.0)
+		pll.Reset()
+
+		' Track last sign for zero-crossing detection
+		Dim lastInput As Double = 0
+		Dim lastOutput As Double = 0
+		Dim inputPhaseZeroTime As Double = -1
+		Dim outputPhaseZeroTime As Double = -1
+		Dim found As Boolean = False
+
+		For i As Integer = 0 To steps
+			Dim t As Double = i * dt
+			Dim inputSignal As Double = Sin(omega * t)
+			Dim outputSignal As Double = pll.FilterRun(inputSignal)
+
+			' Detect input zero-crossing (rising)
+			If lastInput < 0 AndAlso inputSignal >= 0 AndAlso inputPhaseZeroTime < 0 Then
+				inputPhaseZeroTime = t
+			End If
+
+			' Detect output zero-crossing (rising)
+			If lastOutput < 0 AndAlso outputSignal >= 0 AndAlso outputPhaseZeroTime < 0 Then
+				outputPhaseZeroTime = t
+				found = True
+			End If
+
+			lastInput = inputSignal
+			lastOutput = outputSignal
+
+			If found Then Exit For
+		Next
+
+		If found Then
+			Dim deltaT As Double = outputPhaseZeroTime - inputPhaseZeroTime
+			Dim phaseRadians As Double = 2 * PI * frequency * deltaT
+			Dim phaseDegrees As Double = phaseRadians * 180 / PI
+
+			Console.WriteLine($"Input zero at t = {inputPhaseZeroTime:F4} s")
+			Console.WriteLine($"Output zero at t = {outputPhaseZeroTime:F4} s")
+			Console.WriteLine($"Phase delay: {phaseDegrees:F2} degrees ({phaseRadians:F2} rad)")
+		Else
+			Console.WriteLine("Could not detect both zero crossings.")
+		End If
+
+		Console.ReadKey()
+	End Sub
+End Module
+

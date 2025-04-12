@@ -22,15 +22,17 @@ Public Class StatisticLCR
 		End Get
 	End Property
 
+	Public ReadOnly Property FilterDetails As String Implements IFilterRun.FilterDetails
+		Get
+			Throw New NotImplementedException()
+		End Get
+	End Property
+
 	Public Sub Reset() Implements IFilterRun.Reset
 		Throw New NotImplementedException()
 	End Sub
 
 	Public Function FilterRun(Value As Double) As Double Implements IFilterRun.FilterRun
-		Throw New NotImplementedException()
-	End Function
-
-	Public Function FilterRun(Value As Double, FilterPLLDetector As IFilterPLLDetector) As Double Implements IFilterRun.FilterRun
 		Throw New NotImplementedException()
 	End Function
 End Class

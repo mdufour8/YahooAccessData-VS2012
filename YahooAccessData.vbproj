@@ -211,6 +211,7 @@
     <Compile Include="FileSupport\TimePeriodOverlap.vb" />
     <Compile Include="FileSupport\TreeNodeList.vb" />
     <Compile Include="MathSupport\Filter\Butterworth\FilterLPButterworth.vb" />
+    <Compile Include="MathSupport\Filter\Exponential\FilterDoubleExp.vb" />
     <Compile Include="MathSupport\Filter\Statistic\FilterStatisticQueue.vb" />
     <Compile Include="MathSupport\Filter\Statistic\StatisticalData.vb" />
     <Compile Include="MathSupport\Filter\Statistic\FilterStatistical.vb" />
@@ -370,6 +371,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Information\" />
+    <Folder Include="MathSupport\Filter\PLL\Documentation\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

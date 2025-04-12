@@ -28,7 +28,7 @@ Namespace MathPlus.Filter
     Private MyToErrorLimit As Double
     Private MyValueInit As Double
     Private MyValueOutput As Double
-		Private MyFilterPLL As FilterPLL
+		Private MyFilterPLL As FilterLowPassPLL
 		Private MyListOfConvergence As IList(Of Double)
     Private MyListOfPriceMedianNextDayLow As IList(Of Double)
     Private MyListOfPriceMedianNextDayHigh As IList(Of Double)
@@ -55,7 +55,7 @@ Namespace MathPlus.Filter
       End If
       'this is working but leave it to false for now
       IsStochasticProbabilityHisteresis = False
-			MyFilterPLL = New FilterPLL(FilterRate:=7, DampingFactor:=1.0)
+			MyFilterPLL = New FilterLowPassPLL(FilterRate:=7, DampingFactor:=1.0)
 			MyListOfConvergence = New List(Of Double)
       MyRateForVolatility = CInt(FilterPLLDetectorForVolatilitySigma.VolatilityRate)
       'MyFilterVolatilityForPriceStochasticMedian = New FilterVolatilityYangZhang(MyRateForVolatility, FilterVolatility.enuVolatilityStatisticType.Exponential)
@@ -172,7 +172,7 @@ Namespace MathPlus.Filter
       MyListOfPriceMedianNextDayHigh.Add(ThisStockPriceHighValue)
       If IsStochasticProbabilityHisteresis Then
 				'note IsStochasticProbabilityHisteresis is not normally being use yet
-				MyFilterPLL.FilterRun(Value:=MyPriceForMidStochastic, FilterPLLDetector:=Me)
+				MyFilterPLL.Filter(Value:=MyPriceForMidStochastic, FilterPLLDetector:=Me)
 				MyListOfValue.Add(MyFilterPLL.FilterLast)
 			Else
 				MyListOfValue.Add(MyPriceForMidStochastic)

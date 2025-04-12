@@ -11,6 +11,7 @@ Imports YahooAccessData.MathPlus.Filter
 ''' </summary>
 Public Class FilterExpPredict
 	Implements IFilterRun
+
 	Implements IFilter
 	Implements IFilterState
 
@@ -98,7 +99,7 @@ Public Class FilterExpPredict
 		IsReset = True
 	End Sub
 
-	Public Function FilterRun(Value As Double) As Double Implements IFilterRun.FilterRun
+	Public Overridable Function FilterRun(Value As Double) As Double Implements IFilterRun.FilterRun
 		Dim Ap As Double
 		Dim Bp As Double
 		Dim Result As Double
@@ -117,7 +118,7 @@ Public Class FilterExpPredict
 		FilterValueLastK1 = FilterValueLast
 		Result = MyFilter.Filter(Value)
 		ResultY = MyFilterY.Filter(Result)
-		Ap = (2 * Result) - ResultY
+		Ap = Result + (Result - ResultY)
 		Bp = ABRatio * (Result - ResultY)
 		MyFilterDeltaALast = Ap - MyFilterALast
 		MyFilterDeltaBLast = Bp - MyFilterBLast
@@ -154,10 +155,6 @@ Public Class FilterExpPredict
 		ValueLastK1 = ValueLast
 		ValueLast = Value
 		Return FilterValueLast
-	End Function
-
-	Private Function IFilterRun_FilterRun(Value As Double, FilterPLLDetector As IFilterPLLDetector) As Double Implements IFilterRun.FilterRun
-		Throw New NotImplementedException()
 	End Function
 
 	Public ReadOnly Property FilterLast As Double Implements IFilterRun.FilterLast
@@ -227,6 +224,13 @@ Public Class FilterExpPredict
 	Public Sub Reset() Implements IFilterRun.Reset
 		IsReset = True
 	End Sub
+
+	Public ReadOnly Property FilterDetails As String Implements IFilterRun.FilterDetails
+		Get
+			Return $"{Me.GetType().Name}({MyFilterRate},{MyFilter.GetType().Name}({MyFilter.Rate}),{MyFilterY.GetType().Name}({MyFilterY.Rate}))"
+		End Get
+	End Property
+
 
 	Public Overrides Function ToString() As String
 		Return $"{Me.GetType().Name}: FilterRate={MyFilterRate},{Me.FilterLast}"

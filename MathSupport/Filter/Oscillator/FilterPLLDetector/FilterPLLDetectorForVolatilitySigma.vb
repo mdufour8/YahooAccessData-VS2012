@@ -35,7 +35,7 @@ Namespace MathPlus.Filter
 		Private MyCountOfPLLRun As Integer
 		Private MyStatus As Boolean
 		Private MyVolatilityAverage As Double
-		Private MyFilterPLL As FilterPLL
+		Private MyFilterPLL As FilterLowPassPLL
 		Private MyDetectorBandExcessBalanceSum As Double
 		Private MyDetectorBalanceLast As Double
 		Private MyMaximum As Double
@@ -66,7 +66,7 @@ Namespace MathPlus.Filter
 			MyFilterExpForQueuePLE = New FilterExp(FilterRate:=MyRate)
 			MyFilterExpForQueuePLEVolPlus = New FilterExp(FilterRate:=MyRate)
 			MyFilterExpForQueuePLEVolMinus = New FilterExp(FilterRate:=MyRate)
-			MyFilterPLL = New FilterPLL(FilterRate:=7, DampingFactor:=1.0)
+			MyFilterPLL = New FilterLowPassPLL(FilterRate:=7, DampingFactor:=1.0)
 			MyListOfConvergence = New List(Of Double)
 			MyListOfProbabilityOfExcess = New List(Of Double)
 			MyListOfProbabilityOfExcessBalance = New List(Of Double)
@@ -239,7 +239,7 @@ Namespace MathPlus.Filter
 			MyToCountLimitSelected = MyToCountLimit
 			MyQueueForSigmaStatisticDaily.Enqueue(StockPriceVolatilityPredictionBand)
 
-			ThisVolatilityDelta = MyFilterPLL.FilterRun(StockPriceVolatilityPredictionBand.Volatility, Me)
+			ThisVolatilityDelta = MyFilterPLL.Filter(StockPriceVolatilityPredictionBand.Volatility, Me)
 			MyListOfValueOutput.Add(ThisVolatilityDelta)
 			Me.IFilterPLLDetector_RunErrorDetector(StockPriceVolatilityPredictionBand.Volatility, ThisVolatilityDelta)
 			StockPriceVolatilityPredictionBand.Refresh(VolatilityDelta:=ThisVolatilityDelta)

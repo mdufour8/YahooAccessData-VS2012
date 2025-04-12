@@ -1,120 +1,94 @@
-﻿Imports YahooAccessData.MathPlus.Filter
-Imports MathNet.Filtering
-Imports MathNet.Filtering.IIR
+﻿Imports YahooAccessData.MathPlus
+Imports YahooAccessData.MathPlus.Filter
 
-Public Class FilterLPButterworth
+''' <summary>
+''' A second-order exponential filter designed for smoothing and stability (no overshoot).
+''' </summary>
+Public Class FilterDoubleExp
 	Implements IFilterRun
 	Implements IFilter
-	'Implements IFilterState
+	Implements IFilterState
 
-	Private MyRate As Integer
-	Private MyFilterRate As Double
-	Private FilterValueLast As Double
-	Private ValueLast As Double
-	Private ValueLastK1 As Double
-	Private MyFilter As OnlineFilter
-	Private IsReset As Boolean
+	Private ReadOnly FirstFilter As FilterExp
+	Private ReadOnly SecondFilter As FilterExp
 
 	''' <summary>
-	''' Implements a Butterworth Low Pass filter with e 3 dB bandwith of 1/FilterRate
-	''' The filter is implemented using the MathNet library.
-	''' The filter is a second-order low-pass Butterworth filter.
-	''' The filter is initialized with a cutoff frequency of 1/FilterRate Hz and a sample rate of 1 sample.
-	''' The filter can be reset to its initial state.
+	''' Initializes a new instance of the FilterDoubleExp class with the specified filter rate.
 	''' </summary>
+	''' <param name="FilterRate">The filter rate for both internal filters.</param>
 	Public Sub New(ByVal FilterRate As Double)
-
-		Throw New NotImplementedException
-
-		If FilterRate < 1 Then FilterRate = 2
-		MyFilterRate = FilterRate
-		MyRate = CInt(MyFilterRate)
-
-		' Define the sample rate and the desired cutoff frequency
-		Dim sampleRate As Double = 1.0 ' Sample rate in Hz  
-		Dim cutoffFrequency As Double = 1 / MyFilterRate ' Cutoff frequency in Hz
-
-		' Create a second-order low-pass Butterworth filter
-		MyFilter = OnlineIirFilter.CreateLowpass(
-				mode:=ImpulseResponse.Infinite,
-				sampleRate:=sampleRate,
-				cutoffRate:=cutoffFrequency,
-				order:=2) ' Order of the filter
-
-
-		FilterValueLast = 0
-		ValueLast = 0
-		ValueLastK1 = 0
-		IsReset = True
-		'MyFilter.Reset()
-		MyFilter.ProcessSample(0.0) ' Initialize the filter with a sample of 0	
+		' Create two instances of the single exponential filter
+		FirstFilter = New FilterExp(FilterRate)
+		SecondFilter = New FilterExp(FilterRate)
 	End Sub
 
+	''' <summary>
+	''' Runs the double exponential filter by passing the value through two sequential filters.
+	''' </summary>
+	''' <param name="Value">The input value to filter.</param>
+	''' <returns>The filtered value after two passes.</returns>
 	Public Function FilterRun(Value As Double) As Double Implements IFilterRun.FilterRun
-		If IsReset Then
-			'initialization
-			FilterValueLast = Value
-			IsReset = False
-		End If
-		FilterValueLast = MyFilter.ProcessSample(Value)
-		ValueLastK1 = ValueLast
-		ValueLast = Value
-		Return FilterValueLast
+		' Pass the value through the first filter, then the second filter
+		Dim firstPass As Double = FirstFilter.FilterRun(Value)
+		Return SecondFilter.FilterRun(firstPass)
 	End Function
 
+	''' <summary>
+	''' Gets the last filtered value from the second filter.
+	''' </summary>
 	Public ReadOnly Property FilterLast As Double Implements IFilterRun.FilterLast
 		Get
-			Return FilterValueLast
+			Return SecondFilter.FilterLast
 		End Get
 	End Property
 
-	Public ReadOnly Property FilterRate() As Double Implements IFilterRun.FilterRate
+	''' <summary>
+	''' Gets the filter rate used by the filters.
+	''' </summary>
+	Public ReadOnly Property FilterRate As Double Implements IFilterRun.FilterRate
 		Get
-			Return MyFilterRate
+			Return FirstFilter.FilterRate
 		End Get
 	End Property
 
+	''' <summary>
+	''' Resets both internal filters.
+	''' </summary>
 	Public Sub Reset() Implements IFilterRun.Reset
-		IsReset = True
+		FirstFilter.Reset()
+		SecondFilter.Reset()
 	End Sub
 
+	''' <summary>
+	''' Gets the details of the filter, including the filter rate.
+	''' </summary>
 	Public ReadOnly Property FilterDetails As String Implements IFilterRun.FilterDetails
 		Get
-			Throw New NotImplementedException()
+			Return $"{Me.GetType().Name}({FirstFilter.FilterRate})"
 		End Get
 	End Property
 
-	'#Region "IFilterState"
-	'	Public Function ASIFilterState() As IFilterState Implements IFilterState.ASIFilterState
-	'		Return Me
-	'	End Function
+#Region "IFilterState"
+	Public Function ASIFilterState() As IFilterState Implements IFilterState.ASIFilterState
+		Return Me
+	End Function
 
-	'	Private MyQueueForState As New Queue(Of Double)
-	'	Private Sub IFilterState_ReturnPrevious() Implements IFilterState.ReturnPrevious
-	'		Try
-	'			If MyQueueForState.Count = 0 Then Return
-	'			ValueLast = MyQueueForState.Dequeue
-	'			ValueLastK1 = MyQueueForState.Dequeue
-	'			FilterValueLast = MyQueueForState.Dequeue
-	'			FilterValueLastK1 = MyQueueForState.Dequeue
-	'		Catch ex As InvalidOperationException
-	'			' Handle error, perhaps log it or rethrow with additional info
-	'			Throw New Exception($"Failed to restore state from queue in {Me.GetType().Name}. Queue may be empty or corrupted.", ex)
-	'		End Try
-	'	End Sub
+	Private MyQueueForState As New Queue(Of Double)
+	Private Sub IFilterState_ReturnPrevious() Implements IFilterState.ReturnPrevious
+		FirstFilter.ASIFilterState.ReturnPrevious()
+		SecondFilter.ASIFilterState.ReturnPrevious()
+	End Sub
 
-	'	Private Sub IFilterState_Save() Implements IFilterState.Save
-	'		MyQueueForState.Enqueue(ValueLast)
-	'		MyQueueForState.Enqueue(ValueLastK1)
-	'		MyQueueForState.Enqueue(FilterValueLast)
-	'		MyQueueForState.Enqueue(FilterValueLastK1)
-	'	End Sub
-	'#End Region
+	Private Sub IFilterState_Save() Implements IFilterState.Save
+		FirstFilter.ASIFilterState.Save()
+		SecondFilter.ASIFilterState.Save()
+	End Sub
+#End Region
 
 #Region "IFilter"
 	Private ReadOnly Property IFilter_Rate As Integer Implements IFilter.Rate
 		Get
-			Return CInt(MyFilterRate)
+			Return DirectCast(FirstFilter, IFilter).Rate
 		End Get
 	End Property
 
@@ -221,7 +195,7 @@ Public Class FilterLPButterworth
 	End Function
 
 	Public Overrides Function ToString() As String Implements IFilter.ToString
-		Return $"{Me.GetType().Name}: FilterRate={MyFilterRate},{Me.FilterLast}"
+		Return $"{Me.GetType().Name}: FilterRate={IFilter_Rate},{Me.FilterLast}"
 	End Function
 #End Region
 End Class
