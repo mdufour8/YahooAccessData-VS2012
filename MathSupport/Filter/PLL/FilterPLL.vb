@@ -82,15 +82,16 @@ Public Class FilterPLL
 		'this result come from the fact that the delay for a square window moving average is given by (N+1)/2 and 1/Alpha for an exponential filter
 		'A = CDbl((2 / (MyFilterRate + 1)))
 
-		'Seek also:https://en.wikipedia.org/wiki/Low-pass_filter
-		'B = 1 - A
+		Dim Ts As Double = 1.0   '1 Sample per day by default
+		Dim Fs As Double = 1.0 / Ts
+
 		FreqDigital = 1 / (Math.PI * MyFilterRate)  'Digital Frequency: Ω = ω × T
 		C = MyVCOPeriod
 		C2 = 2 * MyDampingFactor * (2 * Math.PI) * FreqDigital
 
 		'see DPLL_Detailed_Frequency_Response_Analysis_1.pdf for explanation
 		'FreqDigital = 1.0  '(Sampling rate Is 1.0 Sample/day by Default))
-		'SamplingPeriod = 1 / FreqDigital
+
 		'FrequencyNaturel = 1 / MyFilterRate
 		''C2 = 2 * MyDampingFactor * (2 * Math.PI) * FreqDigital
 		'C2 = 2 * MyDampingFactor * (2 * Math.PI * FrequencyNaturel) * SamplingPeriod / Math.PI

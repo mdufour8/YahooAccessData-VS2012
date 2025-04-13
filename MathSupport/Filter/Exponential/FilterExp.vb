@@ -22,44 +22,53 @@ Public Class FilterExp
 		MyFilterRate = FilterRate
 		MyRate = CInt(MyFilterRate)
 
-		'this is the factor A that will give the same bandwidth than a moving average with a flat windows of FilterRate points
-		'see https://en.wikipedia.org/wiki/Exponential_smoothing  section: Comparison with moving average
-		'this result come from the fact that the delay for a square window moving average is given by (N+1)/2 and 1/Alpha for an exponential filter
-		'Note this is the noise equivalent bandwidth (NEB), not the 3 dB bandwidth. The NEB is the bandwidth of a brick-wall filter
-		'that would let the same amount of noise through as the filter in question.
-		'see the explication in the file included in this directory 'IIR_Filter_NEB_vs_3dB_Bandwidth_FINAL.pdf'
+		' The factor A is calculated to provide the same bandwidth as a moving average with a flat window of FilterRate points.
+		' For more details, see the "Comparison with moving average" section in:
+		' https://en.wikipedia.org/wiki/Exponential_smoothing.
+		' 
+		' This result is based on the fact that the delay for a square window moving average is given by (N+1)/2,
+		' while for an exponential filter, it is given by 1/Alpha (A). 
+		' Note that this is the Noise Equivalent Bandwidth (NEB), not the 3 dB bandwidth. 
+		' The NEB represents the bandwidth of a brick-wall filter that allows the same amount of noise to pass through
+		' as the exponential filter in question. For further explanation, refer to the document:
+		' 'IIR_Filter_NEB_vs_3dB_Bandwidth_FINAL.pdf' included in this directory.
+
+		' The following formula originates from the technical comparison between exponential smoothing and standard moving averages:
+		' - Both exponential smoothing and moving averages introduce a lag relative to the input data.
+		' - For symmetrical kernels (e.g., moving averages or Gaussian filters), this lag can be corrected by shifting the result
+		'   by half the window length. However, it is unclear how appropriate this correction would be for exponential smoothing.
+		' - Both methods have a similar distribution of forecast error when Alpha (A) = 2 / (k + 1), where k is the number of past
+		'   data points considered in the moving average.
+		' - The key difference is that exponential smoothing considers all past data, while moving averages only consider the last k points.
+		' - Computationally, exponential smoothing is more efficient, as it only requires the most recent forecast value to be stored,
+		'   whereas moving averages require storing the past k data points or the data point at lag k+1.
+
+		' The term A is not directly related to the 3 dB bandwidth or the Noise Equivalent Bandwidth (NEB).
+		' Instead, it corresponds to the equivalent number of points that produce a similar result statistically to a flat moving average
+		' with a fixed number of points. The formula for A is:
+		' A = 2 / (FilterRate + 1)
+		' For example, when FilterRate = 10, A = 0.1818.
+
+		' However, given Alpha (A), the 3 dB bandwidth can be approximately calculated as:
+		' f_3dB = (Sampling Frequency * ln(1 - A)) / (2 * PI),
+		' where A is the factor for the previous value.
+		' The 3 dB bandwidth is the frequency at which the power of the output signal is half that of the input signal.
+		'Note it's value can also be calculated exactly as:
+		'ω_3dB = ArcCos((A^2+2A-2)/2(A-1))
 
 
-		'THe formula that follow originate from this technical aspect:
-		'Comparison with standard moving average
-		'Exponential smoothing And moving average have similar defects Of introducing a lag relative To the input data.
-		'While this can be corrected by shifting the result by half the window length For a symmetrical kernel, such As a
-		'moving average Or gaussian, it Is unclear how appropriate this would be for exponential smoothing.
-		'They (moving average with symmetrical kernels) also both have roughly the same distribution of forecast error
-		'when α = 2/(k + 1) where k Is the number of past data points in consideration of moving average. They differ in that
-		'exponential smoothing takes into account all past data, whereas moving average only takes into account k past data points.
-		'Computationally speaking, they also differ in that moving average requires that the past k data points,
-		'Or the data point at lag k + 1 plus the most recent forecast value, to be kept, whereas exponential
-		'smoothing only needs the most recent forecast value to be kept.[11]
+		' The equivalent Noise Bandwidth (NEB) is given by:
+		' ω_neb = PI * (A / (2 - A)). for largefilterRate > this ratio ω_neb/ω_3dB is ~PI/2.
 
+		' Another important aspect is the time or number of samples required to reach 63% of the final value for a unit step input.
+		' This is known as the Time Constant and is calculated as:
+		' Time Constant = Sampling Period / ln(1 - A).
+		' To estimate the number of samples required to reach 95% of the final value, use the formula:
+		' Number of Samples = 3 * Time Constant.
 
-		'So the following term is not related to 3 dB bandwidth nor to the noise equivalent bandwidth (NEB)
-		'It is related to the equivalent number of point than give a similar result that a flat moving average with a fixed number of point.
-		A = CDbl((2 / (MyFilterRate + 1)))   'for MyFilterRate=10 this give A=0.1818
-
-		'however given the Alpha the 3 dB badwidth is approximativly given by:
-		'Ferquency 3dB = (Sampling Frequency*ln(1-A)/2PI
-		'where A is the factor for the previous value	
-
-		'The equivalent noise Bandwidth is given by PI*(A/(2-A))
-
-		'Another aspect to consider is time or number of sample to reach the 63% of the final value	for a unit step input.
-		'This is given by the formula: Time Constant = Sampling Period/ln(1-A). This time constant value can be use to estimate the number of sample 
-		'requires to reach 95% of the final value of the unit step. This is given by the formula: 3 * Time Constant.	
-
-
-		'Seek also:https://en.wikipedia.org/wiki/Low-pass_filter
-		' B = 1 - A is the factor for the previous value
+		' For additional context, see: https://en.wikipedia.org/wiki/Low-pass_filter.
+		' Note that B = 1 - A is the factor applied to the previous value.
+		A = 2 / (FilterRate + 1)
 		B = 1 - A
 		FilterValueLast = 0
 		FilterValueLastK1 = 0
@@ -67,6 +76,40 @@ Public Class FilterExp
 		ValueLastK1 = 0
 		IsReset = True
 	End Sub
+
+	''' <summary>
+	''' Return the 3 dB bandwidth for a given filter rate.
+	''' The 3 dB bandwidth is the frequency at which the power of the output signal is half that of the input signal.
+	''' The formula used is:
+	''' α=2/(FilterRate+1)
+	''' f_3dB = (Sampling Frequency * ln(1 - α)) / (2 * PI),
+	''' where α is the filetring factor for the most recent imput value to the filter.
+	''' f_3dB = (Sampling Frequency * -ln(1 - α)) / (2 * PI),
+	''' </summary>
+	''' <param name="FilterRate"></param>
+	''' <returns>The 3dB cut-off frequency for a given number of samples. The unit is in Cycle/Sample </returns>
+	Shared Function GetFrequency3dB(FilterRate As Double) As Double
+		' This function calculates the 3 dB bandwidth for a given filter rate.
+		Dim _α As Double = 2 / (FilterRate + 1)
+		Return Math.Log(1 - _α) / (2 * Math.PI)
+	End Function
+
+	''' <summary>
+	''' Get the response time for a given filter rate.
+	''' The response time is the number of samples for the filter to reach 95% of it final final when subject to a Unit Step signal input.
+	''' The formula used is:
+	''' α=2/(FilterRate+1)
+	''' t = -ln(1 - 0.95) / ln(1 - α)
+	''' where α is the fitering factor for the most recent imput value to the filter.
+	''' t = -ln(1 - 0.95) / ln(1 - α)
+	''' Note that another relation is given approximativly by fc=2/(Response Time at 95%</summary>
+	''' <param name="FilterRate"></param>
+	''' <returns>The response time for a given filter rate. The unit is in Sample </returns>
+	Shared Function GetResponseTime(FilterRate As Double) As Double
+		' This function calculates the 3 dB bandwidth for a given filter rate.
+		Dim _α As Double = 2 / (FilterRate + 1)
+		Return Math.Log(1 - 0.95) / Math.Log(1 - _α)
+	End Function
 
 	Public Function FilterRun(Value As Double) As Double Implements IFilterRun.FilterRun
 		If IsReset Then
