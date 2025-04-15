@@ -54,7 +54,7 @@ Public Class FilterExp
 		' where A is the factor for the previous value.
 		' The 3 dB bandwidth is the frequency at which the power of the output signal is half that of the input signal.
 		'Note it's value can also be calculated exactly as:
-		'ω_3dB = ArcCos((A^2+2A-2)/2(A-1))
+		'ω_3dB = ArcCos((A^2+2A-2)/2(A-1))t
 
 
 		' The equivalent Noise Bandwidth (NEB) is given by:

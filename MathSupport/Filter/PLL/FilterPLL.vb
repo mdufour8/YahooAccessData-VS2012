@@ -18,16 +18,10 @@ Public Class FilterPLL
 
 	Private MyVCOPeriod As Double
 
-	Private MyErrork0 As Double
-	Private MyErrork1 As Double
-	Private MyVCOk0 As Double
-	Private MyVCOk1 As Double
-	Private MyVCOk2 As Double
-	Private MyRefValue As Double
-	Private MyFilterValueLast As Double
-	Private MyFilterValuek0 As Double
-	Private MyFilterValuek1 As Double
-	Private MyFilterValuek2 As Double
+
+	Private MyError() As Double
+	Private MyVCO() As Double
+
 	Private ValueLast As Double
 	Private ValueLastK1 As Double
 	Private MySignalDelta As Double
@@ -47,6 +41,7 @@ Public Class FilterPLL
 		Dim This_Ts As Double = 1.0    'Sampling rate Is 1 day by Default in all that base code 
 		Dim This_fₙ As Double
 		Dim This_ωₙ As Double
+		Dim This_ωc As Double
 		Dim This_Ω As Double
 
 		'the ADPLL need the natural frequency of the filter. 
@@ -57,10 +52,6 @@ Public Class FilterPLL
 		'If MyFilterRate < ThisFilterRateMinimum Then
 		'	MyFilterRate = ThisFilterRateMinimum
 		'End If
-		MyVCOPeriod = 0   'by default in this application
-		MyErrork1 = 0
-		MyFilterValuek2 = 0
-
 		'original code
 		'Let explain this relation:
 		'FreqDigital = 1 / (PI * MyFilterRate)
@@ -84,8 +75,20 @@ Public Class FilterPLL
 
 		Dim Ts As Double = 1.0   '1 Sample per day by default
 		Dim Fs As Double = 1.0 / Ts
+		Dim Ω = 2 * PI * MyFilterRate 'Digital Frequency: Ω = ω × T	
+
+
+		ReDim MyError(0 To 2)
+		ReDim MyVCO(0 To 2)
+		For I = 0 To MyError.Length - 1
+			MyError(I) = 0.0
+			MyVCO(I) = 0.0
+		Next
+		MyVCOPeriod = 0   'by default in this application
 
 		FreqDigital = 1 / (Math.PI * MyFilterRate)  'Digital Frequency: Ω = ω × T
+
+
 		C = MyVCOPeriod
 		C2 = 2 * MyDampingFactor * (2 * Math.PI) * FreqDigital
 
@@ -103,7 +106,6 @@ Public Class FilterPLL
 			Throw New Exception("Low pass PLL filter is not stable...")
 		End If
 		MySignalDelta = 0
-		MyErrork0 = 0
 		MyFilterForError = New FilterExpPredict(FilterRate:=MyFilterRate)
 		IsReset = True
 	End Sub
@@ -113,39 +115,34 @@ Public Class FilterPLL
 			'initialization
 			'initialize the loop with the first time sample
 			'this is to minimize the PLL tracking error
-			MyFilterValuek0 = Value
-			MyFilterValueLast = MyFilterValuek0
-			'MyRefValue is the first reference sample value and never change annymore
-			MyRefValue = Value
-			MyVCOk0 = Value
+			For I = 0 To MyError.Length - 1
+				MyError(I) = 0
+				MyVCO(I) = 0
+			Next
+			MyVCO(0) = Value
+			MyError(0) = 0
 			MyFilterForError.Reset()
 			IsReset = False
 		End If
 		'just the standard PLL here
-		MySignalDelta = Value - MyFilterValuek0
+		MySignalDelta = Value - MyVCO(0)
 		'calculate the filter loop parameters
-		MyErrork1 = MyErrork0
-		MyErrork0 = (C1 * MySignalDelta) + MyErrork1
-		MyFilterError = (C2 * MySignalDelta) + MyErrork1
+		MyError(1) = MyError(0)
+		MyError(0) = (C1 * MySignalDelta) + MyError(1)
+
+		MyFilterError = (C2 * MySignalDelta) + MyError(1)
 		MyFilterForError.FilterRun(MyFilterError)
 		'calculate the integrator parameters
-		MyVCOk2 = MyVCOk1
-		MyVCOk1 = MyVCOk0
-		MyVCOk0 = C + MyFilterError + MyVCOk1
-		'in this implementation MyFilterError is the instantaneous slope of the signal output
-		MyFilterValuek2 = MyFilterValuek1
-		MyFilterValuek1 = MyFilterValuek0
-
-		'MyFilterValuek0 is the next signal predicted value for the next input sample
-		MyFilterValuek0 = MyVCOk0
-		MyFilterValueLast = MyFilterValuek0
+		MyVCO(2) = MyVCO(1)
+		MyVCO(1) = MyVCO(0)
+		MyVCO(0) = C + MyFilterError + MyVCO(1)
 		ValueLast = Value
-		Return MyFilterValueLast
+		Return MyVCO(0)
 	End Function
 
 	Public ReadOnly Property FilterLast As Double Implements IFilterRun.FilterLast
 		Get
-			Return MyFilterValueLast
+			Return MyVCO(0)
 		End Get
 	End Property
 
@@ -167,25 +164,25 @@ Public Class FilterPLL
 
 	Public ReadOnly Property FilterValuek0 As Double
 		Get
-			Return MyFilterValuek0
+			Return MyVCO(0)
 		End Get
 	End Property
 
 	Public ReadOnly Property FilterValuek1 As Double
 		Get
-			Return MyFilterValuek1
+			Return MyVCO(1)
 		End Get
 	End Property
 
 	Public ReadOnly Property Errork0 As Double
 		Get
-			Return MyErrork0
+			Return MyError(0)
 		End Get
 	End Property
 
 	Public ReadOnly Property Errork1 As Double
 		Get
-			Return MyErrork1
+			Return MyError(1)
 		End Get
 	End Property
 
@@ -208,17 +205,11 @@ Public Class FilterPLL
 	Private Sub IFilterState_ReturnPrevious() Implements IFilterState.ReturnPrevious
 		Try
 			If MyQueueForState.Count = 0 Then Return
-			MyErrork0 = MyQueueForState.Dequeue
-			MyErrork1 = MyQueueForState.Dequeue
-			MyVCOk0 = MyQueueForState.Dequeue
-			MyVCOk1 = MyQueueForState.Dequeue
-			MyVCOk2 = MyQueueForState.Dequeue
-
-			MyRefValue = MyQueueForState.Dequeue
-			MyFilterValueLast = MyQueueForState.Dequeue
-			MyFilterValuek0 = MyQueueForState.Dequeue
-			MyFilterValuek1 = MyQueueForState.Dequeue
-			MyFilterValuek2 = MyQueueForState.Dequeue
+			MyError(0) = MyQueueForState.Dequeue
+			MyError(1) = MyQueueForState.Dequeue
+			MyVCO(0) = MyQueueForState.Dequeue
+			MyVCO(1) = MyQueueForState.Dequeue
+			MyVCO(2) = MyQueueForState.Dequeue
 			ValueLast = MyQueueForState.Dequeue
 			ValueLastK1 = MyQueueForState.Dequeue
 			MySignalDelta = MyQueueForState.Dequeue
@@ -230,18 +221,13 @@ Public Class FilterPLL
 	End Sub
 
 	Private Sub IFilterState_Save() Implements IFilterState.Save
-		MyQueueForState.Enqueue(MyErrork0)
-		MyQueueForState.Enqueue(MyErrork1)
+		MyQueueForState.Enqueue(MyError(0))
+		MyQueueForState.Enqueue(MyError(1))
 
-		MyQueueForState.Enqueue(MyVCOk0)
-		MyQueueForState.Enqueue(MyVCOk1)
-		MyQueueForState.Enqueue(MyVCOk2)
+		MyQueueForState.Enqueue(MyVCO(0))
+		MyQueueForState.Enqueue(MyVCO(1))
+		MyQueueForState.Enqueue(MyVCO(2))
 
-		MyQueueForState.Enqueue(MyRefValue)
-		MyQueueForState.Enqueue(MyFilterValueLast)
-		MyQueueForState.Enqueue(MyFilterValuek0)
-		MyQueueForState.Enqueue(MyFilterValuek1)
-		MyQueueForState.Enqueue(MyFilterValuek2)
 		MyQueueForState.Enqueue(ValueLast)
 		MyQueueForState.Enqueue(ValueLastK1)
 		MyQueueForState.Enqueue(MySignalDelta)
