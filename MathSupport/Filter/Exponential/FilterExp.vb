@@ -1,4 +1,5 @@
 ﻿Imports YahooAccessData.MathPlus.Filter
+Imports System.Numerics
 
 Public Class FilterExp
 	Implements IFilterRun
@@ -78,20 +79,18 @@ Public Class FilterExp
 	End Sub
 
 	''' <summary>
-	''' Return the 3 dB bandwidth for a given filter rate.
+	''' Return the 3 dB bandwidth for a given filter rate in rad/sec.
 	''' The 3 dB bandwidth is the frequency at which the power of the output signal is half that of the input signal.
 	''' The formula used is:
-	''' α=2/(FilterRate+1)
-	''' f_3dB = (Sampling Frequency * ln(1 - α)) / (2 * PI),
-	''' where α is the filetring factor for the most recent imput value to the filter.
-	''' f_3dB = (Sampling Frequency * -ln(1 - α)) / (2 * PI),
+	''' for α=2/(FilterRate+1)
+	''' where α is the filetring factor for the most recent imput value to the filter and
+	''' ωc3dB = log(N+1/N-1)
 	''' </summary>
 	''' <param name="FilterRate"></param>
-	''' <returns>The 3dB cut-off frequency for a given number of samples. The unit is in Cycle/Sample </returns>
+	''' <returns>The 3dB cut-off frequency for a given number of samples. The unit is in Radian/Sample </returns>
 	Shared Function GetFrequency3dB(FilterRate As Double) As Double
 		' This function calculates the 3 dB bandwidth for a given filter rate.
-		Dim _α As Double = 2 / (FilterRate + 1)
-		Return Math.Log(1 - _α) / (2 * Math.PI)
+		Return Math.Log((FilterRate + 1) / (FilterRate - 1))
 	End Function
 
 	''' <summary>
@@ -106,10 +105,47 @@ Public Class FilterExp
 	''' <param name="FilterRate"></param>
 	''' <returns>The response time for a given filter rate. The unit is in Sample </returns>
 	Shared Function GetResponseTime(FilterRate As Double) As Double
-		' This function calculates the 3 dB bandwidth for a given filter rate.
 		Dim _α As Double = 2 / (FilterRate + 1)
 		Return Math.Log(1 - 0.95) / Math.Log(1 - _α)
 	End Function
+
+	''' <summary>
+	''' Get the time constant for a given filter rate.
+	''' The time constant is the time required for the filter to reach approximately 63% of its final value when subject to a unit step input.
+	''' The formula is simply for teh first order filter 1/ωc3dB:
+	''' Also for α=2/(FilterRate+1)
+	''' t = -ln(1 - 0.63) / ln(1 - α)
+	''' where α is the fitering factor for the most recent imput value to the filter.
+	''' Note that another relation is given approximativly by fc=2/(Response Time at 95%</summary>
+	''' <param name="FilterRate"></param>
+	''' <returns>The time to reach the 63% of the response in number of points</returns>
+	Shared Function GetTimeConstant(FilterRate As Double) As Double
+		Return 1 / GetFrequency3dB(FilterRate)
+	End Function
+
+	''' <summary>
+	''' Calculates the transfer function for the current filter
+	''' </summary>
+	''' <param name="DigitalFrequencyΩ">
+	''' The digital frequency for the transfer function in radian between [0,π]. In some case you may need to apply 
+	''' a factor of 2*PI to convert from cycle/sample to radian/sample.
+	''' The digital frequency is related to the sampling frequency and the frequency of the input signal.
+	''' The formula used is:
+	''' DigitalFrequencyΩ = 2 * PI * Frequency / SamplingFrequency
+	''' where Frequency is the frequency of the input signal and SamplingFrequency is the sampling frequency.
+	''' </param>
+	''' <returns>A named tuple containing the amplitude and phase (in radians).</returns>
+	Function GetTransfertFunction(DigitalFrequencyΩ As Double) As Complex
+		' Example calculation for amplitude and phase
+		Dim alpha As Double = 2 / (FilterRate + 1)
+		Dim amplitude As Double = 1 / Math.Sqrt(1 + alpha ^ 2) ' Example formula for amplitude
+		Dim phase As Double = -Math.Atan(alpha) ' Example formula for phase (in radians)
+
+		Throw New NotImplementedException("The function GetTransfertFunction is not implemented yet.")
+		' Return the amplitude and phase as a named tuple
+		'Return (Amplitude:=amplitude, Phase:=phase)
+	End Function
+
 
 	Public Function FilterRun(Value As Double) As Double Implements IFilterRun.FilterRun
 		If IsReset Then

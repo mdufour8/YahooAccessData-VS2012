@@ -30,7 +30,11 @@ Public Class FilterPLL
 	Private MyDampingFactor As Double
 	Private IsReset As Boolean
 	'note we cannot create another PLL filter without causing stack overflow
-	Private MyFilterForError As FilterExpPredict
+	Private MyFilterDoubleExpForError As FilterDoubleExp
+	Private MyFilterDoubleExpForBandPass As FilterDoubleExp
+	Private MyFilterDoubleExpForBandPassAmplitude As Double
+	Private MyFilterTrendLast As Double
+	Private MyFilterBandPassLast As Double
 
 	Public Sub New(ByVal FilterRate As Double, Optional DampingFactor As Double = 1.0)
 		Dim ThisFilterRateMinimum As Double
@@ -41,8 +45,9 @@ Public Class FilterPLL
 		Dim This_Ts As Double = 1.0    'Sampling rate Is 1 day by Default in all that base code 
 		Dim This_fₙ As Double
 		Dim This_ωₙ As Double
-		Dim This_ωc As Double
-		Dim This_Ω As Double
+		'Dim This_ωc As Double
+		Dim This_Ωn As Double
+		Dim This_Ωc As Double
 
 		'the ADPLL need the natural frequency of the filter. 
 
@@ -59,7 +64,7 @@ Public Class FilterPLL
 		'In this article the relation bwetween the 3dB bandwidth and the filter resonance frequncy is explained.
 		'It is noted that a formal relation between the 3dB bandwidth and the filter resonance frequency is not given.	
 		'However it can be approxmated with simple relation of 2.0.  
-		'The user provide a filter rate parameters that is effectivly the desired 3dB bandwidth of the filter.
+		'The user provide a filter rate parameters that is effect					ivly the desired 3dB bandwidth of the filter.
 		'The filter rate is the 3dB bandwidth of the filter but the PLL filter is described by it resonnance frequency:
 		'Fn=Fc/2.0 = 2*PI/2.0*FilterRate)=PI/FilterRate	
 
@@ -74,8 +79,10 @@ Public Class FilterPLL
 		'A = CDbl((2 / (MyFilterRate + 1)))
 
 		Dim Ts As Double = 1.0   '1 Sample per day by default
-		Dim Fs As Double = 1.0 / Ts
-		Dim Ω = 2 * PI * MyFilterRate 'Digital Frequency: Ω = ω × T	
+		'Dim fs As Double = Ts / MyFilterRate
+		'Dim f
+		This_Ωn = Math.Log((MyFilterRate + 1) / (MyFilterRate - 1)) 'Digital Frequency: Ω = ω × Ts
+
 
 
 		ReDim MyError(0 To 2)
@@ -86,17 +93,23 @@ Public Class FilterPLL
 		Next
 		MyVCOPeriod = 0   'by default in this application
 
-		FreqDigital = 1 / (Math.PI * MyFilterRate)  'Digital Frequency: Ω = ω × T
 
-
+		'FreqDigital = 1 / (Math.PI * MyFilterRate)  'Digital Frequency: Ω = ω × T
+		'FreqDigital = 1 / (Math.PI * MyFilterRate)  'Digital Frequency: Ω = ω × T
 		C = MyVCOPeriod
-		C2 = 2 * MyDampingFactor * (2 * Math.PI) * FreqDigital
+		'C2 = 2 * MyDampingFactor * (2 * Math.PI) * FreqDigital
+		'MyFilterDoubleExpForBandPassAmplitude = (MyDampingFactor * This_Ωn)
+		MyFilterDoubleExpForBandPassAmplitude = 1.0 'can be removed not in used
+		C2 = 2 * MyDampingFactor * This_Ωn
+
+		'Dim FreqDigital1 = Math.Log((MyFilterRate + 1) / (MyFilterRate - 1)) / (2 * (MyDampingFactor + (1 / (4 * MyDampingFactor))))
+		'C2 = 2 * MyDampingFactor * FreqDigital1
 
 		'see DPLL_Detailed_Frequency_Response_Analysis_1.pdf for explanation
 		'FreqDigital = 1.0  '(Sampling rate Is 1.0 Sample/day by Default))
 
 		'FrequencyNaturel = 1 / MyFilterRate
-		''C2 = 2 * MyDampingFactor * (2 * Math.PI) * FreqDigital
+		'C2 = 2 * MyDampingFactor * (2 * Math.PI) * FreqDigital
 		'C2 = 2 * MyDampingFactor * (2 * Math.PI * FrequencyNaturel) * SamplingPeriod / Math.PI
 
 		C1 = (C2 ^ 2) / (4 * (MyDampingFactor ^ 2))
@@ -106,7 +119,8 @@ Public Class FilterPLL
 			Throw New Exception("Low pass PLL filter is not stable...")
 		End If
 		MySignalDelta = 0
-		MyFilterForError = New FilterExpPredict(FilterRate:=MyFilterRate)
+		MyFilterDoubleExpForError = New FilterDoubleExp(FilterRate:=MyFilterRate)
+		MyFilterDoubleExpForBandPass = New FilterDoubleExp(FilterRate:=MyFilterRate)
 		IsReset = True
 	End Sub
 
@@ -121,7 +135,8 @@ Public Class FilterPLL
 			Next
 			MyVCO(0) = Value
 			MyError(0) = 0
-			MyFilterForError.Reset()
+			MyFilterDoubleExpForError.Reset()
+			MyFilterDoubleExpForBandPass.Reset()
 			IsReset = False
 		End If
 		'just the standard PLL here
@@ -131,11 +146,15 @@ Public Class FilterPLL
 		MyError(0) = (C1 * MySignalDelta) + MyError(1)
 
 		MyFilterError = (C2 * MySignalDelta) + MyError(1)
-		MyFilterForError.FilterRun(MyFilterError)
+		MyFilterDoubleExpForError.FilterRun(MyFilterError)
+
 		'calculate the integrator parameters
 		MyVCO(2) = MyVCO(1)
 		MyVCO(1) = MyVCO(0)
 		MyVCO(0) = C + MyFilterError + MyVCO(1)
+		MyFilterDoubleExpForBandPass.FilterRun(Value)
+		MyFilterBandPassLast = MyVCO(0) - (MyFilterDoubleExpForBandPassAmplitude * MyFilterDoubleExpForBandPass.FilterLast)
+		'MyFilterTrendLast = MyFilterBandPassLast / 2
 		ValueLast = Value
 		Return MyVCO(0)
 	End Function
@@ -174,6 +193,25 @@ Public Class FilterPLL
 		End Get
 	End Property
 
+	''' <summary>
+	''' The filtered Bandpass output for this filter centered at the resonnance frequency.
+	''' </summary>
+	''' <returns></returns>
+	Public ReadOnly Property FilterBandPassLast As Double
+		Get
+			Return MyFilterBandPassLast
+		End Get
+	End Property
+	''' <summary>
+	''' The filtered trend or slope of the signal over the filtered sample.
+	''' </summary>
+	''' <returns></returns>
+	Public ReadOnly Property FilterTrendLast As Double
+		Get
+			Return MyFilterDoubleExpForError.FilterLast
+		End Get
+	End Property
+
 	Public ReadOnly Property Errork0 As Double
 		Get
 			Return MyError(0)
@@ -188,7 +226,7 @@ Public Class FilterPLL
 
 	Public ReadOnly Property FilterError As Double
 		Get
-			Return MyFilterForError.FilterLast
+			Return MyFilterDoubleExpForError.FilterLast
 		End Get
 	End Property
 

@@ -15,6 +15,8 @@ Public Class FilterExpPredict
 	Implements IFilter
 	Implements IFilterState
 
+	Private Const FILTER_RATE_MINIMUM_SAMPLE_FOR_STATISTICAL As Integer = 20
+
 	Private MyRate As Integer
 	Private MyFilterRate As Double
 	Private MyFilterALast As Double
@@ -33,7 +35,7 @@ Public Class FilterExpPredict
 	Private IsReset As Boolean
 	Private MyStatisticalForGain As FilterStatisticalQueue
 	Private MyFilterRateYearlyScaling As Double
-	Private MyFilterRateYearlyGainVolatilityScaling As Double
+	Private MyFilterRateYearlyGainVolatilitySQRTScaling As Double
 
 
 	''' <summary>
@@ -41,7 +43,6 @@ Public Class FilterExpPredict
 	''' </summary>
 	''' <param name="FilterRate">The filter rate.</param>
 	''' <remarks></remarks>
-
 	Public Sub New(ByVal FilterRate As Double)
 		Me.New(NumberToPredict:=0, FilterHead:=New FilterExp(FilterRate), FilterBase:=New FilterExp(FilterRate))
 	End Sub
@@ -77,25 +78,27 @@ Public Class FilterExpPredict
 			Throw New ArgumentException("Invalid Filter type FilterHead in FilterExpPredict!")
 		End If
 		MyFilterRateYearlyScaling = YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR / MyFilterRate
-		MyFilterRateYearlyGainVolatilityScaling = Math.Sqrt(MyFilterRateYearlyScaling)
+		MyFilterRateYearlyGainVolatilitySQRTScaling = Math.Sqrt(MyFilterRateYearlyScaling)
 
 
 		MyFilter = FilterHead
 		MyFilterY = FilterBase
-		MyStatisticalForGain = New FilterStatisticalQueue(FilterRate:=CInt(MyFilterRate))
-		MyNumberToPredict = NumberToPredict
-		Dim ThisFilterRateForStatistical As Double = 5 * MyFilterRate
-		If ThisFilterRateForStatistical < YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_MONTH Then
-			ThisFilterRateForStatistical = YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_MONTH
+
+		Dim ThisFilterRateForStatistical As Double = 3 * MyFilterRate
+		If ThisFilterRateForStatistical < FILTER_RATE_MINIMUM_SAMPLE_FOR_STATISTICAL Then
+			'just to garanty a certain validity long term for the statistical filter	
+			ThisFilterRateForStatistical = FILTER_RATE_MINIMUM_SAMPLE_FOR_STATISTICAL
 		End If
+		MyStatisticalForGain = New FilterStatisticalQueue(FilterRate:=CInt(ThisFilterRateForStatistical))
+		MyNumberToPredict = NumberToPredict
+
 		FilterValueLast = 0
 		FilterValueLastK1 = 0
 		ValueLast = 0
 		ValueLastK1 = 0
-		A = CDbl((2 / (MyFilterRate + 1)))
+		A = 2 / (MyFilterRate + 1)
 		B = 1 - A
-		ABRatio = A / B
-
+		ABRatio = 2 / (MyFilterRate - 1)   'This is is equivalent to 'ABRatio = A / B or ABRatio =A / (1 - A)	
 		IsReset = True
 	End Sub
 
@@ -146,12 +149,12 @@ Public Class FilterExpPredict
 		'Thus, the annualized trend estimate Is computed as
 		'b_annual = b_t * f_scale = b_t * (f_s / MyFilterRate)
 		'
+		Dim ThisGainVolatilityCorrected As Double = MyFilterRateYearlyGainVolatilitySQRTScaling * MyStatisticalForGain.Filter(Value:=Bp).StandardDeviation
 
-		Dim ThisGainVolatilityCorrected As Double = MyFilterRateYearlyGainVolatilityScaling * MyStatisticalForGain.Filter(Value:=Bp).StandardDeviation
 		MyGainYearlyEstimate = Bp * (YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR) / (1 + ThisGainVolatilityCorrected)
 		'Console.WriteLine(ThisGainVolatilityCorrected)
 
-		'note that the gain is not the same as the gainLog here. This etimate is valid for any range of signal positive or negative
+		'note that the gain is not the same as the gainLog here. This estimate is valid for any range of signal positive or negative
 		ValueLastK1 = ValueLast
 		ValueLast = Value
 		Return FilterValueLast

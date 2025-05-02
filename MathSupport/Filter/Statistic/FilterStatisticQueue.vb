@@ -9,6 +9,7 @@ Public Class FilterStatisticalQueue
 	Implements IFilter(Of IStatistical)
 	Implements IRegisterKey(Of String)
 
+
 	Private MyRate As Integer
 	Private FilterValueLastK1 As IStatistical
 	Private FilterValueLast As IStatistical
