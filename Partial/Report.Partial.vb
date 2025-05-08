@@ -2204,18 +2204,19 @@ Partial Public Class Report
             For Each ThisStockSymbol As IStockSymbol In ThisListOfStockSymbol
               ThisWebYahooStockDescriptor = New WebStockDescriptor(ThisExchange, ThisStockSymbol)
               ThisStock = ThisReport.StockAdd(StockSymbol:=ThisWebYahooStockDescriptor.Symbol, SectorName:="", IndustryName:="")
-              'if ThisStock is nothing the stock could not be addded likely due conflicting Symbol
-              'in that case the stock is ignored
-              If ThisStock IsNot Nothing Then
-                With ThisStock
-                  '	'keep most of the information except a few item
-                  .Name = ThisStockSymbol.Name
-                  .Exchange = ThisWebYahooStockDescriptor.Exchange
-                  .DateStart = ThisReport.DateStart
-                  .DateStop = .DateStart
-                End With
-              End If
-            Next
+							'if ThisStock is nothing the stock could not be addded likely due conflicting Symbol
+							'in that case the stock is ignored
+							If ThisStock IsNot Nothing Then
+								With ThisStock
+									'	'keep most of the information except a few item
+									.Name = ThisStockSymbol.Name
+									.Exchange = ThisWebYahooStockDescriptor.Exchange
+									.DateStart = ThisReport.DateStart
+									.DateStop = .DateStart
+									.IsInternational = ThisStockSymbol.IsInternational
+								End With
+							End If
+						Next
           Next
         End If
       End If

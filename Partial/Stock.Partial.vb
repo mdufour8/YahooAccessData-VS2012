@@ -2964,6 +2964,7 @@ Partial Public Class Stock
 	Public Property ReportID As Integer
 	Public Property Exchange As String
 	Public Property ErrorDescription As String
+	Public Property IsInternational As Boolean
 
 	Public ReadOnly Property SectorName As String
 		Get

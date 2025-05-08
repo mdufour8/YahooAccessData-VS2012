@@ -148,6 +148,54 @@ Public Class RecordPrices
 		'The data is then processed to create the daily intra day data set
 		Dim ThisNumberPoint = ReportDate.MarketTradingDeltaDays(Me.DateStart, Me.DateStop) + 1
 
+		'Filter colData to exclude records that fall on Saturday or Sunday
+		'The approach Of checking If two records match Using record Is lastRecord In the Where clause
+		'Is relatively fast because it performs a reference equality check. This means
+		'it checks whether the two objects refer To the same memory location, which Is an O(1)
+		'operation. However, the overall performance of the filtering operation depends
+		'on the size of the dataset And the LINQ implementation.
+		'The approach Of checking If two records match Using record Is lastRecord In the Where clause
+		'Is relatively fast because it performs a reference equality check. This means it
+		'checks whether the two objects refer To the same memory location, which Is an O(1) operation.
+		'However, the overall performance of the filtering operation depends on the size of the dataset
+		'and the LINQ implementation.
+
+		'The behavior of the Where clause in LINQ can be a bit implicit if you're not familiar with how it works.
+		'The Where method filters a collection by evaluating the predicate (the function you provide) for each element.
+		'If the predicate returns True, the element is included in the result; otherwise, it is excluded.
+		'This behavior Is Not explicitly stated In the code itself, which can make it less obvious to someone reading it. 
+
+		If Me.Stock.IsInternational Then
+			'If the stock is international, we need to adjust the date to the local time zone
+			'This is done by adding 5 hours to the date
+			'This is not yet implemented 
+			'colData = colData.ToLocalTime()
+			Dim lastRecord = colData.LastOrDefault()
+			If lastRecord Is Nothing Then
+				'If the collection is empty, lastRecord will be Nothing.	
+				Throw New InvalidOperationException("The record collection is empty.")
+			End If
+			colData = colData.Where(
+				Function(record)
+					If record Is lastRecord Then
+						'special case for the last record
+						'in that case move the date to next monday
+						'this is to avoid the weekend but still want to kepp the data
+						'note that the DateDay is protectd and can be changed only by acceding the internal record
+						Select Case record.DateDay.DayOfWeek
+							Case DayOfWeek.Saturday
+								record.Record.DateDay = record.DateDay.AddDays(2)
+							Case DayOfWeek.Sunday
+								record.Record.DateDay = record.DateDay.AddDays(1)
+						End Select
+						Return True
+					End If
+					If record.DateDay.DayOfWeek <> DayOfWeek.Saturday AndAlso record.DateDay.DayOfWeek <> DayOfWeek.Sunday Then
+						Return True
+					End If
+					Return False
+				End Function)
+		End If
 		Call ProcessDataDailyIntraDay(colData, DateStartValue, DateStopValue)
 	End Sub
 
@@ -184,8 +232,8 @@ Public Class RecordPrices
 					IsIntraDayLocalEnabled = True
 				End If
 				If .Vol > 0 Then
-					If .Vol < Me.VolMin Then
-						Me.VolMin = .Vol
+					If .Vol <Me.VolMin Then
+						Me.VolMin= .Vol
 					End If
 					If .Vol > Me.VolMax Then
 						Me.VolMax = .Vol
@@ -471,7 +519,7 @@ Public Class RecordPrices
 			Me.DateStop = Me.DateStart
 		End If
 
-		'need one more point to include the Datestop 
+		'need one more point to include the Datestop and the next day data
 		Me.NumberPoint = ReportDate.MarketTradingDeltaDays(Me.DateStart, Me.DateStop) + 1
 		If colData.Last.Record.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
 			IsLiveUpdate = True
@@ -482,8 +530,13 @@ Public Class RecordPrices
 		ReDim MyPriceVols(0 To Me.NumberPoint - 1)
 		'array declaration
 		MyPriceVolsIntraDay = New PriceVol(0 To Me.NumberPoint - 1)() {}
+		'extract the intra day data from the full stream time data for all teh stream
+		'only the daily data is used for the calculation	
 		colDataDailyIntraDay = colData.ToDailyIntraDay(Me.DateStart, Me.DateStop.AddHours(24).AddSeconds(-1))
-		'colDataDaily = colDataDailyIntraDay.ToDaily
+		'also patch the data to a standard weekly stream data from Monday to Friday
+
+
+
 
 		MyPriceVolsIntraDay = New PriceVol(0 To Me.NumberPoint - 1)() {}
 		MyPriceVolLast = New PriceVol(0)
@@ -582,10 +635,6 @@ Public Class RecordPrices
 			ThisStockDividendSinglePayout = Nothing
 		End If
 #End If
-
-		'note the intraday date here may also contain only one element per day for the full day i.e. eodData
-		'ThisRecordIntraDay is a list of record in a day
-		'Essentially proceed many items in a day if necessary
 		I = 0
 		For Each ThisRecordIntraDay In colDataDailyIntraDay
 			If ThisRecordIntraDay.Count > 1 Then
@@ -595,7 +644,6 @@ Public Class RecordPrices
 			'take the last element in the day which is the current end of day and 
 			'compare it with the previous day close to evaluate if there was a split
 			ThisRecord = ThisRecordIntraDay.Last
-
 
 #If IS_SPLIT_LOCAL_ENABLED Then
 			If Me.Stock.IsSplitEnabled Then
