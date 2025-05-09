@@ -153,7 +153,8 @@ Public Class FilterPLL
 		MyVCO(1) = MyVCO(0)
 		MyVCO(0) = C + MyFilterError + MyVCO(1)
 		MyFilterDoubleExpForBandPass.FilterRun(Value)
-		MyFilterBandPassLast = MyVCO(0) - (MyFilterDoubleExpForBandPassAmplitude * MyFilterDoubleExpForBandPass.FilterLast)
+		'MyFilterBandPassLast = MyVCO(0) - (MyFilterDoubleExpForBandPassAmplitude * MyFilterDoubleExpForBandPass.FilterLast)
+		MyFilterBandPassLast = MyVCO(0) - MyFilterDoubleExpForBandPass.FilterLast
 		'MyFilterTrendLast = MyFilterBandPassLast / 2
 		ValueLast = Value
 		Return MyVCO(0)
