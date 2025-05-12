@@ -756,6 +756,22 @@ Namespace MathPlus
 			End Function
 
 
+			''' <summary>
+			''' Estimates the log-normal distribution parameters from sample data with maximum-likelihood.
+			''' In the contect of a stock price the input data enumeration should be in the form of Samples(i)=Si/Si-1
+			''' </summary>
+			''' <param name="samples">The samples to estimate the distribution parameters from.</param>
+			''' <returns></returns>
+			Public Shared Function Estimate(samples As IEnumerable(Of Double), Optional randomSource As System.Random = Nothing) As MathNet.Numerics.Distributions.LogNormal
+				'Calculate the mean And standard deviation of the logarithm of the samples
+				Dim logSamples = samples.Select(Function(s) Math.Log(s))
+				Dim muSigma = Statistics.Statistics.MeanStandardDeviation(logSamples)
+				'Create And return a LogNormal distribution using the calculated mean And standard deviation
+				Return New Distributions.LogNormal(muSigma.Mean, muSigma.StandardDeviation, randomSource)
+			End Function
+
+
+
 
 			''' <summary>
 			''' Calculate the approximative logarithm gain using and squared data approximation that eliminate the problem of negative value but

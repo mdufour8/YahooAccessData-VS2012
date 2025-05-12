@@ -367,6 +367,7 @@
   <ItemGroup>
     <Content Include="MathSupport\Filter\Oscillator\FilterPLLDetector\Price Probability Zero Stochatic Crossing PLL Filter.jpg" />
     <Content Include="MathSupport\Filter\Statistic\AAPL N50.png" />
+    <Content Include="MathSupport\Filter\Statistic\LogNormal.cs" />
     <Content Include="MathSupport\Filter\Volatility\LogNormal Distribution Grahical Interpretation.JPG" />
   </ItemGroup>
   <ItemGroup>

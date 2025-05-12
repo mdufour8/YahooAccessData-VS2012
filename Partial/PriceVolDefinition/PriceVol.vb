@@ -6,17 +6,18 @@ Public Structure PriceVol
   Implements ISentimentIndicator
 
 #Region "New"
-  Public Sub New(ByVal PriceValue As Single)
-    Me.Open = PriceValue
-    Me.OpenNext = PriceValue
-    Me.Low = PriceValue
-    Me.High = PriceValue
-    Me.Last = PriceValue
-    Me.LastPrevious = PriceValue
-    Me.LastWeighted = PriceValue
-  End Sub
+	Public Sub New(ByVal PriceValue As Single, Optional Volume As Integer = 0)
+		Me.Open = PriceValue
+		Me.OpenNext = PriceValue
+		Me.Low = PriceValue
+		Me.High = PriceValue
+		Me.Last = PriceValue
+		Me.LastPrevious = PriceValue
+		Me.LastWeighted = PriceValue
+		Me.Vol = Volume
+	End Sub
 
-  Public Sub New(ByVal PriceValue As PriceVol)
+	Public Sub New(ByVal PriceValue As PriceVol)
     With Me
       .DateLastTrade = PriceValue.DateLastTrade
       .Open = PriceValue.Open

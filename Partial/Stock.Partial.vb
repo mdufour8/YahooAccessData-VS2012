@@ -227,8 +227,15 @@ Partial Public Class Stock
 			'Debug.Print($"WebRefreshRecord: {Me.Symbol} escape with CurrentCount at {0}")
 			'Return Now
 		End If
-		Debug.Print($"WebRefreshRecord: {Me.Symbol} Started with CurrentCount at {MySemaphoreSlimWebStockReading.CurrentCount}")
-		MySemaphoreSlimWebStockReading.Wait()
+		Trace.WriteLine($"WebRefreshRecord: {Me.Symbol} Started with CurrentCount at {MySemaphoreSlimWebStockReading.CurrentCount}")
+		Dim ThisWaitingCount = MySemaphoreSlimWebStockReading.CurrentCount
+		Do
+			If MySemaphoreSlimWebStockReading.Wait(millisecondsTimeout:=1000) = True Then
+				Exit Do
+			Else
+				Trace.WriteLine(($"WebRefreshRecord: {Me.Symbol} still waiting with CurrentCount at {MySemaphoreSlimWebStockReading.CurrentCount}"))
+			End If
+		Loop
 		Dim ThisStockWatch As New Stopwatch
 		ThisStockWatch.Restart()
 		'ThisTaskOfWebRefreshRecord.RunSynchronously()
@@ -290,6 +297,9 @@ Partial Public Class Stock
 		'End If
 		Me.IsSplitEnabled = False
 		ThisExchangeSymbol = Me.WebExchangeCode()
+		'If Me.Symbol = "GOLD" Then
+		'	Debugger.Break()
+		'End If
 		If ThisExchangeSymbol Is Nothing Then
 			Return New ResponseStatus(Of Date)(Me.DateStop, IsSuccess:=False, Message:="Invalid exchange and or symbol combination...")
 		End If
@@ -461,7 +471,8 @@ Partial Public Class Stock
 					End If
 				End If
 			Else
-				Debug.Print($"Web query failure for {Me.Symbol}{vbCr}{ThisResponseQuery.Message}")
+				Trace.WriteLine($"Web query failure for {Me.Symbol}{vbCr}{ThisResponseQuery.Message}")
+				Return New ResponseStatus(Of Date)(Me.DateStop, IsSuccess:=False, Message:=$"Web query failure for {Me.Symbol}{vbCr}{ThisResponseQuery.Message}")
 			End If
 		End If
 		Return New ResponseStatus(Of Date)(Me.DateStop)
