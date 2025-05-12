@@ -165,36 +165,38 @@ Public Class RecordPrices
 		'If the predicate returns True, the element is included in the result; otherwise, it is excluded.
 		'This behavior Is Not explicitly stated In the code itself, which can make it less obvious to someone reading it. 
 
-		If Me.Stock.IsInternational Then
-			'If the stock is international, we need to adjust the date to the local time zone
-			'This is done by adding 5 hours to the date
-			'This is not yet implemented 
-			'colData = colData.ToLocalTime()
-			Dim lastRecord = colData.LastOrDefault()
-			If lastRecord Is Nothing Then
-				'If the collection is empty, lastRecord will be Nothing.	
-				Throw New InvalidOperationException("The record collection is empty.")
+		If Me.Stock IsNot Nothing Then
+			If Me.Stock.IsInternational Then
+				'If the stock is international, we need to adjust the date to the local time zone
+				'This is done by adding 5 hours to the date
+				'This is not yet implemented 
+				'colData = colData.ToLocalTime()
+				Dim lastRecord = colData.LastOrDefault()
+				If lastRecord Is Nothing Then
+					'If the collection is empty, lastRecord will be Nothing.	
+					Throw New InvalidOperationException("The record collection is empty.")
+				End If
+				colData = colData.Where(
+					Function(record)
+						If record Is lastRecord Then
+							'special case for the last record
+							'in that case move the date to next monday
+							'this is to avoid the weekend but still want to kepp the data
+							'note that the DateDay is protectd and can be changed only by acceding the internal record
+							Select Case record.DateDay.DayOfWeek
+								Case DayOfWeek.Saturday
+									record.Record.DateDay = record.DateDay.AddDays(2)
+								Case DayOfWeek.Sunday
+									record.Record.DateDay = record.DateDay.AddDays(1)
+							End Select
+							Return True
+						End If
+						If record.DateDay.DayOfWeek <> DayOfWeek.Saturday AndAlso record.DateDay.DayOfWeek <> DayOfWeek.Sunday Then
+							Return True
+						End If
+						Return False
+					End Function)
 			End If
-			colData = colData.Where(
-				Function(record)
-					If record Is lastRecord Then
-						'special case for the last record
-						'in that case move the date to next monday
-						'this is to avoid the weekend but still want to kepp the data
-						'note that the DateDay is protectd and can be changed only by acceding the internal record
-						Select Case record.DateDay.DayOfWeek
-							Case DayOfWeek.Saturday
-								record.Record.DateDay = record.DateDay.AddDays(2)
-							Case DayOfWeek.Sunday
-								record.Record.DateDay = record.DateDay.AddDays(1)
-						End Select
-						Return True
-					End If
-					If record.DateDay.DayOfWeek <> DayOfWeek.Saturday AndAlso record.DateDay.DayOfWeek <> DayOfWeek.Sunday Then
-						Return True
-					End If
-					Return False
-				End Function)
 		End If
 		Call ProcessDataDailyIntraDay(colData, DateStartValue, DateStopValue)
 	End Sub
