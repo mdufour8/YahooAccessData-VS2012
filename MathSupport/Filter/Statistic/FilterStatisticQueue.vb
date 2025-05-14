@@ -2,7 +2,8 @@
 
 ''' <summary>
 ''' The FilterStatistical class calculates the mean, variance, and standard deviation of a series of values.
-''' It uses a sliding window approach if a FilterRate is specified.
+''' It uses a sliding window approach with the specified size given by by the FilterRate. 
+''' 
 ''' </summary>
 <Serializable()>
 Public Class FilterStatisticalQueue
@@ -26,18 +27,12 @@ Public Class FilterStatisticalQueue
 	Private MyListOfValueStatistical As List(Of IStatistical)
 
 	''' <summary>
-	''' Calculate the statistical information from all value 
-	''' </summary>
-	''' <remarks></remarks>
-	Public Sub New()
-		Me.New(1)
-	End Sub
-
-	''' <summary>
-	''' Calculate the statistical information based on a windows of size given by FilterRate
+	''' Calculate the statistical information based on a windows size given by FilterRate. 
+	''' This is a basic implementation for the statistical measurement using the square windows only.
+	''' It does not use any exponential filtering and follow the usual statistic standard method.
 	''' </summary>
 	''' <param name="FilterRate">
-	''' Should be greater than one, otherwise the calculation is done on all the data
+	''' Should be set to be greater than two
 	''' </param>
 	''' <remarks></remarks>
 	Public Sub New(ByVal FilterRate As Integer)
@@ -55,7 +50,7 @@ Public Class FilterStatisticalQueue
 	End Sub
 
 	''' <summary>
-	''' Calculate the statistical information based on a windows of size given by FilterRate
+	''' Calculate the statistical information based on a windows size given by FilterRate
 	''' </summary>
 	''' <param name="FilterRate"></param>
 	''' Should be greater than one, otherwise the calculation is done on all the data

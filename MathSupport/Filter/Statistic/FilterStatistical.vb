@@ -1,9 +1,5 @@
 ﻿Imports YahooAccessData.MathPlus.Filter
 
-
-
-
-
 ''' <summary>
 ''' The FilterStatistical class calculates the mean, variance, and standard deviation of a series of values.
 ''' It uses a sliding window approach if a FilterRate is specified.
@@ -77,7 +73,7 @@ Public Class FilterStatistical
 	End Sub
 
 	''' <summary>
-	''' ''' The Filter function:
+	'''		The Filter function:
 	''' - Initializes the filter with the first value and sets MyStartPoint to 0 if IsRunReady is False.
 	''' - If IsRunReady is False and the new value is different from ValueLast, it sets MyStartPoint to the current count of MyListOfValueStatistical and marks IsRunReady as True.
 	''' - Uses a sliding window approach if IsRunReady is True and the count of MyListOfValueStatistical is greater than or equal to MyStartPoint.

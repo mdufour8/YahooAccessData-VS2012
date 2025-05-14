@@ -10,26 +10,42 @@ Imports System.Threading.Tasks
 
 Namespace MathPlus.Filter
 #Region "FilterVolatility"
-  ''' <summary>
-  ''' This class implement the close to close standard volatility measurements.
-  ''' 
-  ''' see definition:
-  ''' http://en.wikipedia.org/wiki/Rate_of_return#Logarithmic_or_continuously_compounded_return
-  ''' http://en.wikipedia.org/wiki/Volatility_%28finance%29
-  ''' https://www.youtube.com/watch?v=eiTCTibH010
-  ''' http://en.wikipedia.org/wiki/Volatility_(finance)
-  ''' https://en.wikipedia.org/wiki/Stochastic_volatility
-  ''' https://en.wikipedia.org/wiki/Geometric_Brownian_motion
-  ''' </summary>
-  ''' <remarks>
-  ''' The simplest and most common type of calculation that
-  ''' benefits from only using reliable prices from closing auctions. We note that the
-  ''' volatility should be the standard deviation multiplied by √N/(N-1) to take into
-  ''' account the fact we are sampling a smaller subset of the population.
-  ''' This class also use the normalized logarithm compounded return to measure the volatility and
-  ''' is only valid for positive value
-  ''' </remarks>
-  <Serializable()>
+	''' <summary>
+	''' This class implements the close-to-close standard volatility measurement.
+	''' By default, it returns the annualized volatility assuming a daily sampling rate.
+	''' The user can modify the annualization factor by specifying a custom scale factor during object creation.
+	''' The volatility is calculated using the standard deviation of the logarithmic returns.
+	''' Consideration Details:
+	'''
+	'''  Volatility is a standardized measure of the variability of returns, not raw prices.
+	''' 
+	''' - Stock prices are non-stationary: they trend over time and do not revert to a fixed mean.
+	''' - Using raw prices in volatility calculation leads to overestimated and inconsistent results.
+	''' - Returns (especially log returns) are stationary and mean-reverting, making statistical analysis valid.
+	''' - Log returns are scale-invariant, time-additive, and comparable across different stocks.
+	''' 
+	''' Preferred formula:
+	'''   LogReturn = Log(P_t / P_{t-1})
+	''' 
+	''' This approach ensures volatility measures reflect relative changes, not price levels or long-term trends.
+	''' 
+	''' see more details definition:
+	''' http://en.wikipedia.org/wiki/Rate_of_return#Logarithmic_or_continuously_compounded_return
+	''' http://en.wikipedia.org/wiki/Volatility_%28finance%29
+	''' https://www.youtube.com/watch?v=eiTCTibH010
+	''' http://en.wikipedia.org/wiki/Volatility_(finance)
+	''' https://en.wikipedia.org/wiki/Stochastic_volatility
+	''' https://en.wikipedia.org/wiki/Geometric_Brownian_motion
+	''' </summary>
+	''' <remarks>
+	''' The simplest and most common type of calculation that
+	''' benefits from only using reliable prices from closing auctions. We note that the
+	''' volatility should be the standard deviation multiplied by √N/(N-1) to take into
+	''' account the fact we are sampling a smaller subset of the population.
+	''' This class also use the normalized logarithm compounded return to measure the volatility and
+	''' is only valid for positive value
+	''' </remarks>
+	<Serializable()>
   Public Class FilterVolatility
     Implements IFilter
     Implements IRegisterKey(Of String)
@@ -135,13 +151,13 @@ Namespace MathPlus.Filter
 				IsSpecialDividendPayoutLocal = False
 				ThisReturnLog = MyStatistical.Last
 			Else
-				'same thing shoudl be fixed
+				'same thing should be fixed
 				'ThisReturnLog = GainLog(Value, ValueRef)  
 				ThisReturnLog = LogPriceReturn(Value, ValueRef)
 			End If
 			If MyStatistical.Count = 0 Then
 				'start filtering only if the first valid data i.e. not zero
-				'thsi help to eliminate the first day of trading when there is no data from the previous day
+				'this help to eliminate the first day of trading when there is no data from the previous day
 				If ThisReturnLog <> 0 Then
 					'first valid measurement of volatility
 					MyStatistical.Filter(ThisReturnLog)
@@ -181,8 +197,8 @@ Namespace MathPlus.Filter
     ''' is not at the daily sample rate and the yearly volatility is needed.
     ''' </remarks>
     Public Function Filter(ByVal Value As Double) As Double Implements IFilter.Filter
-      Return Me.Filter(Value, ValueLast)
-    End Function
+			Return Me.Filter(Value, ValueLast)
+		End Function
 
 
 		Public Function Filter(Value As IPriceVol) As Double Implements IFilter.Filter

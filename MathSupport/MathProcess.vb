@@ -92,8 +92,8 @@ Namespace MathProcess
     ''' <param name="Volatility">The volatility of the process per year''' </param>
     ''' <remarks></remarks>
     Public Sub New(ByVal ValueStart As Double, ByVal Gain As Double, ByVal Volatility As Double)
-      MyGaussian = New Distributions.Normal(0, 1)
-      MyValueStart = ValueStart
+			MyGaussian = New Distributions.Normal(0, 1)
+			MyValueStart = ValueStart
       MyStochasticProcessLast = ValueStart
       MyVolatility = Volatility
       MyMuSigma = Gain - (Volatility ^ 2 / 2)

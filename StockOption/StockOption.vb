@@ -1307,49 +1307,85 @@ Namespace OptionValuation
 			Return ThisResult
 		End Function
 
-		''' Calculate a random log normal sample
-		''' see: 
-		''' https://en.wikipedia.org/wiki/Geometric_Brownian_motion
-		''' for lab experiment see this excellent demo: 
-		''' http://www.math.uah.edu/stat/apps/GeometricBrownianMotion.html
-		''' See also for more general interest on statistic analysis and definition:
-		''' http://www.math.uah.edu/stat/brown/index.html
-		''' https://en.wikipedia.org/wiki/Log-normal_distribution
+		''' <summary>
+		''' Simulates the next stock price sample using a Geometric Brownian Motion (GBM) model.
+		''' This method assumes that the underlying asset follows a log-normal distribution,
+		''' where the logarithmic returns are normally distributed.
+		''' 
+		''' The formula used is based on the stochastic differential equation:
+		''' dS = μS dt + σS dW
+		''' which leads to the solution:
+		''' S(t) = S(0) * exp[(μ - σ²/2)t + σ√t * Z]
+		''' where Z is a standard normal random variable.
+		''' 
+		''' Simulates the next stock price sample using a Geometric Brownian Motion (GBM) model.
+		''' 
+		''' This model assumes that the **logarithm of returns** follows a normal (Gaussian) distribution.
+		''' Therefore, the resulting stock prices themselves follow a **log-normal** distribution.
+		''' 
+		''' ⚠ Why not use a normal distribution directly?
+		''' - Directly applying a Gaussian distribution to price (e.g., S + N(0, σ)) can result in negative prices, 
+		'''   which are not realistic in financial models.
+		''' - Financial returns are **multiplicative**, not additive; they compound over time.
+		''' 
+		''' ✅ Why use log-normal instead:
+		''' - Ensures all simulated prices remain positive.
+		''' - Captures the correct behavior of compounded returns.
+		''' - Mathematically derived from the SDE solution of GBM:
+		'''       S(t) = S(0) * exp[(μ - σ²/2)t + σ√t * Z],  where Z ~ N(0,1)
+		''' 
+		''' In this implementation, we simulate the process by drawing a log-normal sample with parameters:
+		'''   - μ' = (Gain - ½·Volatility²) · Time
+		'''   - σ' = Volatility · sqrt(Time)
+		'''   These match the mean and standard deviation of the normal variable inside the exponent.
+		''' 
+		''' References:
+		''' - https://en.wikipedia.org/wiki/Geometric_Brownian_motion
+		''' - Geometric Brownian motion simulation applet:
+		'''   http://www.math.uah.edu/stat/apps/GeometricBrownianMotion.html
+		''' - General overview of Brownian motion and statistical foundations:
+		'''   http://www.math.uah.edu/stat/brown/index.html
+		''' - Log-normal distribution:
+		'''   https://en.wikipedia.org/wiki/Log-normal_distribution
 		''' </summary>
-		''' <param name="NumberTradingDays"></param>
-		''' <param name="StockPrice"></param>
-		''' <param name="Gain"></param>
-		''' <param name="Volatility"></param>
-		''' <returns>A random lognormal sample</returns>
-		''' <remarks></remarks>
+		''' <param name="NumberTradingDays">Forecast horizon in trading days.</param>
+		''' <param name="StockPrice">Current stock price (S₀).</param>
+		''' <param name="Gain">Annualized expected return (μ).</param>
+		''' <param name="GainDerivative">Slope of the expected return (μ') adjustment over time.</param>
+		''' <param name="Volatility">Annualized volatility (σ), as a decimal (e.g., 0.2 for 20%).</param>
+		''' <returns>A predicted future stock price simulated from the log-normal distribution.</returns>
 		Public Shared Function StockPricePredictionSample(
-                                               ByVal NumberTradingDays As Double,
-                                               ByVal StockPrice As Double,
-                                               ByVal Gain As Double,
-                                               ByVal GainDerivative As Double,
-                                               ByVal Volatility As Double) As Double
+																							 ByVal NumberTradingDays As Double,
+																							 ByVal StockPrice As Double,
+																							 ByVal Gain As Double,
+																							 ByVal GainDerivative As Double,
+																							 ByVal Volatility As Double) As Double
 
-      Dim ThisResult As Double
-      Dim ThisTimeInYear As Double = NumberTradingDays / YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR
-      Dim ThisGain As Double = Gain * (1 + ThisTimeInYear * GainDerivative)
-      'Dim ThisPricePrediction As Double = StockOption.StockPricePrediction(NumberTradingDays, StockPrice, Gain)
-      'Dim ThisPricePredictionMedian As Double = StockOption.StockPricePredictionMedian(NumberTradingDays, StockPrice, Gain, Volatility)
 
-      'Since the variable Ut=(μ−σ2/2)t+σZt has the normal distribution with mean (μ−σ2/2)t and standard deviation σ√t, 
-      'it follows that Xt=exp(Ut) has the lognormal distribution with these parameters. 
-      'These result for the PDF then follow directly from the corresponding results for the lognormal PDF.
-      Dim ThisMu As Double = (ThisGain - Volatility ^ 2 / 2) * ThisTimeInYear
-      Dim ThisSigma As Double = Volatility * Math.Sqrt(ThisTimeInYear)
+			' Convert trading days into fraction of a year
+			Dim ThisTimeInYear As Double = NumberTradingDays / YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR
 
-      If ThisSigma > 0 Then
-        ThisResult = StockPrice * Distributions.LogNormal.Sample(ThisMu, ThisSigma)
-      Else
-        ThisResult = StockPrice
-      End If
-      Return ThisResult
-    End Function
+			' Adjust expected return to account for slope (derivative of gain)
+			Dim ThisGain As Double = Gain * (1 + ThisTimeInYear * GainDerivative)
 
-    Public Shared Function StockPricePrediction(
+			' Calculate μ and σ parameters for the log-normal distribution
+			Dim ThisMu As Double = (ThisGain - Volatility ^ 2 / 2) * ThisTimeInYear
+			Dim ThisSigma As Double = Volatility * Math.Sqrt(ThisTimeInYear)
+			Dim ThisResult As Double
+			' Generate a random sample from the log-normal distribution
+			''Since the variable Ut=(μ−σ2/2)t+σZt has the normal distribution with mean (μ−σ2/2)t and standard deviation σ√t, 
+			''it follows that Xt=exp(Ut) has the lognormal distribution with these parameters. 
+			''These result for the PDF then follow directly from the corresponding results for the lognormal PDF.
+
+			If ThisSigma > 0 Then
+				ThisResult = StockPrice * Distributions.LogNormal.Sample(ThisMu, ThisSigma)
+			Else
+				ThisResult = StockPrice
+			End If
+			Return ThisResult
+		End Function
+
+		Public Shared Function StockPricePrediction(
                                                ByVal NumberTradingDays As Integer,
                                                ByVal StockPrice As Double,
                                                ByVal Gain As Double,
