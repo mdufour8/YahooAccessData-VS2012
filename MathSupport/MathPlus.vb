@@ -139,6 +139,10 @@ Namespace MathPlus
 					ThisReturnLog = 0
 				Else
 					ThisReturnLog = Math.Log(Value / ValueRef)
+					If Double.IsNaN(ThisReturnLog) Or Double.IsInfinity(ThisReturnLog) Then
+						'ThisResult = Double.NaN
+						ThisReturnLog = 0.0
+					End If
 				End If
 			End If
 			Return ThisReturnLog

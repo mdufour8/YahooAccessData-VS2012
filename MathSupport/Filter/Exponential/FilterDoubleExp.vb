@@ -2,7 +2,25 @@
 Imports YahooAccessData.MathPlus.Filter
 
 ''' <summary>
-''' A second-order exponential filter designed for smoothing and stability (no overshoot).
+''' Summary of 3 dB Bandwidth for Single vs. Double Exponential Filters
+'''
+''' A single exponential filter has a frequency response with a -3 dB cutoff frequency
+''' approximately proportional to the smoothing factor:
+'''     wc1 ≈ alpha      (in radians/sample)
+'''
+''' A double exponential filter (i.e., applying the filter twice) has a sharper roll-off.
+''' Its -3 dB bandwidth is narrower and approximately given by:
+'''     wc2 ≈ wc1 / sqrt(2) ≈ alpha / sqrt(2)
+'''
+''' Therefore, the ratio of the -3 dB bandwidths is:
+'''     wc2 / wc1 ≈ 1 / sqrt(2) ≈ 0.707
+'''
+''' This behavior is similar to a second-order low-pass filter like a Butterworth filter.
+''' It helps better capture trend while attenuating high-frequency noise.
+'''
+''' Example adjustment:
+''' If you estimated alpha from a single-filter system and now use a double exponential filter,
+''' Summary of 3 dB Bandwidth for Single vs. Double Exponential Filters
 ''' </summary>
 Public Class FilterDoubleExp
 	Implements IFilterRun
@@ -14,6 +32,9 @@ Public Class FilterDoubleExp
 
 	''' <summary>
 	''' Initializes a new instance of the FilterDoubleExp class with the specified filter rate.
+	''' An adjustment of 1/sqrt(2) should be applied by the user if the bandwith of the filter 
+	''' need to be the same than an equivalent single pole filter.
+	''' This adjustment is based on the behavior of double exponential filters.
 	''' </summary>
 	''' <param name="FilterRate">The filter rate for both internal filters.</param>
 	Public Sub New(ByVal FilterRate As Double)

@@ -77,36 +77,48 @@ Namespace MathPlus.Filter
       Me.New(FilterRate, Math.Sqrt(SamplingRatePerDay * NUMBER_TRADINGDAY_PER_YEAR), StatisticType)
     End Sub
 
-    Public Sub New(
-      ByVal FilterRate As Integer,
-      ByVal ScaleCorrection As Double,
-      Optional StatisticType As enuVolatilityStatisticType = enuVolatilityStatisticType.Standard)
+		''' <summary>
+		''' By observation the standard deviation of the measured Volatility using an exponential filter
+		''' is slighlty larger than using a square window method
+		''' The square windows might be preferable for a better estimate with less deviation of the volatility:
+		''' i.e. 10% deviation standard for he exponential filter versus 6% for the square windows for 30% volatility
+		''' and a window size or filter exponential equivalent of 120 sample. 
+		''' </summary>
+		''' <param name="FilterRate"></param>
+		''' <param name="ScaleCorrection"></param>
+		''' <param name="StatisticType"></param>
+		Public Sub New(
+			ByVal FilterRate As Integer,
+			ByVal ScaleCorrection As Double,
+			Optional StatisticType As enuVolatilityStatisticType = enuVolatilityStatisticType.Standard)
 
-      MyFilterVolatilityYearlyCorrection = ScaleCorrection
-      MyListOfValue = New ListScaled
-      MyStatisticType = StatisticType
-      If FilterRate < 1 Then FilterRate = 1
-      MyRate = CInt(FilterRate)
-      Select Case MyStatisticType
-        Case enuVolatilityStatisticType.Exponential
-          MyStatistical = New FilterStatisticalExp(FilterRate)
-        Case Else
-          MyStatistical = New FilterStatistical(FilterRate)
-      End Select
-      FilterValueLast = 0
-      FilterValueLastK1 = 0
-      ValueLast = 0
-      ValueLastK1 = 0
-      IsSpecialDividendPayoutLocal = False
-    End Sub
+			MyFilterVolatilityYearlyCorrection = ScaleCorrection
+			MyListOfValue = New ListScaled
+			MyStatisticType = StatisticType
+			If FilterRate < 1 Then FilterRate = 1
+			MyRate = CInt(FilterRate)
+			Select Case MyStatisticType
+				Case enuVolatilityStatisticType.Exponential
+					MyStatistical = New FilterStatisticalExp(FilterRate)
+				Case Else
+					'MyStatistical = New FilterStatistical(FilterRate)
+					'The queue is base on a queue memory rather than a list and is more efficient
+					MyStatistical = New FilterStatisticalQueue(FilterRate)
+			End Select
+			FilterValueLast = 0
+			FilterValueLastK1 = 0
+			ValueLast = 0
+			ValueLastK1 = 0
+			IsSpecialDividendPayoutLocal = False
+		End Sub
 
 
-    ''' <summary>
-    ''' True for ignoring the volatility jump due to an open price exceeding the expected 2x sigma price peak value.
-    ''' This can be usuful for reducing the impact of unexpected news on the stock volatility. 
-    ''' </summary>
-    ''' <returns>The current state</returns>
-    Public Property IsFilterVolatilityJump As Boolean
+		''' <summary>
+		''' True for ignoring the volatility jump due to an open price exceeding the expected 2x sigma price peak value.
+		''' This can be usuful for reducing the impact of unexpected news on the stock volatility. 
+		''' </summary>
+		''' <returns>The current state</returns>
+		Public Property IsFilterVolatilityJump As Boolean
 
     ''' <summary>
     ''' Compute the volatility using the standard Logarithmic or Continuously Compounded Return method. 
@@ -152,7 +164,7 @@ Namespace MathPlus.Filter
 				ThisReturnLog = MyStatistical.Last
 			Else
 				'same thing should be fixed
-				'ThisReturnLog = GainLog(Value, ValueRef)  
+				'ThisReturnLog = GainLog(Value, ValueRef)
 				ThisReturnLog = LogPriceReturn(Value, ValueRef)
 			End If
 			If MyStatistical.Count = 0 Then

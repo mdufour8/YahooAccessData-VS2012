@@ -37,14 +37,14 @@ Public Class FilterStatisticalExp
 		Private ValueLast As Double
 		Private ValueLastK1 As Double
 		Private IsValueInitial As Boolean
-		'Private MyListOfValue As List(Of Double)
-		'Private MyListOfValueSquare As List(Of Double)
-		'Private MySumOfValue As Double
-		'Private MySumOfValueSquare As Double
-		Private MyFilterExpMean As FilterExp
-		Private MyFilterExpSquare As FilterExp
+	'Private MyListOfValue As List(Of Double)
+	'Private MyListOfValueSquare As List(Of Double)
+	'Private MySumOfValue As Double
+	'Private MySumOfValueSquare As Double
+	Private MyFilterExpMean As IFilterRun
+	Private MyFilterExpSquare As IFilterRun
 
-		Private MyListOfValueStatistical As List(Of IStatistical)
+	Private MyListOfValueStatistical As List(Of IStatistical)
 
 	''' <summary>
 	''' Calculate the statistical information from all value 
@@ -71,11 +71,11 @@ Public Class FilterStatisticalExp
 			MyRate = CInt(FilterRate)
 			'the -1 is for the finite number of samples correction from an infinite number of samples
 			MyVarianceCorrection = MyRate / (MyRate - 1)
-			MyFilterExpMean = New FilterExp(FilterRate)
-			MyFilterExpSquare = New FilterExp(FilterRate)
-
-			FilterValueLast = New StatisticalData(0, 0, 0)
-			FilterValueLastK1 = New StatisticalData(0, 0, 0)
+		MyFilterExpMean = New FilterExp(FilterRate)
+		MyFilterExpSquare = New FilterExp(FilterRate)
+		'Math.Sqrt(2) is to maintain teh equivalent nbadnwidth of a single pole filter
+		FilterValueLast = New StatisticalData(0, 0, 0)
+		FilterValueLastK1 = New StatisticalData(0, 0, 0)
 			ValueLast = 0
 			ValueLastK1 = 0
 			MyStartPoint = 0
