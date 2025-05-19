@@ -45,18 +45,17 @@ Namespace MathPlus
       Public Const TIME_TO_MARKET_FROM_OPEN_TO_CLOSE_IN_DAY As Double = (YahooAccessData.ReportDate.MARKET_OPEN_TO_CLOSE_PERIOD_HOUR_DEFAULT) / 24  'market open for 6.5 hours
       Public Const TIME_TO_MARKET_PREVIOUS_CLOSE_TO_OPEN_IN_DAY As Double = 1 - TIME_TO_MARKET_FROM_OPEN_TO_CLOSE_IN_DAY  'market open for 6.5 hours
 
+			Public Shared Function Mean(ByVal Value As IEnumerable(Of Double)) As Double
+				Dim ThisMean As Double = 0
+				Dim ThisElement As Double
 
-      Public Shared Function Mean(ByVal Value As IEnumerable(Of Double)) As Double
-        Dim ThisMean As Double = 0
-        Dim ThisElement As Double
+				For Each ThisElement In Value
+					ThisMean = ThisMean + ThisElement
+				Next
+				Return ThisMean / Value.Count
+			End Function
 
-        For Each ThisElement In Value
-          ThisMean = ThisMean + ThisElement
-        Next
-        Return ThisMean / Value.Count
-      End Function
-
-      Public Shared Function Mean(ByRef Value() As Double) As Double
+			Public Shared Function Mean(ByRef Value() As Double) As Double
         Return Measure.Mean(Value, 0, Value.Length - 1)
       End Function
 

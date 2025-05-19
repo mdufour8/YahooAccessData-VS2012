@@ -36,6 +36,7 @@ Public Class FilterExpPredict
 	Private MyStatisticalForGain As FilterStatisticalQueue
 	Private MyFilterRateYearlyScaling As Double
 	Private MyFilterRateYearlyGainVolatilitySQRTScaling As Double
+	Private MyCircularBuffer As CircularBuffer(Of Double)
 
 
 	''' <summary>
@@ -43,19 +44,32 @@ Public Class FilterExpPredict
 	''' </summary>
 	''' <param name="FilterRate">The filter rate.</param>
 	''' <remarks></remarks>
-	Public Sub New(ByVal FilterRate As Double)
-		Me.New(NumberToPredict:=0, FilterHead:=New FilterExp(FilterRate), FilterBase:=New FilterExp(FilterRate))
+	Public Sub New(ByVal FilterRate As Double, Optional BufferCapacity As Integer = 0)
+		Me.New(
+			NumberToPredict:=0,
+			FilterHead:=New FilterExp(FilterRate),
+			FilterBase:=New FilterExp(FilterRate),
+			BufferCapacity:=BufferCapacity)
 	End Sub
 
-	Public Sub New(ByVal FilterRate As Double, ByVal NumberToPredict As Double)
-		Me.New(NumberToPredict:=NumberToPredict, FilterHead:=New FilterExp(FilterRate), FilterBase:=New FilterExp(FilterRate))
+	Public Sub New(ByVal FilterRate As Double, ByVal NumberToPredict As Double, Optional BufferCapacity As Integer = 0)
+		Me.New(
+			NumberToPredict:=NumberToPredict,
+			FilterHead:=New FilterExp(FilterRate),
+			FilterBase:=New FilterExp(FilterRate),
+			BufferCapacity:=BufferCapacity)
 	End Sub
 
-	Public Sub New(ByVal FilterHead As IFilter, ByVal FilterBase As IFilter)
-		Me.New(NumberToPredict:=0, FilterHead:=FilterHead, FilterBase:=FilterBase)
+	Public Sub New(ByVal FilterHead As IFilter, ByVal FilterBase As IFilter, Optional BufferCapacity As Integer = 0)
+		Me.New(NumberToPredict:=0, FilterHead:=FilterHead, FilterBase:=FilterBase, BufferCapacity:=BufferCapacity)
 	End Sub
 
-	Public Sub New(ByVal NumberToPredict As Double, ByVal FilterHead As IFilter, ByVal FilterBase As IFilter)
+	Public Sub New(
+		ByVal NumberToPredict As Double,
+		ByVal FilterHead As IFilter,
+		ByVal FilterBase As IFilter,
+		Optional BufferCapacity As Integer = 0)
+
 		Dim A As Double
 		Dim B As Double
 
@@ -99,6 +113,7 @@ Public Class FilterExpPredict
 		A = 2 / (MyFilterRate + 1)
 		B = 1 - A
 		ABRatio = 2 / (MyFilterRate - 1)   'This is is equivalent to 'ABRatio = A / B or ABRatio =A / (1 - A)	
+		MyCircularBuffer = New CircularBuffer(Of Double)(capacity:=BufferCapacity, 0.0)
 		IsReset = True
 	End Sub
 
@@ -115,6 +130,7 @@ Public Class FilterExpPredict
 			If TypeOf MyFilterY Is IFilterRun Then
 				DirectCast(MyFilterY, IFilterRun).Reset()
 			End If
+			MyCircularBuffer.Clear()
 			FilterValueLast = Value
 			IsReset = False
 		End If
@@ -157,6 +173,7 @@ Public Class FilterExpPredict
 		'note that the gain is not the same as the gainLog here. This estimate is valid for any range of signal positive or negative
 		ValueLastK1 = ValueLast
 		ValueLast = Value
+		MyCircularBuffer.AddLast(FilterValueLast)
 		Return FilterValueLast
 	End Function
 
@@ -277,7 +294,7 @@ Public Class FilterExpPredict
 
 	Private ReadOnly Property IFilter_Count As Integer Implements IFilter.Count
 		Get
-			Throw New NotImplementedException()
+			Return MyCircularBuffer.Count
 		End Get
 	End Property
 
@@ -295,7 +312,7 @@ Public Class FilterExpPredict
 
 	Private ReadOnly Property IFilter_ToList As IList(Of Double) Implements IFilter.ToList
 		Get
-			Throw New NotImplementedException()
+			Return MyCircularBuffer.ToList()
 		End Get
 	End Property
 
@@ -312,6 +329,38 @@ Public Class FilterExpPredict
 	End Property
 
 	Public Property Tag As String Implements IFilter.Tag
+
+	Private ReadOnly Property IFilterRun_IsReset As Boolean Implements IFilterRun.IsReset
+		Get
+			Return IsReset
+		End Get
+	End Property
+
+	Public ReadOnly Property FilterLast(Index As Integer) As Double Implements IFilterRun.FilterLast
+		Get
+			'For the CircularBuffer note 0 is the oldest value MyCircularBuffer.Count -1 is
+			'the most recent value.
+			'The index is in the range [0, FilterRate-1].
+			Dim ThisBufferIndex As Integer = MyCircularBuffer.Count - 1 - Index
+			Select Case ThisBufferIndex
+				Case < 0
+					'return the oldest value
+					Return MyCircularBuffer.PeekFirst
+				Case >= MyCircularBuffer.Count
+					'return the last value (most recent value)
+					Return MyCircularBuffer.PeekLast
+				Case Else
+					'return at a sppecific location in the buffer	
+					Return MyCircularBuffer.Item(BufferIndex:=ThisBufferIndex)
+			End Select
+		End Get
+	End Property
+
+	Private ReadOnly Property IFilterRun_FilterTrendLast As Double Implements IFilterRun.FilterTrendLast
+		Get
+			Return FilterTrendLast
+		End Get
+	End Property
 
 	Private Function IFilter_Filter(Value As Double) As Double Implements IFilter.Filter
 		Return Me.FilterRun(Value)
@@ -366,7 +415,7 @@ Public Class FilterExpPredict
 	End Function
 
 	Private Function IFilter_ToArray() As Double() Implements IFilter.ToArray
-		Throw New NotImplementedException()
+		Return MyCircularBuffer.ToArray()
 	End Function
 
 	Private Function IFilter_ToArray(ScaleToMinValue As Double, ScaleToMaxValue As Double) As Double() Implements IFilter.ToArray

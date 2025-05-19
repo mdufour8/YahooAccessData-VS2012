@@ -732,6 +732,10 @@ Namespace MathPlus.Filter
 				If MyFilterBPrediction Is Nothing Then
 					Return Nothing
 				Else
+					'this is base on a FilterLowPassExpPredict filter with a PLL filter head	
+					'MyFilterBPrediction = New Filter.FilterLowPassExpPredict(
+					'NumberToPredict:=MyFilterBPredictionOutput,
+					'FilterHead:=New FilterPLL(FilterRate:=MyFilterRate))
 					Return MyFilterBPrediction.AsIFilterPrediction.ToListOfGainPerYear
 				End If
 			End Get
@@ -742,6 +746,11 @@ Namespace MathPlus.Filter
 				If MyFilterBPredictionDerivative Is Nothing Then
 					Return Nothing
 				Else
+					'this is base on a FilterLowPassExpPredict filter with two PLL filter use as the head	and the base
+					'MyFilterBPredictionDerivative = New Filter.FilterLowPassPLLPredict(
+					'	NumberToPredict:=MyFilterBPredictionOutput,
+					'	FilterHead:=New FilterPLL(FilterRate:=MyFilterRate),
+					'	FilterBase:=New FilterPLL(FilterRate:=MyFilterRate))
 					Return MyFilterBPredictionDerivative.AsIFilterPrediction.ToListOfGainPerYear
 				End If
 			End Get

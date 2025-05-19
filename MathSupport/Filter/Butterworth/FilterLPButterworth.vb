@@ -156,6 +156,24 @@ Public Class FilterLPButterworth
 
 	Private Property IFilter_Tag As String Implements IFilter.Tag
 
+	Private ReadOnly Property IFilterRun_IsReset As Boolean Implements IFilterRun.IsReset
+		Get
+			Return IsReset
+		End Get
+	End Property
+
+	Public ReadOnly Property FilterLast(Item As Integer) As Double Implements IFilterRun.FilterLast
+		Get
+			Throw New NotImplementedException()
+		End Get
+	End Property
+
+	Public ReadOnly Property FilterTrendLast As Double Implements IFilterRun.FilterTrendLast
+		Get
+			Throw New NotImplementedException()
+		End Get
+	End Property
+
 	Private Function IFilter_Filter(Value As Double) As Double Implements IFilter.Filter
 		Return Me.FilterRun(Value)
 	End Function

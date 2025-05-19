@@ -56,8 +56,9 @@ Namespace MathPlus.Filter
     End Enum
 
 
-    Public Const VOLATILITY_FILTER_RATE_DEFAULT As Integer = MathPlus.NUMBER_TRADINGDAY_PER_YEAR \ 12
-    Private MyRate As Integer
+		Public Const VOLATILITY_FILTER_RATE_DEFAULT As Integer = MathPlus.NUMBER_TRADINGDAY_PER_YEAR \ 12
+
+		Private MyRate As Integer
     Private FilterValueLastK1 As Double
     Private FilterValueLast As Double
     Private ValueLast As Double

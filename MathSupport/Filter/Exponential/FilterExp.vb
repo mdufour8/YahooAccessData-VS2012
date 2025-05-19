@@ -16,8 +16,9 @@ Public Class FilterExp
 	Private ValueLast As Double
 	Private ValueLastK1 As Double
 	Private IsReset As Boolean
+	Private MyCircularBuffer As CircularBuffer(Of Double)
 
-	Public Sub New(ByVal FilterRate As Double)
+	Public Sub New(ByVal FilterRate As Double, Optional BufferCapacity As Integer = 0)
 
 		If FilterRate < 1 Then FilterRate = 1
 		MyFilterRate = FilterRate
@@ -75,6 +76,7 @@ Public Class FilterExp
 		FilterValueLastK1 = 0
 		ValueLast = 0
 		ValueLastK1 = 0
+		MyCircularBuffer = New CircularBuffer(Of Double)(capacity:=BufferCapacity, 0.0)
 		IsReset = True
 	End Sub
 
@@ -151,17 +153,49 @@ Public Class FilterExp
 		If IsReset Then
 			'initialization
 			FilterValueLast = Value
+			MyCircularBuffer.Clear()
 			IsReset = False
 		End If
 		FilterValueLastK1 = FilterValueLast
 		FilterValueLast = A * Value + B * FilterValueLast
 		ValueLastK1 = ValueLast
 		ValueLast = Value
+		MyCircularBuffer.AddLast(FilterValueLast)
 		Return FilterValueLast
 	End Function
 	Public ReadOnly Property FilterLast As Double Implements IFilterRun.FilterLast
 		Get
 			Return FilterValueLast
+		End Get
+	End Property
+
+	''' <summary>
+	''' Return the last value of the filter at the given index.
+	''' The index here is the number of samples from the last value. 0 is the most recent value.
+	''' The index is in the range [0, FilterRate-1].
+	''' </summary>
+	''' <remarks>
+	''' The index is in the range [0, FilterRate-1].
+	''' </remarks>
+	''' <param name="Index">range [0, FilterRate-1]</param>
+	''' <returns>The filter value ay the Index value </returns>
+	Public ReadOnly Property FilterLast(Index As Integer) As Double Implements IFilterRun.FilterLast
+		Get
+			'For the CircularBuffer note 0 is the oldest value MyCircularBuffer.Count -1 is
+			'the most recent value.
+			'The index is in the range [0, FilterRate-1].
+			Dim ThisBufferIndex As Integer = MyCircularBuffer.Count - 1 - Index
+			Select Case ThisBufferIndex
+				Case < 0
+					'return the oldest value
+					Return MyCircularBuffer.PeekFirst
+				Case >= MyCircularBuffer.Count
+					'return the last value (most recent value)
+					Return MyCircularBuffer.PeekLast
+				Case Else
+					'return at a sppecific location in the buffer	
+					Return MyCircularBuffer.Item(BufferIndex:=ThisBufferIndex)
+			End Select
 		End Get
 	End Property
 
@@ -217,7 +251,7 @@ Public Class FilterExp
 
 	Private ReadOnly Property IFilter_Count As Integer Implements IFilter.Count
 		Get
-			Throw New NotImplementedException()
+			Return MyCircularBuffer.Count
 		End Get
 	End Property
 
@@ -235,7 +269,7 @@ Public Class FilterExp
 
 	Private ReadOnly Property IFilter_ToList As IList(Of Double) Implements IFilter.ToList
 		Get
-			Throw New NotImplementedException()
+			Return MyCircularBuffer.ToList()
 		End Get
 	End Property
 
@@ -252,6 +286,18 @@ Public Class FilterExp
 	End Property
 
 	Private Property IFilter_Tag As String Implements IFilter.Tag
+
+	Private ReadOnly Property IFilterRun_IsReset As Boolean Implements IFilterRun.IsReset
+		Get
+			Return IsReset
+		End Get
+	End Property
+
+	Public ReadOnly Property FilterTrendLast As Double Implements IFilterRun.FilterTrendLast
+		Get
+			Throw New NotImplementedException()
+		End Get
+	End Property
 
 	Private Function IFilter_Filter(Value As Double) As Double Implements IFilter.Filter
 		Return Me.FilterRun(Value)
@@ -302,11 +348,11 @@ Public Class FilterExp
 	End Function
 
 	Private Function IFilter_Last() As Double Implements IFilter.Last
-		Throw New NotImplementedException()
+		Return Me.ValueLast
 	End Function
 
 	Private Function IFilter_ToArray() As Double() Implements IFilter.ToArray
-		Throw New NotImplementedException()
+		Return MyCircularBuffer.ToArray
 	End Function
 
 	Private Function IFilter_ToArray(ScaleToMinValue As Double, ScaleToMaxValue As Double) As Double() Implements IFilter.ToArray

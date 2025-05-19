@@ -16,6 +16,12 @@ Public Class StatisticLCR
 		End Get
 	End Property
 
+	Public ReadOnly Property FilterLast(Index As Integer) As Double Implements IFilterRun.FilterLast
+		Get
+			Throw New NotImplementedException()
+		End Get
+	End Property
+
 	Public ReadOnly Property FilterRate As Double Implements IFilterRun.FilterRate
 		Get
 			Throw New NotImplementedException()
@@ -23,6 +29,18 @@ Public Class StatisticLCR
 	End Property
 
 	Public ReadOnly Property FilterDetails As String Implements IFilterRun.FilterDetails
+		Get
+			Throw New NotImplementedException()
+		End Get
+	End Property
+
+	Public ReadOnly Property IsReset As Boolean Implements IFilterRun.IsReset
+		Get
+			Throw New NotImplementedException()
+		End Get
+	End Property
+
+	Public ReadOnly Property FilterTrendLast As Double Implements IFilterRun.FilterTrendLast
 		Get
 			Throw New NotImplementedException()
 		End Get

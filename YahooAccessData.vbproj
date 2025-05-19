@@ -194,6 +194,7 @@
     <Import Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FileSupport\CircularBuffer.vb" />
     <Compile Include="FileSupport\FileMutex.vb" />
     <Compile Include="GlobalSuppressions.vb" />
     <Compile Include="Interface\IStockDividendSinglePayout.vb" />

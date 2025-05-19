@@ -9,9 +9,14 @@ Namespace OptionValuation
   Public Class StockOption
     Implements ICloneable
     Implements IStockOption
-    Implements YahooAccessData.IMessageInfoEvents
+		Implements YahooAccessData.IMessageInfoEvents
 
-    Private MyDividendPaymentPeriodType As IStockOption.enuDividendPaymentPeriodType
+		Public Const NUMBER_TRADINGDAY_PER_YEAR As Integer = 252
+		Public Const NUMBER_TRADINGDAY_PER_MONTH As Integer = NUMBER_TRADINGDAY_PER_YEAR \ 12
+		Public Const NUMBER_SECOND_PER_DAY As Integer = 24 * 3600
+		Public Const VOLATILITY_DAILY_TO_YEARLY_RATIO As Double = MathPlus.STATISTICAL_SIGMA_DAILY_TO_YEARLY_RATIO
+
+		Private MyDividendPaymentPeriodType As IStockOption.enuDividendPaymentPeriodType
     Private MySymbol As String
     Private MyStockPrice As Double
     Private MyOptionPriceDelta As Double
@@ -1424,8 +1429,8 @@ Namespace OptionValuation
       Dim ThisSigma As Double = Volatility * Math.Sqrt(ThisTimeInYear)
 
       If ThisSigma > 0 Then
-        ThisResult = Distributions.LogNormal.CDF(ThisMu, ThisSigma, StockPriceEnd / StockPriceStart)
-      Else
+				ThisResult = Distributions.LogNormal.CDF(ThisMu, ThisSigma, StockPriceEnd / StockPriceStart)
+			Else
         ThisResult = 0.5
       End If
       Return ThisResult
@@ -1445,6 +1450,22 @@ Namespace OptionValuation
     End Function
 
 		''' <summary>
+		''' Note:
+		''' This function computes the probability that a stock price will be less than or equal to StockPriceEnd
+		''' after a specified number of trading days, assuming Geometric Brownian Motion (GBM).
+		''' 
+		''' Under GBM, the price ratio S(t)/S(0) follows a log-normal distribution:
+		'''     S(t)/S(0) ~ LogNormal(μ', σ')
+		''' 
+		''' Therefore, the correct way to evaluate the cumulative probability is:
+		'''     P(S(t) ≤ StockPriceEnd) = CDF_LogNormal(μ', σ', StockPriceEnd / StockPriceStart)
+		''' 
+		''' There is **no need to take the logarithm** of the ratio manually — the log-normal CDF
+		''' internally operates on log-transformed values. Using the ratio directly is correct.
+		''' 
+		''' For reference, the equivalent approach using the normal distribution on log-returns would be:
+		'''     log(StockPriceEnd / StockPriceStart) passed to Normal.CDF(μ', σ')
+		''' Both are mathematically consistent, but this implementation uses the log-normal CDF directly.
 		''' Return the probability that the signal is lower than the StockPriceEnd value after the Number of trading days specified.
 		''' </summary>
 		''' <param name="NumberTradingDays"></param>
@@ -1453,7 +1474,6 @@ Namespace OptionValuation
 		''' <param name="GainDerivative"></param>
 		''' <param name="Volatility"></param>
 		''' <param name="StockPriceEnd"></param>
-		''' <returns></returns>
 		''' <remarks></remarks>
 		Public Shared Function StockPricePredictionInverse(
 																											ByVal NumberTradingDays As Double,
@@ -1463,7 +1483,7 @@ Namespace OptionValuation
 																											ByVal Volatility As Double,
 																											ByVal StockPriceEnd As Double) As Double
 			Dim ThisResult As Double
-			Dim ThisTimeInYear As Double = NumberTradingDays / YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR
+			Dim ThisTimeInYear As Double = NumberTradingDays / MathPlus.NUMBER_TRADINGDAY_PER_YEAR
 			Dim ThisGain As Double = Gain + (ThisTimeInYear * GainDerivative)
 			'Dim ThisPricePrediction As Double = StockOption.StockPricePrediction(NumberTradingDays, StockPrice, Gain)
 			'Dim ThisPricePredictionMedian As Double = StockOption.StockPricePredictionMedian(NumberTradingDays, StockPrice, Gain, Volatility)
@@ -1475,7 +1495,6 @@ Namespace OptionValuation
 			Dim ThisSigma As Double = Volatility * Math.Sqrt(ThisTimeInYear)
 
 			If ThisSigma > 0 Then
-				'Should be the Log(StockPriceEnd / StockPriceStart) but the result is not correct
 				ThisResult = Distributions.LogNormal.CDF(ThisMu, ThisSigma, StockPriceEnd / StockPriceStart)
 			Else
 				ThisResult = 0.5
@@ -1484,7 +1503,6 @@ Namespace OptionValuation
 			'ThisStockPriceStartAtMedian = StockPriceEnd * Distributions.LogNormal.InvCDF(ThisMu1, ThisSigma, 0.5)
 			Return ThisResult
 		End Function
-
 
 		''' <summary>
 		''' Return the probability that the signal is lower than the StockPriceEnd value after the Number of trading days specified.

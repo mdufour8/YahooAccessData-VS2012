@@ -35,8 +35,9 @@ Public Class FilterPLL
 	Private MyFilterDoubleExpForBandPassAmplitude As Double
 	Private MyFilterTrendLast As Double
 	Private MyFilterBandPassLast As Double
+	Private MyCircularBuffer As CircularBuffer(Of Double)
 
-	Public Sub New(ByVal FilterRate As Double, Optional DampingFactor As Double = 1.0)
+	Public Sub New(ByVal FilterRate As Double, Optional DampingFactor As Double = 1.0, Optional BufferCapacity As Integer = 0)
 		Dim ThisFilterRateMinimum As Double
 		Dim FreqDigital As Double
 		Dim SamplingPeriod As Double
@@ -121,6 +122,7 @@ Public Class FilterPLL
 		MySignalDelta = 0
 		MyFilterDoubleExpForError = New FilterDoubleExp(FilterRate:=MyFilterRate)
 		MyFilterDoubleExpForBandPass = New FilterDoubleExp(FilterRate:=MyFilterRate)
+		MyCircularBuffer = New CircularBuffer(Of Double)(capacity:=BufferCapacity, 0.0)
 		IsReset = True
 	End Sub
 
@@ -131,10 +133,9 @@ Public Class FilterPLL
 			'this is to minimize the PLL tracking error
 			For I = 0 To MyError.Length - 1
 				MyError(I) = 0
-				MyVCO(I) = 0
+				MyVCO(I) = Value
 			Next
-			MyVCO(0) = Value
-			MyError(0) = 0
+			MyCircularBuffer.Clear()
 			MyFilterDoubleExpForError.Reset()
 			MyFilterDoubleExpForBandPass.Reset()
 			IsReset = False
@@ -157,8 +158,10 @@ Public Class FilterPLL
 		MyFilterBandPassLast = MyVCO(0) - MyFilterDoubleExpForBandPass.FilterLast
 		'MyFilterTrendLast = MyFilterBandPassLast / 2
 		ValueLast = Value
+		MyCircularBuffer.AddLast(MyVCO(0))
 		Return MyVCO(0)
 	End Function
+
 
 	Public ReadOnly Property FilterLast As Double Implements IFilterRun.FilterLast
 		Get
@@ -204,7 +207,7 @@ Public Class FilterPLL
 		End Get
 	End Property
 	''' <summary>
-	''' The filtered trend or slope of the signal over the filtered sample.
+	''' The filtered trend or slope of the signal over the filtered sample rate.
 	''' </summary>
 	''' <returns></returns>
 	Public ReadOnly Property FilterTrendLast As Double
@@ -283,7 +286,7 @@ Public Class FilterPLL
 
 	Public ReadOnly Property Count As Integer Implements IFilter.Count
 		Get
-			Return 0
+			Return MyCircularBuffer.Count
 		End Get
 	End Property
 
@@ -301,7 +304,7 @@ Public Class FilterPLL
 
 	Public ReadOnly Property ToList As IList(Of Double) Implements IFilter.ToList
 		Get
-			Throw New NotImplementedException()
+			Return MyCircularBuffer.ToList()
 		End Get
 	End Property
 
@@ -324,6 +327,38 @@ Public Class FilterPLL
 		Set(value As String)
 			Throw New NotImplementedException()
 		End Set
+	End Property
+
+	Private ReadOnly Property IFilterRun_IsReset As Boolean Implements IFilterRun.IsReset
+		Get
+			Return IsReset
+		End Get
+	End Property
+
+	Public ReadOnly Property FilterLast(Index As Integer) As Double Implements IFilterRun.FilterLast
+		Get
+			'For the CircularBuffer note 0 is the oldest value MyCircularBuffer.Count -1 is
+			'the most recent value.
+			'The index is in the range [0, FilterRate-1].
+			Dim ThisBufferIndex As Integer = MyCircularBuffer.Count - 1 - Index
+			Select Case ThisBufferIndex
+				Case < 0
+					'return the oldest value
+					Return MyCircularBuffer.PeekFirst
+				Case >= MyCircularBuffer.Count
+					'return the last value (most recent value)
+					Return MyCircularBuffer.PeekLast
+				Case Else
+					'return at a sppecific location in the buffer	
+					Return MyCircularBuffer.Item(BufferIndex:=ThisBufferIndex)
+			End Select
+		End Get
+	End Property
+
+	Private ReadOnly Property IFilterRun_FilterTrendLast As Double Implements IFilterRun.FilterTrendLast
+		Get
+			Return FilterTrendLast
+		End Get
 	End Property
 
 	Public Function Filter(Value As Double) As Double Implements IFilter.Filter
@@ -379,7 +414,7 @@ Public Class FilterPLL
 	End Function
 
 	Public Function ToArray() As Double() Implements IFilter.ToArray
-		Throw New NotImplementedException()
+		Return MyCircularBuffer.ToArray()
 	End Function
 
 	Public Function ToArray(ScaleToMinValue As Double, ScaleToMaxValue As Double) As Double() Implements IFilter.ToArray

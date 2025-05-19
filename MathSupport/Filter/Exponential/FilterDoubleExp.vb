@@ -37,10 +37,10 @@ Public Class FilterDoubleExp
 	''' This adjustment is based on the behavior of double exponential filters.
 	''' </summary>
 	''' <param name="FilterRate">The filter rate for both internal filters.</param>
-	Public Sub New(ByVal FilterRate As Double)
+	Public Sub New(ByVal FilterRate As Double, Optional BufferCapacity As Integer = 0)
 		' Create two instances of the single exponential filter
 		FirstFilter = New FilterExp(FilterRate)
-		SecondFilter = New FilterExp(FilterRate)
+		SecondFilter = New FilterExp(FilterRate, BufferCapacity)
 	End Sub
 
 	''' <summary>
@@ -60,6 +60,18 @@ Public Class FilterDoubleExp
 	Public ReadOnly Property FilterLast As Double Implements IFilterRun.FilterLast
 		Get
 			Return SecondFilter.FilterLast
+		End Get
+	End Property
+
+	Public ReadOnly Property FilterLast(Item As Integer) As Double Implements IFilterRun.FilterLast
+		Get
+			Return SecondFilter.FilterLast(Item)
+		End Get
+	End Property
+
+	Public ReadOnly Property FilterTrendLast As Double Implements IFilterRun.FilterTrendLast
+		Get
+			Throw New NotImplementedException()
 		End Get
 	End Property
 
@@ -109,13 +121,13 @@ Public Class FilterDoubleExp
 #Region "IFilter"
 	Private ReadOnly Property IFilter_Rate As Integer Implements IFilter.Rate
 		Get
-			Return DirectCast(FirstFilter, IFilter).Rate
+			Return DirectCast(SecondFilter, IFilter).Rate
 		End Get
 	End Property
 
 	Private ReadOnly Property IFilter_Count As Integer Implements IFilter.Count
 		Get
-			Throw New NotImplementedException()
+			Return DirectCast(SecondFilter, IFilter).Count
 		End Get
 	End Property
 
@@ -133,7 +145,7 @@ Public Class FilterDoubleExp
 
 	Private ReadOnly Property IFilter_ToList As IList(Of Double) Implements IFilter.ToList
 		Get
-			Throw New NotImplementedException()
+			Return DirectCast(SecondFilter, IFilter).ToList
 		End Get
 	End Property
 
@@ -150,6 +162,12 @@ Public Class FilterDoubleExp
 	End Property
 
 	Private Property IFilter_Tag As String Implements IFilter.Tag
+
+	Public ReadOnly Property IsReset As Boolean Implements IFilterRun.IsReset
+		Get
+			Return IsReset
+		End Get
+	End Property
 
 	Private Function IFilter_Filter(Value As Double) As Double Implements IFilter.Filter
 		Return Me.FilterRun(Value)
@@ -200,11 +218,11 @@ Public Class FilterDoubleExp
 	End Function
 
 	Private Function IFilter_Last() As Double Implements IFilter.Last
-		Throw New NotImplementedException()
+		Return DirectCast(FirstFilter, IFilter).Last
 	End Function
 
 	Private Function IFilter_ToArray() As Double() Implements IFilter.ToArray
-		Throw New NotImplementedException()
+		Return DirectCast(SecondFilter, IFilter).ToArray
 	End Function
 
 	Private Function IFilter_ToArray(ScaleToMinValue As Double, ScaleToMaxValue As Double) As Double() Implements IFilter.ToArray
