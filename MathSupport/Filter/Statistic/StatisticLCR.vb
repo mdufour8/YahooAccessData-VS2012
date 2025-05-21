@@ -46,7 +46,29 @@ Public Class StatisticLCR
 		End Get
 	End Property
 
+	Public ReadOnly Property InputLast As Double Implements IFilterRun.InputLast
+		Get
+			Throw New NotImplementedException()
+		End Get
+	End Property
+
+	Public ReadOnly Property Count As Integer Implements IFilterRun.Count
+		Get
+			Throw New NotImplementedException()
+		End Get
+	End Property
+
+	Public ReadOnly Property ToList As IList(Of Double) Implements IFilterRun.ToList
+		Get
+			Throw New NotImplementedException()
+		End Get
+	End Property
+
 	Public Sub Reset() Implements IFilterRun.Reset
+		Throw New NotImplementedException()
+	End Sub
+
+	Public Sub Reset(BufferCapacity As Integer) Implements IFilterRun.Reset
 		Throw New NotImplementedException()
 	End Sub
 

@@ -15,15 +15,15 @@ Public Class FilterExp
 	Private FilterValueLast As Double
 	Private ValueLast As Double
 	Private ValueLastK1 As Double
-	Private IsReset As Boolean
+	Private _IsReset As Boolean
 	Private MyCircularBuffer As CircularBuffer(Of Double)
 
+#Region "New"
 	Public Sub New(ByVal FilterRate As Double, Optional BufferCapacity As Integer = 0)
 
 		If FilterRate < 1 Then FilterRate = 1
 		MyFilterRate = FilterRate
 		MyRate = CInt(MyFilterRate)
-
 		' The factor A is calculated to provide the same bandwidth as a moving average with a flat window of FilterRate points.
 		' For more details, see the "Comparison with moving average" section in:
 		' https://en.wikipedia.org/wiki/Exponential_smoothing.
@@ -77,8 +77,12 @@ Public Class FilterExp
 		ValueLast = 0
 		ValueLastK1 = 0
 		MyCircularBuffer = New CircularBuffer(Of Double)(capacity:=BufferCapacity, 0.0)
-		IsReset = True
+		_IsReset = True
 	End Sub
+#End Region
+
+#Region "Filter Bandwidth Information"
+
 
 	''' <summary>
 	''' Return the 3 dB bandwidth for a given filter rate in rad/sec.
@@ -147,14 +151,21 @@ Public Class FilterExp
 		' Return the amplitude and phase as a named tuple
 		'Return (Amplitude:=amplitude, Phase:=phase)
 	End Function
+#End Region
 
-
+#Region "IFilterRun"
+	''' <summary>
+	''' Filter the value using the exponential filter.
+	''' </summary>
+	''' <param name="Value">The input value to filter.</param>
+	''' <returns>The filtered value.</returns>
+	''' <remarks>Note that the filter is reset at the first call.</remarks>
 	Public Function FilterRun(Value As Double) As Double Implements IFilterRun.FilterRun
-		If IsReset Then
+		If _IsReset Then
 			'initialization
 			FilterValueLast = Value
 			MyCircularBuffer.Clear()
-			IsReset = False
+			_IsReset = False
 		End If
 		FilterValueLastK1 = FilterValueLast
 		FilterValueLast = A * Value + B * FilterValueLast
@@ -206,7 +217,12 @@ Public Class FilterExp
 	End Property
 
 	Public Sub Reset() Implements IFilterRun.Reset
-		IsReset = True
+		_IsReset = True
+	End Sub
+
+	Public Sub Reset(BufferCapacity As Integer) Implements IFilterRun.Reset
+		Me.Reset()
+		MyCircularBuffer = New CircularBuffer(Of Double)(capacity:=BufferCapacity, 0.0)
 	End Sub
 
 	Public ReadOnly Property FilterDetails As String Implements IFilterRun.FilterDetails
@@ -215,6 +231,36 @@ Public Class FilterExp
 		End Get
 	End Property
 
+	Public ReadOnly Property IsReset As Boolean Implements IFilterRun.IsReset
+		Get
+			Return _IsReset
+		End Get
+	End Property
+
+	Public ReadOnly Property FilterTrendLast As Double Implements IFilterRun.FilterTrendLast
+		Get
+			Return 0.0
+		End Get
+	End Property
+
+	Public ReadOnly Property Count As Integer Implements IFilterRun.Count
+		Get
+			Return MyCircularBuffer.Count
+		End Get
+	End Property
+
+	Public ReadOnly Property InputLast As Double Implements IFilterRun.InputLast
+		Get
+			Return ValueLast
+		End Get
+	End Property
+
+	Public ReadOnly Property ToList As IList(Of Double) Implements IFilterRun.ToList
+		Get
+			Return MyCircularBuffer.ToList()
+		End Get
+	End Property
+#End Region
 #Region "IFilterState"
 	Public Function ASIFilterState() As IFilterState Implements IFilterState.ASIFilterState
 		Return Me
@@ -241,9 +287,8 @@ Public Class FilterExp
 		MyQueueForState.Enqueue(FilterValueLastK1)
 	End Sub
 #End Region
-
 #Region "IFilter"
-	Private ReadOnly Property IFilter_Rate As Integer Implements IFilter.Rate
+	Public ReadOnly Property Rate As Integer Implements IFilter.Rate
 		Get
 			Return CInt(MyFilterRate)
 		End Get
@@ -251,7 +296,7 @@ Public Class FilterExp
 
 	Private ReadOnly Property IFilter_Count As Integer Implements IFilter.Count
 		Get
-			Return MyCircularBuffer.Count
+			Return Me.Count
 		End Get
 	End Property
 
@@ -285,19 +330,7 @@ Public Class FilterExp
 		End Get
 	End Property
 
-	Private Property IFilter_Tag As String Implements IFilter.Tag
-
-	Private ReadOnly Property IFilterRun_IsReset As Boolean Implements IFilterRun.IsReset
-		Get
-			Return IsReset
-		End Get
-	End Property
-
-	Public ReadOnly Property FilterTrendLast As Double Implements IFilterRun.FilterTrendLast
-		Get
-			Throw New NotImplementedException()
-		End Get
-	End Property
+	Public Property Tag As String Implements IFilter.Tag
 
 	Private Function IFilter_Filter(Value As Double) As Double Implements IFilter.Filter
 		Return Me.FilterRun(Value)

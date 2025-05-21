@@ -1,5 +1,4 @@
-﻿
-Imports System.Math
+﻿Imports System.Math
 Imports YahooAccessData.MathPlus.Filter
 
 ''' <summary>
@@ -28,7 +27,8 @@ Public Class FilterPLL
 	Private MyFilterError As Double
 	Private MyFilterRate As Double
 	Private MyDampingFactor As Double
-	Private IsReset As Boolean
+	Private _IsReset As Boolean
+
 	'note we cannot create another PLL filter without causing stack overflow
 	Private MyFilterDoubleExpForError As FilterDoubleExp
 	Private MyFilterDoubleExpForBandPass As FilterDoubleExp
@@ -123,11 +123,12 @@ Public Class FilterPLL
 		MyFilterDoubleExpForError = New FilterDoubleExp(FilterRate:=MyFilterRate)
 		MyFilterDoubleExpForBandPass = New FilterDoubleExp(FilterRate:=MyFilterRate)
 		MyCircularBuffer = New CircularBuffer(Of Double)(capacity:=BufferCapacity, 0.0)
-		IsReset = True
+		_IsReset = True
 	End Sub
 
+#Region "IFilterRun"
 	Public Function FilterRun(Value As Double) As Double Implements IFilterRun.FilterRun
-		If IsReset Then
+		If _IsReset Then
 			'initialization
 			'initialize the loop with the first time sample
 			'this is to minimize the PLL tracking error
@@ -138,7 +139,7 @@ Public Class FilterPLL
 			MyCircularBuffer.Clear()
 			MyFilterDoubleExpForError.Reset()
 			MyFilterDoubleExpForBandPass.Reset()
-			IsReset = False
+			_IsReset = False
 		End If
 		'just the standard PLL here
 		MySignalDelta = Value - MyVCO(0)
@@ -169,19 +170,65 @@ Public Class FilterPLL
 		End Get
 	End Property
 
-	Public ReadOnly Property Rate() As Double Implements IFilterRun.FilterRate
+	Public ReadOnly Property FilterRate() As Double Implements IFilterRun.FilterRate
 		Get
 			Return MyFilterRate
 		End Get
 	End Property
 
 	Public Sub Reset() Implements IFilterRun.Reset
-		IsReset = True
+		_IsReset = True
+	End Sub
+	Public Sub Reset(BufferCapacity As Integer) Implements IFilterRun.Reset
+		Me.Reset()
+		MyCircularBuffer = New CircularBuffer(Of Double)(capacity:=BufferCapacity, 0.0)
 	End Sub
 
+	Private ReadOnly Property IFilter_IsReset As Boolean Implements IFilterRun.IsReset
+		Get
+			Return _IsReset
+		End Get
+	End Property
+
+	Public ReadOnly Property FilterLast(Index As Integer) As Double Implements IFilterRun.FilterLast
+		Get
+			'For the CircularBuffer note 0 is the oldest value MyCircularBuffer.Count -1 is
+			'the most recent value.
+			'The index is in the range [0, FilterRate-1].
+			Dim ThisBufferIndex As Integer = MyCircularBuffer.Count - 1 - Index
+			Select Case ThisBufferIndex
+				Case < 0
+					'return the oldest value
+					Return MyCircularBuffer.PeekFirst
+				Case >= MyCircularBuffer.Count
+					'return the last value (most recent value)
+					Return MyCircularBuffer.PeekLast
+				Case Else
+					'return at a sppecific location in the buffer	
+					Return MyCircularBuffer.Item(BufferIndex:=ThisBufferIndex)
+			End Select
+		End Get
+	End Property
+
+	Public ReadOnly Property Count As Integer Implements IFilterRun.Count
+		Get
+			Return MyCircularBuffer.Count
+		End Get
+	End Property
 	Public ReadOnly Property FilterDetails As String Implements IFilterRun.FilterDetails
 		Get
 			Return $"{Me.GetType().Name}({MyFilterRate},{MyDampingFactor})"
+		End Get
+	End Property
+	Public ReadOnly Property InputLast As Double Implements IFilterRun.InputLast
+		Get
+			Return ValueLast
+		End Get
+	End Property
+
+	Public ReadOnly Property ToList As IList(Of Double) Implements IFilterRun.ToList
+		Get
+			Return MyCircularBuffer.ToList()
 		End Get
 	End Property
 
@@ -206,11 +253,8 @@ Public Class FilterPLL
 			Return MyFilterBandPassLast
 		End Get
 	End Property
-	''' <summary>
-	''' The filtered trend or slope of the signal over the filtered sample rate.
-	''' </summary>
-	''' <returns></returns>
-	Public ReadOnly Property FilterTrendLast As Double
+
+	Public ReadOnly Property FilterTrendLast As Double Implements IFilterRun.FilterTrendLast
 		Get
 			Return MyFilterDoubleExpForError.FilterLast
 		End Get
@@ -237,7 +281,7 @@ Public Class FilterPLL
 	Public Overrides Function ToString() As String
 		Return $"{Me.GetType().Name}: FilterRate={MyFilterRate},{Me.FilterLast}"
 	End Function
-
+#End Region
 #Region "IFilterState"
 	Public Function ASIFilterState() As IFilterState Implements IFilterState.ASIFilterState
 		Return Me
@@ -276,92 +320,52 @@ Public Class FilterPLL
 		MyQueueForState.Enqueue(MyFilterError)
 	End Sub
 #End Region
-
 #Region "IFilter"
-	Private ReadOnly Property IFilter_Rate As Integer Implements IFilter.Rate
+	Private ReadOnly Property IFilter_Count As Integer Implements IFilter.Count
 		Get
-			Return CInt(MyFilterRate)
+			Return Me.Count
 		End Get
 	End Property
 
-	Public ReadOnly Property Count As Integer Implements IFilter.Count
-		Get
-			Return MyCircularBuffer.Count
-		End Get
-	End Property
-
-	Public ReadOnly Property Max As Double Implements IFilter.Max
+	Private ReadOnly Property IFilter_Max As Double Implements IFilter.Max
 		Get
 			Throw New NotImplementedException()
 		End Get
 	End Property
 
-	Public ReadOnly Property Min As Double Implements IFilter.Min
+	Private ReadOnly Property IFilter_Min As Double Implements IFilter.Min
 		Get
 			Throw New NotImplementedException()
 		End Get
 	End Property
 
-	Public ReadOnly Property ToList As IList(Of Double) Implements IFilter.ToList
+	Private ReadOnly Property IFilter_ToList As IList(Of Double) Implements IFilter.ToList
 		Get
 			Return MyCircularBuffer.ToList()
 		End Get
 	End Property
 
-	Public ReadOnly Property ToListOfError As IList(Of Double) Implements IFilter.ToListOfError
+	Private ReadOnly Property IFilter_ToListOfError As IList(Of Double) Implements IFilter.ToListOfError
 		Get
 			Throw New NotImplementedException()
 		End Get
 	End Property
 
-	Public ReadOnly Property ToListScaled As ListScaled Implements IFilter.ToListScaled
+	Private ReadOnly Property IFilter_ToListScaled As ListScaled Implements IFilter.ToListScaled
 		Get
 			Throw New NotImplementedException()
 		End Get
 	End Property
 
 	Public Property Tag As String Implements IFilter.Tag
-		Get
-			Throw New NotImplementedException()
-		End Get
-		Set(value As String)
-			Throw New NotImplementedException()
-		End Set
-	End Property
 
-	Private ReadOnly Property IFilterRun_IsReset As Boolean Implements IFilterRun.IsReset
+	Public ReadOnly Property Rate As Integer Implements IFilter.Rate
 		Get
-			Return IsReset
+			Return CInt(Me.FilterRate)
 		End Get
 	End Property
 
-	Public ReadOnly Property FilterLast(Index As Integer) As Double Implements IFilterRun.FilterLast
-		Get
-			'For the CircularBuffer note 0 is the oldest value MyCircularBuffer.Count -1 is
-			'the most recent value.
-			'The index is in the range [0, FilterRate-1].
-			Dim ThisBufferIndex As Integer = MyCircularBuffer.Count - 1 - Index
-			Select Case ThisBufferIndex
-				Case < 0
-					'return the oldest value
-					Return MyCircularBuffer.PeekFirst
-				Case >= MyCircularBuffer.Count
-					'return the last value (most recent value)
-					Return MyCircularBuffer.PeekLast
-				Case Else
-					'return at a sppecific location in the buffer	
-					Return MyCircularBuffer.Item(BufferIndex:=ThisBufferIndex)
-			End Select
-		End Get
-	End Property
-
-	Private ReadOnly Property IFilterRun_FilterTrendLast As Double Implements IFilterRun.FilterTrendLast
-		Get
-			Return FilterTrendLast
-		End Get
-	End Property
-
-	Public Function Filter(Value As Double) As Double Implements IFilter.Filter
+	Private Function IFilter_Filter(Value As Double) As Double Implements IFilter.Filter
 		Return Me.FilterRun(Value)
 	End Function
 
@@ -369,39 +373,39 @@ Public Class FilterPLL
 		Throw New NotImplementedException()
 	End Function
 
-	Private Function Filter_IFilter(ByRef Value() As Double, DelayRemovedToItem As Integer) As Double() Implements IFilter.Filter
+	Private Function IFilter_Filter(ByRef Value() As Double, DelayRemovedToItem As Integer) As Double() Implements IFilter.Filter
 		Throw New NotImplementedException()
 	End Function
 
-	Public Function Filter(Value As Single) As Double Implements IFilter.Filter
-		Return Me.FilterRun(Value)
+	Private Function IFilter_Filter(Value As Single) As Double Implements IFilter.Filter
+		Throw New NotImplementedException()
 	End Function
 
-	Public Function Filter(Value As IPriceVol) As Double Implements IFilter.Filter
+	Private Function IFilter_Filter(Value As IPriceVol) As Double Implements IFilter.Filter
 		Return Me.FilterRun(Value.Last)
 	End Function
 
-	Public Function FilterErrorLast() As Double Implements IFilter.FilterErrorLast
+	Private Function IFilter_FilterErrorLast() As Double Implements IFilter.FilterErrorLast
 		Return Me.FilterError
 	End Function
 
-	Public Function FilterBackTo(ByRef Value As Double) As Double Implements IFilter.FilterBackTo
+	Private Function IFilter_FilterBackTo(ByRef Value As Double) As Double Implements IFilter.FilterBackTo
 		Throw New NotImplementedException()
 	End Function
 
-	Public Function FilterLastToPriceVol() As IPriceVol Implements IFilter.FilterLastToPriceVol
+	Private Function IFilter_FilterLastToPriceVol() As IPriceVol Implements IFilter.FilterLastToPriceVol
 		Throw New NotImplementedException()
 	End Function
 
-	Public Function LastToPriceVol() As IPriceVol Implements IFilter.LastToPriceVol
+	Private Function IFilter_LastToPriceVol() As IPriceVol Implements IFilter.LastToPriceVol
 		Throw New NotImplementedException()
 	End Function
 
-	Public Function FilterPredictionNext(Value As Double) As Double Implements IFilter.FilterPredictionNext
+	Private Function IFilter_FilterPredictionNext(Value As Double) As Double Implements IFilter.FilterPredictionNext
 		Throw New NotImplementedException()
 	End Function
 
-	Public Function FilterPredictionNext(Value As Single) As Double Implements IFilter.FilterPredictionNext
+	Private Function IFilter_FilterPredictionNext(Value As Single) As Double Implements IFilter.FilterPredictionNext
 		Throw New NotImplementedException()
 	End Function
 
@@ -409,45 +413,30 @@ Public Class FilterPLL
 		Return Me.FilterLast
 	End Function
 
-	Public Function Last() As Double Implements IFilter.Last
-		Throw New NotImplementedException()
+	Private Function IFilter_Last() As Double Implements IFilter.Last
+		Return Me.ValueLast
 	End Function
 
-	Public Function ToArray() As Double() Implements IFilter.ToArray
+	Private Function IFilter_ToArray() As Double() Implements IFilter.ToArray
 		Return MyCircularBuffer.ToArray()
 	End Function
 
-	Public Function ToArray(ScaleToMinValue As Double, ScaleToMaxValue As Double) As Double() Implements IFilter.ToArray
+	Private Function IFilter_ToArray(ScaleToMinValue As Double, ScaleToMaxValue As Double) As Double() Implements IFilter.ToArray
 		Throw New NotImplementedException()
 	End Function
 
-	Public Function ToArray(MinValueInitial As Double, MaxValueInitial As Double, ScaleToMinValue As Double, ScaleToMaxValue As Double) As Double() Implements IFilter.ToArray
+	Private Function IFilter_ToArray(MinValueInitial As Double, MaxValueInitial As Double, ScaleToMinValue As Double, ScaleToMaxValue As Double) As Double() Implements IFilter.ToArray
 		Throw New NotImplementedException()
 	End Function
 
 	Private Function IFilter_ToString() As String Implements IFilter.ToString
 		Return Me.ToString()
 	End Function
-
 #End Region
-
-	''' <summary>
-	''' Simulates a unit step input to the FilterPLL and prints analysis to console.
-	''' </summary>
-	Public Shared Sub TestUnitStepResponse()
-		Dim pll As New FilterPLL(FilterRate:=20, DampingFactor:=1.0)
-		pll.Reset()
-
-		Dim response As New List(Of Double)
-		For i = 0 To 50
-			response.Add(pll.FilterRun(1.0))
-		Next
-
-		StepResponseAnalyzer.AnalyzeStepResponse(response, samplingInterval:=1.0)
-	End Sub
-
 End Class
 
+
+#Region "StepResponseAnalyzer"
 Module StepResponseAnalyzer
 
 	''' <summary>
@@ -491,7 +480,20 @@ Module StepResponseAnalyzer
 		Console.WriteLine($"Estimated fₙ (Hz): {omega_n / (2 * PI):F4}")
 	End Sub
 
+	''' <summary>
+	''' Simulates a unit step input to the FilterPLL and prints analysis to console.
+	''' </summary>
+	Public Sub TestUnitStepResponse()
+		Dim pll As New FilterPLL(FilterRate:=20, DampingFactor:=1.0)
+		pll.Reset()
 
+		Dim response As New List(Of Double)
+		For i = 0 To 50
+			response.Add(pll.FilterRun(1.0))
+		Next
+
+		StepResponseAnalyzer.AnalyzeStepResponse(response, samplingInterval:=1.0)
+	End Sub
 	Public Sub TestPhaseShift()
 		' Parameters
 		Dim frequency As Double = 0.1  ' Hz
@@ -549,4 +551,6 @@ Module StepResponseAnalyzer
 		Console.ReadKey()
 	End Sub
 End Module
+#End Region
+
 

@@ -24,6 +24,7 @@ Imports YahooAccessData.MathPlus.Filter
 ''' </summary>
 Public Class FilterDoubleExp
 	Implements IFilterRun
+
 	Implements IFilter
 	Implements IFilterState
 
@@ -43,6 +44,7 @@ Public Class FilterDoubleExp
 		SecondFilter = New FilterExp(FilterRate, BufferCapacity)
 	End Sub
 
+#Region "IFilterRun"
 	''' <summary>
 	''' Runs the double exponential filter by passing the value through two sequential filters.
 	''' </summary>
@@ -71,7 +73,7 @@ Public Class FilterDoubleExp
 
 	Public ReadOnly Property FilterTrendLast As Double Implements IFilterRun.FilterTrendLast
 		Get
-			Throw New NotImplementedException()
+			Return 0.0
 		End Get
 	End Property
 
@@ -92,6 +94,35 @@ Public Class FilterDoubleExp
 		SecondFilter.Reset()
 	End Sub
 
+	Public Sub Reset(BufferCapacity As Integer) Implements IFilterRun.Reset
+		FirstFilter.Reset(BufferCapacity)
+		SecondFilter.Reset(BufferCapacity)
+	End Sub
+
+	Public ReadOnly Property IsReset As Boolean Implements IFilterRun.IsReset
+		Get
+			Return FirstFilter.IsReset AndAlso SecondFilter.IsReset
+		End Get
+	End Property
+
+	Public ReadOnly Property Count As Integer Implements IFilterRun.Count
+		Get
+			Return SecondFilter.Count
+		End Get
+	End Property
+
+	Public ReadOnly Property InputLast As Double Implements IFilterRun.InputLast
+		Get
+			Return FirstFilter.InputLast
+		End Get
+	End Property
+
+	Public ReadOnly Property ToList As IList(Of Double) Implements IFilterRun.ToList
+		Get
+			Return SecondFilter.ToList
+		End Get
+	End Property
+
 	''' <summary>
 	''' Gets the details of the filter, including the filter rate.
 	''' </summary>
@@ -100,7 +131,7 @@ Public Class FilterDoubleExp
 			Return $"{Me.GetType().Name}({FirstFilter.FilterRate})"
 		End Get
 	End Property
-
+#End Region
 #Region "IFilterState"
 	Public Function ASIFilterState() As IFilterState Implements IFilterState.ASIFilterState
 		Return Me
@@ -117,9 +148,8 @@ Public Class FilterDoubleExp
 		SecondFilter.ASIFilterState.Save()
 	End Sub
 #End Region
-
 #Region "IFilter"
-	Private ReadOnly Property IFilter_Rate As Integer Implements IFilter.Rate
+	Public ReadOnly Property Rate As Integer Implements IFilter.Rate
 		Get
 			Return DirectCast(SecondFilter, IFilter).Rate
 		End Get
@@ -127,7 +157,7 @@ Public Class FilterDoubleExp
 
 	Private ReadOnly Property IFilter_Count As Integer Implements IFilter.Count
 		Get
-			Return DirectCast(SecondFilter, IFilter).Count
+			Return Me.Count
 		End Get
 	End Property
 
@@ -161,13 +191,7 @@ Public Class FilterDoubleExp
 		End Get
 	End Property
 
-	Private Property IFilter_Tag As String Implements IFilter.Tag
-
-	Public ReadOnly Property IsReset As Boolean Implements IFilterRun.IsReset
-		Get
-			Return IsReset
-		End Get
-	End Property
+	Public Property Tag As String Implements IFilter.Tag
 
 	Private Function IFilter_Filter(Value As Double) As Double Implements IFilter.Filter
 		Return Me.FilterRun(Value)
@@ -234,7 +258,7 @@ Public Class FilterDoubleExp
 	End Function
 
 	Public Overrides Function ToString() As String Implements IFilter.ToString
-		Return $"{Me.GetType().Name}: FilterRate={IFilter_Rate},{Me.FilterLast}"
+		Return $"{Me.GetType().Name}: FilterRate={Me.Rate},{Me.FilterLast}"
 	End Function
 #End Region
 End Class

@@ -174,6 +174,24 @@ Public Class FilterLPButterworth
 		End Get
 	End Property
 
+	Public ReadOnly Property Count As Integer Implements IFilterRun.Count
+		Get
+			Throw New NotImplementedException()
+		End Get
+	End Property
+
+	Public ReadOnly Property InputLast As Double Implements IFilterRun.InputLast
+		Get
+			Throw New NotImplementedException()
+		End Get
+	End Property
+
+	Public ReadOnly Property ToList As IList(Of Double) Implements IFilterRun.ToList
+		Get
+			Throw New NotImplementedException()
+		End Get
+	End Property
+
 	Private Function IFilter_Filter(Value As Double) As Double Implements IFilter.Filter
 		Return Me.FilterRun(Value)
 	End Function
@@ -241,6 +259,10 @@ Public Class FilterLPButterworth
 	Public Overrides Function ToString() As String Implements IFilter.ToString
 		Return $"{Me.GetType().Name}: FilterRate={MyFilterRate},{Me.FilterLast}"
 	End Function
+
+	Public Sub Reset(BufferCapacity As Integer) Implements IFilterRun.Reset
+		Throw New NotImplementedException()
+	End Sub
 #End Region
 End Class
 

@@ -11,7 +11,6 @@ Imports YahooAccessData.MathPlus.Filter
 ''' </summary>
 Public Class FilterExpPredict
 	Implements IFilterRun
-
 	Implements IFilter
 	Implements IFilterState
 
@@ -32,7 +31,7 @@ Public Class FilterExpPredict
 	Private MyFilterY As IFilter
 	Private MyNumberToPredict As Double
 	Private MyGainYearlyEstimate As Double
-	Private IsReset As Boolean
+	Private _IsReset As Boolean
 	Private MyStatisticalForGain As FilterStatisticalQueue
 	Private MyFilterRateYearlyScaling As Double
 	Private MyFilterRateYearlyGainVolatilitySQRTScaling As Double
@@ -114,7 +113,7 @@ Public Class FilterExpPredict
 		B = 1 - A
 		ABRatio = 2 / (MyFilterRate - 1)   'This is is equivalent to 'ABRatio = A / B or ABRatio =A / (1 - A)	
 		MyCircularBuffer = New CircularBuffer(Of Double)(capacity:=BufferCapacity, 0.0)
-		IsReset = True
+		_IsReset = True
 	End Sub
 
 	Public Overridable Function FilterRun(Value As Double) As Double Implements IFilterRun.FilterRun
@@ -122,7 +121,7 @@ Public Class FilterExpPredict
 		Dim Bp As Double
 		Dim Result As Double
 		Dim ResultY As Double
-		If IsReset Then
+		If _IsReset Then
 			'initialization
 			If TypeOf MyFilter Is IFilterRun Then
 				DirectCast(MyFilter, IFilterRun).Reset()
@@ -132,7 +131,7 @@ Public Class FilterExpPredict
 			End If
 			MyCircularBuffer.Clear()
 			FilterValueLast = Value
-			IsReset = False
+			_IsReset = False
 		End If
 		FilterValueLastK1 = FilterValueLast
 		Result = MyFilter.Filter(Value)
@@ -235,6 +234,7 @@ Public Class FilterExpPredict
 		End Get
 	End Property
 
+#Region "IFilterRun"
 	Public ReadOnly Property FilterRate() As Double Implements IFilterRun.FilterRate
 		Get
 			Return MyFilterRate
@@ -242,8 +242,19 @@ Public Class FilterExpPredict
 	End Property
 
 	Public Sub Reset() Implements IFilterRun.Reset
-		IsReset = True
+		_IsReset = True
 	End Sub
+
+	Public Sub Reset(BufferCapacity As Integer) Implements IFilterRun.Reset
+		Me.Reset()
+		MyCircularBuffer = New CircularBuffer(Of Double)(capacity:=BufferCapacity, 0.0)
+	End Sub
+
+	Public ReadOnly Property IsReset As Boolean Implements IFilterRun.IsReset
+		Get
+			Return _IsReset
+		End Get
+	End Property
 
 	Public ReadOnly Property FilterDetails As String Implements IFilterRun.FilterDetails
 		Get
@@ -251,10 +262,53 @@ Public Class FilterExpPredict
 		End Get
 	End Property
 
+	Public ReadOnly Property FilterLast(Index As Integer) As Double Implements IFilterRun.FilterLast
+		Get
+			'For the CircularBuffer note 0 is the oldest value MyCircularBuffer.Count -1 is
+			'the most recent value.
+			'The index is in the range [0, FilterRate-1].
+			Dim ThisBufferIndex As Integer = MyCircularBuffer.Count - 1 - Index
+			Select Case ThisBufferIndex
+				Case < 0
+					'return the oldest value
+					Return MyCircularBuffer.PeekFirst
+				Case >= MyCircularBuffer.Count
+					'return the last value (most recent value)
+					Return MyCircularBuffer.PeekLast
+				Case Else
+					'return at a sppecific location in the buffer	
+					Return MyCircularBuffer.Item(BufferIndex:=ThisBufferIndex)
+			End Select
+		End Get
+	End Property
 
+	Private ReadOnly Property IFilterRun_FilterTrendLast As Double Implements IFilterRun.FilterTrendLast
+		Get
+			Return FilterTrendLast
+		End Get
+	End Property
+
+	Public ReadOnly Property Count As Integer Implements IFilterRun.Count
+		Get
+			Return MyCircularBuffer.Count
+		End Get
+	End Property
+
+	Public ReadOnly Property InputLast As Double Implements IFilterRun.InputLast
+		Get
+			Return ValueLast
+		End Get
+	End Property
+
+	Public ReadOnly Property ToList As IList(Of Double) Implements IFilterRun.ToList
+		Get
+			Return MyCircularBuffer.ToList()
+		End Get
+	End Property
 	Public Overrides Function ToString() As String
 		Return $"{Me.GetType().Name}: FilterRate={MyFilterRate},{Me.FilterLast}"
 	End Function
+#End Region
 
 #Region "IFilterState"
 	Public Function ASIFilterState() As IFilterState Implements IFilterState.ASIFilterState
@@ -284,9 +338,8 @@ Public Class FilterExpPredict
 		'MyQueueForState.Enqueue(FilterValueLastK1)
 	End Sub
 #End Region
-
 #Region "IFilter"
-	Private ReadOnly Property IFilter_Rate As Integer Implements IFilter.Rate
+	Public ReadOnly Property Rate As Integer Implements IFilter.Rate
 		Get
 			Return CInt(MyFilterRate)
 		End Get
@@ -294,7 +347,7 @@ Public Class FilterExpPredict
 
 	Private ReadOnly Property IFilter_Count As Integer Implements IFilter.Count
 		Get
-			Return MyCircularBuffer.Count
+			Return Me.Count
 		End Get
 	End Property
 
@@ -303,6 +356,8 @@ Public Class FilterExpPredict
 			Throw New NotImplementedException()
 		End Get
 	End Property
+
+	Public Property Tag As String Implements IFilter.Tag
 
 	Private ReadOnly Property IFilter_Min As Double Implements IFilter.Min
 		Get
@@ -325,40 +380,6 @@ Public Class FilterExpPredict
 	Private ReadOnly Property IFilter_ToListScaled As ListScaled Implements IFilter.ToListScaled
 		Get
 			Throw New NotImplementedException()
-		End Get
-	End Property
-
-	Public Property Tag As String Implements IFilter.Tag
-
-	Private ReadOnly Property IFilterRun_IsReset As Boolean Implements IFilterRun.IsReset
-		Get
-			Return IsReset
-		End Get
-	End Property
-
-	Public ReadOnly Property FilterLast(Index As Integer) As Double Implements IFilterRun.FilterLast
-		Get
-			'For the CircularBuffer note 0 is the oldest value MyCircularBuffer.Count -1 is
-			'the most recent value.
-			'The index is in the range [0, FilterRate-1].
-			Dim ThisBufferIndex As Integer = MyCircularBuffer.Count - 1 - Index
-			Select Case ThisBufferIndex
-				Case < 0
-					'return the oldest value
-					Return MyCircularBuffer.PeekFirst
-				Case >= MyCircularBuffer.Count
-					'return the last value (most recent value)
-					Return MyCircularBuffer.PeekLast
-				Case Else
-					'return at a sppecific location in the buffer	
-					Return MyCircularBuffer.Item(BufferIndex:=ThisBufferIndex)
-			End Select
-		End Get
-	End Property
-
-	Private ReadOnly Property IFilterRun_FilterTrendLast As Double Implements IFilterRun.FilterTrendLast
-		Get
-			Return FilterTrendLast
 		End Get
 	End Property
 
@@ -411,7 +432,7 @@ Public Class FilterExpPredict
 	End Function
 
 	Private Function IFilter_Last() As Double Implements IFilter.Last
-		Throw New NotImplementedException()
+		Return Me.InputLast
 	End Function
 
 	Private Function IFilter_ToArray() As Double() Implements IFilter.ToArray

@@ -272,12 +272,12 @@ Namespace MathPlus.Filter
 			'		ThisFilterPredictionGainYearly = ThisFilterPredictionGainYearly
 			'	End If
 			'End If
-			MyFilterValueLast = MyFilterPLL.Filter(Value)
+			MyFilterValueLast = MyFilterPLL.FilterRun(Value)
 			If MyFilterBPrediction IsNot Nothing Then
 				MyFilterBPrediction.Filter(Value)
 				MyFilterBPredictionDerivative.Filter(Value)
 			End If
-			MyFilterError = MyFilterPLLPhase.Filter(MyFilterPLL.FilterError)
+			MyFilterError = MyFilterPLLPhase.FilterRun(MyFilterPLL.FilterError)
 			'MyFilterError = MyFilterPLL.FilterError
 			MyStatisticalForGain.Filter(NUMBER_TRADINGDAY_PER_YEAR * GainLog(Value:=MyFilterValueLast + MyFilterError, ValueRef:=MyFilterValueLast))
 			ThisFilterPredictionGainYearly = MyStatisticalForGain.FilterLast.ToGaussianScale(ScaleToSignedUnit:=True)
@@ -456,7 +456,7 @@ Namespace MathPlus.Filter
 				'take the filter output has the best estimate of the current input 
 				'this significantly reduce the noise on the futur estimate of output value
 				'and is a superior for signal trading
-				ThisFilterValueLast = MyFilterPLL.Filter(MyFilterPLL.FilterLast + MyFilterPLL.FilterError)
+				ThisFilterValueLast = MyFilterPLL.FilterRun(MyFilterPLL.FilterLast + MyFilterPLL.FilterError)
 			Next
 			MyFilterPLL.ASIFilterState.ReturnPrevious()
 			Return ThisFilterValueLast
