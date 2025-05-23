@@ -7,6 +7,7 @@
 ''' </summary>
 <Serializable()>
 Public Class FilterStatisticalQueue
+	Implements IFilterRun(Of IStatistical)
 	Implements IFilter(Of IStatistical)
 	Implements IRegisterKey(Of String)
 
@@ -16,6 +17,7 @@ Public Class FilterStatisticalQueue
 	Private FilterValueLast As IStatistical
 	Private MyStartPoint As Integer
 	Private IsRunReady As Boolean
+	Private _IsReset As Boolean
 
 	Private ValueLast As Double
 	Private ValueLastK1 As Double
@@ -25,7 +27,10 @@ Public Class FilterStatisticalQueue
 	Private MySumOfValue As Double
 	Private MySumOfValueSquare As Double
 	Private MyListOfValueStatistical As List(Of IStatistical)
+	Private MyCircularBuffer As CircularBuffer(Of IStatistical)
 
+
+#Region "New"
 	''' <summary>
 	''' Calculate the statistical information based on a windows size given by FilterRate. 
 	''' This is a basic implementation for the statistical measurement using the square windows only.
@@ -35,7 +40,7 @@ Public Class FilterStatisticalQueue
 	''' Should be set to be greater than two
 	''' </param>
 	''' <remarks></remarks>
-	Public Sub New(ByVal FilterRate As Integer)
+	Public Sub New(ByVal FilterRate As Integer, Optional BufferCapacity As Integer = 0)
 		MyListOfValueStatistical = New List(Of IStatistical)
 		MyQueueOfValue = New Queue(Of Double)
 		MyQueueOfValueSquare = New Queue(Of Double)
@@ -47,23 +52,11 @@ Public Class FilterStatisticalQueue
 		ValueLastK1 = 0
 		MyStartPoint = 0
 		IsRunReady = False
+		MyCircularBuffer = New CircularBuffer(Of IStatistical)(capacity:=BufferCapacity, Nothing)
 	End Sub
+#End Region
 
-	''' <summary>
-	''' Calculate the statistical information based on a windows size given by FilterRate
-	''' </summary>
-	''' <param name="FilterRate"></param>
-	''' Should be greater than one, otherwise the calculation is done on all the data
-	''' <param name="StartPoint">
-	''' The startPoint where the calculation is started
-	''' </param>
-	''' <remarks></remarks>
-	Public Sub New(ByVal FilterRate As Integer, ByVal StartPoint As Integer)
-		Me.New(FilterRate)
-		MyStartPoint = StartPoint
-		IsRunReady = True
-	End Sub
-
+#Region "IFilter"
 	''' <summary>
 	''' The Filter function:
 	''' - Initializes the filter with the first value and sets MyStartPoint to 0 if IsRunReady is False.
@@ -88,15 +81,24 @@ Public Class FilterStatisticalQueue
 		Dim ThisMean As Double
 		Dim ThisVariance As Double
 
-		If MyListOfValueStatistical.Count = 0 Then
+		If MyListOfValueStatistical.Count = 0 OrElse _IsReset Then
+			MyListOfValueStatistical.Clear()
+			MyCircularBuffer.Clear()
+			MyQueueOfValue.Clear()
+			MyQueueOfValueSquare.Clear()
+			MySumOfValue = 0
+			MySumOfValueSquare = 0
+			ValueLast = Value
 			'initialization
 			FilterValueLast = New StatisticalData(Value, 0, 1)
-			If IsRunReady = False Then
-				MyStartPoint = 0
-			End If
+			IsRunReady = False
+			MyStartPoint = 0
 		Else
 			If IsRunReady = False Then
+				'wait until the value change to start the volatility measurement filter
+				'this is to avoid initial value of zero to be used in the calculation
 				If Value <> ValueLast Then
+					'we can start the statistical measurement	
 					MyStartPoint = MyListOfValueStatistical.Count
 					IsRunReady = True
 				End If
@@ -144,6 +146,7 @@ Public Class FilterStatisticalQueue
 		MyListOfValueStatistical.Add(FilterValueLast)
 		ValueLastK1 = ValueLast
 		ValueLast = Value
+		MyCircularBuffer.AddLast(FilterValueLast)
 		Return FilterValueLast
 	End Function
 
@@ -332,7 +335,89 @@ Public Class FilterStatisticalQueue
 	Public Overrides Function ToString() As String Implements IFilter(Of IStatistical).ToString
 		Return Me.FilterLast.ToString
 	End Function
+#End Region
 
+#Region "IFilterRun"
+	Public Function FilterRun(Value As Double) As IStatistical Implements IFilterRun(Of IStatistical).FilterRun
+		Return Me.Filter(Value)
+	End Function
+
+	Public ReadOnly Property InputLast As Double Implements IFilterRun(Of IStatistical).InputLast
+		Get
+			Return Me.Last()
+		End Get
+	End Property
+
+	Private ReadOnly Property IFilterRun_FilterLast As IStatistical Implements IFilterRun(Of IStatistical).FilterLast
+		Get
+			Return Me.FilterLast
+		End Get
+	End Property
+
+	Private ReadOnly Property IFilterRun_FilterLast(Index As Integer) As IStatistical Implements IFilterRun(Of IStatistical).FilterLast
+		Get
+			'For the CircularBuffer note 0 is the oldest value MyCircularBuffer.Count -1 is
+			'the most recent value.
+			'The index is in the range [0, FilterRate-1].
+			Dim ThisBufferIndex As Integer = MyCircularBuffer.Count - 1 - Index
+			Select Case ThisBufferIndex
+				Case < 0
+					'return the oldest value
+					Return MyCircularBuffer.PeekFirst
+				Case >= MyCircularBuffer.Count
+					'return the last value (most recent value)
+					Return MyCircularBuffer.PeekLast
+				Case Else
+					'return at a sppecific location in the buffer	
+					Return MyCircularBuffer.Item(BufferIndex:=ThisBufferIndex)
+			End Select
+		End Get
+	End Property
+
+	Public ReadOnly Property FilterTrendLast As IStatistical Implements IFilterRun(Of IStatistical).FilterTrendLast
+		Get
+			Return New StatisticalData(0, 0, 0)
+		End Get
+	End Property
+
+	Public ReadOnly Property FilterRate As Double Implements IFilterRun(Of IStatistical).FilterRate
+		Get
+			Return Me.Rate
+		End Get
+	End Property
+
+	Private ReadOnly Property IFilterRun_Count As Integer Implements IFilterRun(Of IStatistical).Count
+		Get
+			Return MyCircularBuffer.Count
+		End Get
+	End Property
+
+	Private ReadOnly Property IFilterRun_ToList As IList(Of IStatistical) Implements IFilterRun(Of IStatistical).ToList
+		Get
+			Return MyCircularBuffer.ToList()
+		End Get
+	End Property
+
+	Public ReadOnly Property FilterDetails As String Implements IFilterRun(Of IStatistical).FilterDetails
+		Get
+			Return $"{Me.GetType().Name}({Me.Rate})"
+		End Get
+	End Property
+
+	Public Sub Reset() Implements IFilterRun(Of IStatistical).Reset
+		_IsReset = True
+	End Sub
+
+	Public Sub Reset(BufferCapacity As Integer) Implements IFilterRun(Of IStatistical).Reset
+		Me.Reset()
+		MyCircularBuffer = New CircularBuffer(Of IStatistical)(capacity:=BufferCapacity, Nothing)
+	End Sub
+	Public ReadOnly Property IsReset As Boolean Implements IFilterRun(Of IStatistical).IsReset
+		Get
+			Return _IsReset
+		End Get
+	End Property
+#End Region
 #Region "IRegisterKey"
 	Public Function AsIRegisterKey() As IRegisterKey(Of String)
 		Return Me

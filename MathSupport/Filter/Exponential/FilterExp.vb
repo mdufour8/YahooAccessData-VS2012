@@ -3,7 +3,6 @@ Imports System.Numerics
 
 Public Class FilterExp
 	Implements IFilterRun
-
 	Implements IFilter
 	Implements IFilterState
 

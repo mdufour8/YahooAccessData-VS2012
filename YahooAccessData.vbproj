@@ -253,6 +253,7 @@
     <Compile Include="MathSupport\MathPlus.vb" />
     <Compile Include="MathSupport\MathProcess.vb" />
     <Compile Include="MathSupport\Measure.vb" />
+    <Compile Include="MathSupport\PriceCDFProbabilityAnalysis\CDFProbabilityAnalysis.vb" />
     <Compile Include="My Project\Application1.Designer.vb">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
