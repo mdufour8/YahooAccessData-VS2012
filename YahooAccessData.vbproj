@@ -212,7 +212,9 @@
     <Compile Include="FileSupport\TimePeriodOverlap.vb" />
     <Compile Include="FileSupport\TreeNodeList.vb" />
     <Compile Include="MathSupport\Filter\Butterworth\FilterLPButterworth.vb" />
+    <Compile Include="MathSupport\Filter\FilterCascaded.vb" />
     <Compile Include="MathSupport\Filter\Exponential\FilterDoubleExp.vb" />
+    <Compile Include="MathSupport\Filter\Interface\IFilterConnector.vb" />
     <Compile Include="MathSupport\Filter\Statistic\FilterStatisticQueue.vb" />
     <Compile Include="MathSupport\Filter\Statistic\StatisticalData.vb" />
     <Compile Include="MathSupport\Filter\Statistic\FilterStatistical.vb" />
@@ -254,6 +256,7 @@
     <Compile Include="MathSupport\MathProcess.vb" />
     <Compile Include="MathSupport\Measure.vb" />
     <Compile Include="MathSupport\PriceCDFProbabilityAnalysis\CDFProbabilityAnalysis.vb" />
+    <Compile Include="MathSupport\PriceCDFProbabilityAnalysis\FilterCDFProbability.vb" />
     <Compile Include="My Project\Application1.Designer.vb">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

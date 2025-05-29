@@ -35,7 +35,7 @@ Namespace MathPlus.Filter
 		''' <param name="Volatility">Filter providing the most recent volatility estimate.</param>
 		''' <param name="PivotOffset">Number of samples ago to use as the pivot reference point.</param>
 		''' <returns>A probability value between 0 and 1 indicating how likely the observed move is under a flat-trend model.</returns>
-		Public Function CalculateSinglePivotCDFProbability(Filter As IFilterRun, Volatility As IFilter, PivotOffset As Integer) As Double
+		Public Function CalculateSinglePivotCDFProbability(Filter As IFilterRun, Volatility As IFilterRun, PivotOffset As Integer) As Double
 			If Volatility.FilterLast = 0 Then Return 0.5 ' Cannot infer trend if volatility is zero
 
 			' Get pivot and current price values
