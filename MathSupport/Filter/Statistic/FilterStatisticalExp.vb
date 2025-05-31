@@ -151,21 +151,6 @@ Public Class FilterStatisticalExp
 		For Each ThisValue In Value
 			Me.Filter(ThisValue)
 		Next
-		ThisListOfValueStatistical = New List(Of IStatistical)(MyListOfValueStatistical)
-		MyListOfValueStatistical.Clear()
-		ThisPoint = MyStartPoint + MyRate
-		If ThisPoint < ThisListOfValueStatistical.Count Then
-			ThisPosition = ThisPoint - 1
-		Else
-			ThisPosition = ThisListOfValueStatistical.Count - 1
-		End If
-		Dim ThisStatistical = ThisListOfValueStatistical(ThisPosition)
-		For I = 0 To ThisPosition
-			MyListOfValueStatistical.Add(ThisStatistical.Copy)
-		Next
-		For I = I To (ThisListOfValueStatistical.Count - 1)
-			MyListOfValueStatistical.Add(ThisListOfValueStatistical(I))
-		Next
 		Return MyListOfValueStatistical.ToArray
 	End Function
 
@@ -177,39 +162,11 @@ Public Class FilterStatisticalExp
 	''' <returns>The result</returns>
 	''' <remarks></remarks>
 	Public Function Filter(ByRef Value() As Double, DelayRemovedToItem As Integer) As IStatistical() Implements IFilter(Of IStatistical).Filter
-		Dim ThisValues(0 To Value.Length - 1) As IStatistical
-		Dim I As Integer
-		Dim J As Integer
-
-		Dim ThisFilterLeft As New FilterStatistical(Me.Rate)
-		Dim ThisFilterRight As New FilterStatistical(Me.Rate)
-		Dim ThisFilterLeftItem As IStatistical
-		Dim ThisStatisticalValue As IStatistical
-		MyListOfValueStatistical.Clear()
-		'filter from the left
-		ThisFilterLeft.Filter(Value)
-		'filter from the right the section with the reverse filtering
-		For I = DelayRemovedToItem To 0 Step -1
-			ThisFilterRight.Filter(Value(I))
-		Next
-		'the data in ThisFilterRightList is reversed
-		'need to look at it in reverse order using J
-		J = DelayRemovedToItem
-		For I = 0 To Value.Length - 1
-			ThisFilterLeftItem = ThisFilterLeft.ToList(I)
-			ThisStatisticalValue = ThisFilterLeftItem.Copy
-			If I <= DelayRemovedToItem Then
-				ThisStatisticalValue.Add(ThisFilterRight.ToList(J))
-			End If
-			MyListOfValueStatistical.Add(ThisStatisticalValue)
-			ThisValues(I) = ThisStatisticalValue
-			J = J - 1
-		Next
-		Return ThisValues
+		Throw New NotImplementedException("FilterStatisticalExp.Filter(Value(), DelayRemovedToItem)")
 	End Function
 
 	Public Function FilterErrorLast() As IStatistical Implements IFilter(Of IStatistical).FilterErrorLast
-		Throw New NotImplementedException
+		Throw New NotImplementedException(message:="FilterStatisticalExp.FilterErrorLast()")
 	End Function
 
 	Public Function FilterBackTo(ByRef Value As IStatistical) As Double Implements IFilter(Of IStatistical).FilterBackTo

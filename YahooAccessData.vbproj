@@ -214,8 +214,10 @@
     <Compile Include="MathSupport\Filter\Butterworth\FilterLPButterworth.vb" />
     <Compile Include="MathSupport\Filter\FilterCascaded.vb" />
     <Compile Include="MathSupport\Filter\Exponential\FilterDoubleExp.vb" />
+    <Compile Include="MathSupport\Filter\FilterGraph.vb" />
     <Compile Include="MathSupport\Filter\Interface\IFilterConnector.vb" />
     <Compile Include="MathSupport\Filter\Statistic\FilterStatisticQueue.vb" />
+    <Compile Include="MathSupport\Filter\Statistic\FilterRunStatisticQueue.vb" />
     <Compile Include="MathSupport\Filter\Statistic\StatisticalData.vb" />
     <Compile Include="MathSupport\Filter\Statistic\FilterStatistical.vb" />
     <Compile Include="MathSupport\FilterCorrelation.vb" />

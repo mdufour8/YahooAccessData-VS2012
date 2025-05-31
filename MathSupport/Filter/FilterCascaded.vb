@@ -12,7 +12,7 @@
 
 	Public Function FilterRun(value As Double) As Double Implements IFilterRun.FilterRun
 		Dim result As Double = value
-		For Each Filter In _filters
+		For Each Filter As IFilterRun In _filters
 			result = Filter.FilterRun(result)
 		Next
 		Return result
@@ -42,7 +42,7 @@
 		End Get
 	End Property
 
-	Public ReadOnly Property FilterRate As Double() Implements IFilterRun.FilterRate
+	Public ReadOnly Property FilterRate As Double Implements IFilterRun.FilterRate
 		Get
 			Return _filters.Last().FilterRate
 		End Get
@@ -67,13 +67,13 @@
 	End Property
 
 	Public Sub Reset() Implements IFilterRun.Reset
-		For Each Filter In _filters
+		For Each Filter As IFilterRun In _filters
 			Filter.Reset()
 		Next
 	End Sub
 
 	Public Sub Reset(bufferCapacity As Integer) Implements IFilterRun.Reset
-		For Each Filter In _filters
+		For Each Filter As IFilterRun In _filters
 			Filter.Reset(bufferCapacity)
 		Next
 	End Sub

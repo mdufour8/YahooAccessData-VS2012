@@ -60,7 +60,7 @@ Namespace MathPlus.Filter
 		''' Returns a dictionary mapping each pivot offset to its individual CDF probability.
 		''' Useful for comparative analysis or heatmap visualization of pivot effectiveness.
 		''' </summary>
-		Public Function GetAllPivotProbabilities(Filter As IFilterRun, Volatility As IFilter, PivotOffsets As IEnumerable(Of Integer)) As Dictionary(Of Integer, Double)
+		Public Function GetAllPivotProbabilities(Filter As IFilterRun, Volatility As IFilterRun, PivotOffsets As IEnumerable(Of Integer)) As Dictionary(Of Integer, Double)
 			Dim result As New Dictionary(Of Integer, Double)
 			For Each offset In PivotOffsets
 				Try
@@ -73,7 +73,7 @@ Namespace MathPlus.Filter
 			Return result
 		End Function
 
-		Public Function CalculateAveragePriceCDFProbability(Filter As IFilterRun, Volatility As IFilter, PivotOffsets As IEnumerable(Of Integer)) As Double
+		Public Function CalculateAveragePriceCDFProbability(Filter As IFilterRun, Volatility As IFilterRun, PivotOffsets As IEnumerable(Of Integer)) As Double
 			Dim result As Double
 
 			If PivotOffsets.Count = 0 Then

@@ -1,4 +1,5 @@
-﻿Imports YahooAccessData.MathPlus.Filter
+﻿Imports Newtonsoft.Json.Linq
+Imports YahooAccessData.MathPlus.Filter
 
 ''' <summary>
 ''' The FilterStatistical class calculates the mean, variance, and standard deviation of a series of values.
@@ -12,22 +13,8 @@ Public Class FilterStatisticalQueue
 	Implements IRegisterKey(Of String)
 
 
-	Private MyRate As Integer
-	Private FilterValueLastK1 As IStatistical
-	Private FilterValueLast As IStatistical
-	Private MyStartPoint As Integer
-	Private IsRunReady As Boolean
-	Private _IsReset As Boolean
-
-	Private ValueLast As Double
-	Private ValueLastK1 As Double
-	Private IsValueInitial As Boolean
-	Private MyQueueOfValue As Queue(Of Double)
-	Private MyQueueOfValueSquare As Queue(Of Double)
-	Private MySumOfValue As Double
-	Private MySumOfValueSquare As Double
 	Private MyListOfValueStatistical As List(Of IStatistical)
-	Private MyCircularBuffer As CircularBuffer(Of IStatistical)
+	Private MyStatQueue As FilterRunStatisticQueue
 
 
 #Region "New"
@@ -41,18 +28,8 @@ Public Class FilterStatisticalQueue
 	''' </param>
 	''' <remarks></remarks>
 	Public Sub New(ByVal FilterRate As Integer, Optional BufferCapacity As Integer = 0)
+		MyStatQueue = New FilterRunStatisticQueue(FilterRate:=FilterRate, BufferCapacity:=BufferCapacity)
 		MyListOfValueStatistical = New List(Of IStatistical)
-		MyQueueOfValue = New Queue(Of Double)
-		MyQueueOfValueSquare = New Queue(Of Double)
-		If FilterRate < 2 Then FilterRate = 2
-		MyRate = CInt(FilterRate)
-		FilterValueLast = New StatisticalData(0, 0, 0)
-		FilterValueLastK1 = New StatisticalData(0, 0, 0)
-		ValueLast = 0
-		ValueLastK1 = 0
-		MyStartPoint = 0
-		IsRunReady = False
-		MyCircularBuffer = New CircularBuffer(Of IStatistical)(capacity:=BufferCapacity, Nothing)
 	End Sub
 #End Region
 
@@ -75,79 +52,7 @@ Public Class FilterStatisticalQueue
 	''' <param name="Value"></param>
 	''' <returns></returns>
 	Public Function Filter(Value As Double) As IStatistical Implements IFilter(Of IStatistical).Filter
-		Dim ThisValueToRemove As Double
-		Dim ThisValueSquareToRemove As Double
-		Dim ThisM2 As Double
-		Dim ThisMean As Double
-		Dim ThisVariance As Double
-
-		If MyListOfValueStatistical.Count = 0 OrElse _IsReset Then
-			MyListOfValueStatistical.Clear()
-			MyCircularBuffer.Clear()
-			MyQueueOfValue.Clear()
-			MyQueueOfValueSquare.Clear()
-			MySumOfValue = 0
-			MySumOfValueSquare = 0
-			ValueLast = Value
-			'initialization
-			FilterValueLast = New StatisticalData(Value, 0, 1)
-			IsRunReady = False
-			MyStartPoint = 0
-		Else
-			If IsRunReady = False Then
-				'wait until the value change to start the volatility measurement filter
-				'this is to avoid initial value of zero to be used in the calculation
-				If Value <> ValueLast Then
-					'we can start the statistical measurement	
-					MyStartPoint = MyListOfValueStatistical.Count
-					IsRunReady = True
-				End If
-			End If
-		End If
-		FilterValueLastK1 = FilterValueLast.Copy
-		If IsRunReady Then
-			If MyListOfValueStatistical.Count >= MyStartPoint Then
-				If MyQueueOfValue.Count >= MyRate Then
-					ThisValueToRemove = MyQueueOfValue.Dequeue()
-					MyQueueOfValue.Enqueue(Value)
-					MySumOfValue = MySumOfValue + Value - ThisValueToRemove
-					ThisMean = MySumOfValue / MyRate
-
-					ThisM2 = (Value - ThisMean) ^ 2
-					ThisValueSquareToRemove = MyQueueOfValueSquare.Dequeue()
-					MyQueueOfValueSquare.Enqueue(ThisM2)
-					MySumOfValueSquare = MySumOfValueSquare + ThisM2 - ThisValueSquareToRemove
-					'the -1 is for the finite number of samples correction from an infinite number of samples
-					ThisVariance = MySumOfValueSquare / (MyRate - 1)
-				Else
-					MyQueueOfValue.Enqueue(Value)
-					MySumOfValue = MySumOfValue + Value
-					ThisMean = MySumOfValue / MyQueueOfValue.Count
-
-					ThisM2 = (Value - ThisMean) ^ 2
-					MyQueueOfValueSquare.Enqueue(ThisM2)
-					MySumOfValueSquare = MySumOfValueSquare + ThisM2
-					If MyQueueOfValue.Count > 1 Then
-						'-1 take care of the finite population effect
-						ThisVariance = MySumOfValueSquare / (MyQueueOfValue.Count - 1)
-					Else
-						ThisVariance = MySumOfValueSquare
-					End If
-				End If
-			Else
-				ThisMean = Value
-				ThisVariance = 0
-			End If
-		Else
-			ThisMean = Value
-			ThisVariance = 0
-		End If
-		FilterValueLast = New StatisticalData(ThisMean, ThisVariance, MyQueueOfValue.Count) With {.ValueLast = Value}
-		MyListOfValueStatistical.Add(FilterValueLast)
-		ValueLastK1 = ValueLast
-		ValueLast = Value
-		MyCircularBuffer.AddLast(FilterValueLast)
-		Return FilterValueLast
+		Return Me.FilterRun(Value:=Value)
 	End Function
 
 	Public Function Filter(Value As IPriceVol) As IStatistical Implements IFilter(Of IStatistical).Filter
@@ -168,23 +73,10 @@ Public Class FilterStatisticalQueue
 		Dim ThisPoint As Integer
 		Dim I As Integer
 
+		MyListOfValueStatistical.Clear()
+		MyStatQueue.Reset()
 		For Each ThisValue In Value
 			Me.Filter(ThisValue)
-		Next
-		ThisListOfValueStatistical = New List(Of IStatistical)(MyListOfValueStatistical)
-		MyListOfValueStatistical.Clear()
-		ThisPoint = MyStartPoint + MyRate
-		If ThisPoint < ThisListOfValueStatistical.Count Then
-			ThisPosition = ThisPoint - 1
-		Else
-			ThisPosition = ThisListOfValueStatistical.Count - 1
-		End If
-		Dim ThisStatistical = ThisListOfValueStatistical(ThisPosition)
-		For I = 0 To ThisPosition
-			MyListOfValueStatistical.Add(ThisStatistical.Copy)
-		Next
-		For I = I To (ThisListOfValueStatistical.Count - 1)
-			MyListOfValueStatistical.Add(ThisListOfValueStatistical(I))
 		Next
 		Return MyListOfValueStatistical.ToArray
 	End Function
@@ -197,35 +89,7 @@ Public Class FilterStatisticalQueue
 	''' <returns>The result</returns>
 	''' <remarks></remarks>
 	Public Function Filter(ByRef Value() As Double, DelayRemovedToItem As Integer) As IStatistical() Implements IFilter(Of IStatistical).Filter
-		Dim ThisValues(0 To Value.Length - 1) As IStatistical
-		Dim I As Integer
-		Dim J As Integer
-
-		Dim ThisFilterLeft As New FilterStatistical(Me.Rate)
-		Dim ThisFilterRight As New FilterStatistical(Me.Rate)
-		Dim ThisFilterLeftItem As IStatistical
-		Dim ThisStatisticalValue As IStatistical
-		MyListOfValueStatistical.Clear()
-		'filter from the left
-		ThisFilterLeft.Filter(Value)
-		'filter from the right the section with the reverse filtering
-		For I = DelayRemovedToItem To 0 Step -1
-			ThisFilterRight.Filter(Value(I))
-		Next
-		'the data in ThisFilterRightList is reversed
-		'need to look at it in reverse order using J
-		J = DelayRemovedToItem
-		For I = 0 To Value.Length - 1
-			ThisFilterLeftItem = ThisFilterLeft.ToList(I)
-			ThisStatisticalValue = ThisFilterLeftItem.Copy
-			If I <= DelayRemovedToItem Then
-				ThisStatisticalValue.Add(ThisFilterRight.ToList(J))
-			End If
-			MyListOfValueStatistical.Add(ThisStatisticalValue)
-			ThisValues(I) = ThisStatisticalValue
-			J = J - 1
-		Next
-		Return ThisValues
+		Throw New NotImplementedException
 	End Function
 
 	Public Function FilterErrorLast() As IStatistical Implements IFilter(Of IStatistical).FilterErrorLast
@@ -237,19 +101,7 @@ Public Class FilterStatisticalQueue
 	End Function
 
 	Public Function FilterLastToPriceVol() As IPriceVol Implements IFilter(Of IStatistical).FilterLastToPriceVol
-		Dim ThisPriceVol As IPriceVol = New PriceVol(CSng(Me.FilterLast.Mean))
-		With ThisPriceVol
-			.LastPrevious = CSng(FilterValueLastK1.Mean)
-			If Me.FilterLast.High > .High Then
-				.High = CSng(Me.FilterLast.High)
-				.Range = RecordPrices.CalculateTrueRange(ThisPriceVol)
-			End If
-			If Me.FilterLast.Low > .Low Then
-				.Low = CSng(Me.FilterLast.Low)
-			End If
-			.Range = RecordPrices.CalculateTrueRange(ThisPriceVol)
-		End With
-		Return ThisPriceVol
+		Throw New NotSupportedException(message:="FilterLastToPriceVol is not supported in FilterStatisticalQueue.")
 	End Function
 
 	Public Function LastToPriceVol() As IPriceVol Implements IFilter(Of IStatistical).LastToPriceVol
@@ -269,16 +121,16 @@ Public Class FilterStatisticalQueue
 	End Function
 
 	Public Function FilterLast() As IStatistical Implements IFilter(Of IStatistical).FilterLast
-		Return FilterValueLast
+		Return MyStatQueue.FilterLast
 	End Function
 
 	Public Function Last() As Double Implements IFilter(Of IStatistical).Last
-		Return ValueLast
+		Return MyStatQueue.InputLast
 	End Function
 
 	Public ReadOnly Property Rate As Integer Implements IFilter(Of IStatistical).Rate
 		Get
-			Return MyRate
+			Return CInt(MyStatQueue.FilterRate)
 		End Get
 	End Property
 
@@ -339,38 +191,25 @@ Public Class FilterStatisticalQueue
 
 #Region "IFilterRun"
 	Public Function FilterRun(Value As Double) As IStatistical Implements IFilterRun(Of IStatistical).FilterRun
-		Return Me.Filter(Value)
+		MyListOfValueStatistical.Add(MyStatQueue.FilterRun(Value:=Value))
+		Return MyStatQueue.FilterLast
 	End Function
 
 	Public ReadOnly Property InputLast As Double Implements IFilterRun(Of IStatistical).InputLast
 		Get
-			Return Me.Last()
+			Return MyStatQueue.InputLast
 		End Get
 	End Property
 
-	Private ReadOnly Property IFilterRun_FilterLast As IStatistical Implements IFilterRun(Of IStatistical).FilterLast
+	Public ReadOnly Property IFilterRun_FilterLast As IStatistical Implements IFilterRun(Of IStatistical).FilterLast
 		Get
-			Return Me.FilterLast
+			Return MyStatQueue.FilterLast
 		End Get
 	End Property
 
-	Private ReadOnly Property IFilterRun_FilterLast(Index As Integer) As IStatistical Implements IFilterRun(Of IStatistical).FilterLast
+	Public ReadOnly Property IFilterRun_FilterLast(Index As Integer) As IStatistical Implements IFilterRun(Of IStatistical).FilterLast
 		Get
-			'For the CircularBuffer note 0 is the oldest value MyCircularBuffer.Count -1 is
-			'the most recent value.
-			'The index is in the range [0, FilterRate-1].
-			Dim ThisBufferIndex As Integer = MyCircularBuffer.Count - 1 - Index
-			Select Case ThisBufferIndex
-				Case < 0
-					'return the oldest value
-					Return MyCircularBuffer.PeekFirst
-				Case >= MyCircularBuffer.Count
-					'return the last value (most recent value)
-					Return MyCircularBuffer.PeekLast
-				Case Else
-					'return at a sppecific location in the buffer	
-					Return MyCircularBuffer.Item(BufferIndex:=ThisBufferIndex)
-			End Select
+			Return MyStatQueue.FilterLast(Index:=Index)
 		End Get
 	End Property
 
@@ -388,13 +227,13 @@ Public Class FilterStatisticalQueue
 
 	Private ReadOnly Property IFilterRun_Count As Integer Implements IFilterRun(Of IStatistical).Count
 		Get
-			Return MyCircularBuffer.Count
+			Return MyStatQueue.Count
 		End Get
 	End Property
 
 	Private ReadOnly Property IFilterRun_ToList As IList(Of IStatistical) Implements IFilterRun(Of IStatistical).ToList
 		Get
-			Return MyCircularBuffer.ToList()
+			Return MyStatQueue.ToList
 		End Get
 	End Property
 
@@ -405,16 +244,15 @@ Public Class FilterStatisticalQueue
 	End Property
 
 	Public Sub Reset() Implements IFilterRun(Of IStatistical).Reset
-		_IsReset = True
+		MyStatQueue.Reset()
 	End Sub
 
 	Public Sub Reset(BufferCapacity As Integer) Implements IFilterRun(Of IStatistical).Reset
-		Me.Reset()
-		MyCircularBuffer = New CircularBuffer(Of IStatistical)(capacity:=BufferCapacity, Nothing)
+		MyStatQueue.Reset(BufferCapacity:=BufferCapacity)
 	End Sub
 	Public ReadOnly Property IsReset As Boolean Implements IFilterRun(Of IStatistical).IsReset
 		Get
-			Return _IsReset
+			Return MyStatQueue.IsReset
 		End Get
 	End Property
 #End Region
