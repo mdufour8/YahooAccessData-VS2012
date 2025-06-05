@@ -8,8 +8,7 @@ Public Interface IFilterRun
 	ReadOnly Property FilterLast(Index As Integer) As Double
 	ReadOnly Property FilterTrendLast As Double
 	ReadOnly Property FilterRate() As Double
-	ReadOnly Property Count() As Integer
-	ReadOnly Property ToList() As IList(Of Double)
+	ReadOnly Property ToBufferList() As IList(Of Double)
 	ReadOnly Property FilterDetails() As String
 	Sub Reset()
 	Sub Reset(BufferCapacity As Integer)
@@ -25,8 +24,7 @@ Public Interface IFilterRun(Of T)
 	ReadOnly Property FilterLast(Index As Integer) As T
 	ReadOnly Property FilterTrendLast As T
 	ReadOnly Property FilterRate() As Double
-	ReadOnly Property Count() As Integer
-	ReadOnly Property ToList() As IList(Of T)
+	ReadOnly Property ToBufferList() As IList(Of T)
 	ReadOnly Property FilterDetails() As String
 	Sub Reset()
 	Sub Reset(BufferCapacity As Integer)

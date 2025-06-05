@@ -24,7 +24,6 @@ Imports YahooAccessData.MathPlus.Filter
 ''' - https://en.wikipedia.org/wiki/Bessel%27s_correction
 ''' </summary>
 Public Class FilterStatisticalExp
-	Implements IFilterRun(Of IStatistical)
 	Implements IFilter(Of IStatistical)
 	Implements IRegisterKey(Of String)
 
@@ -102,7 +101,6 @@ Public Class FilterStatisticalExp
 			IsRunReady = False
 			MyStartPoint = 0
 			FilterValueLast = New StatisticalData(Mean:=Value, Variance:=0, NumberPoint:=1)
-			IsRunReady = False
 		Else
 			If IsRunReady = False Then
 				'wait until the value change to start the volatility measurement filter
@@ -290,7 +288,7 @@ Public Class FilterStatisticalExp
 
 	Private ReadOnly Property IFilterRun_FilterLast As IStatistical Implements IFilterRun(Of IStatistical).FilterLast
 		Get
-			Return Me.FilterLast
+			Return MyCircularBuffer.PeekLast
 		End Get
 	End Property
 

@@ -1,4 +1,4 @@
-﻿Imports Newtonsoft.Json.Linq
+﻿Imports System.Threading.Tasks
 Imports YahooAccessData.MathPlus.Filter
 
 ''' <summary>
@@ -14,8 +14,7 @@ Public Class FilterStatisticalQueue
 
 
 	Private MyListOfValueStatistical As List(Of IStatistical)
-	Private MyStatQueue As FilterRunStatisticQueue
-
+	Private MyStatQueue As IFilterRun(Of IStatistical)
 
 #Region "New"
 	''' <summary>
@@ -28,7 +27,7 @@ Public Class FilterStatisticalQueue
 	''' </param>
 	''' <remarks></remarks>
 	Public Sub New(ByVal FilterRate As Integer, Optional BufferCapacity As Integer = 0)
-		MyStatQueue = New FilterRunStatisticQueue(FilterRate:=FilterRate, BufferCapacity:=BufferCapacity)
+		MyStatQueue = New StatisticWindows(FilterRate:=FilterRate, BufferCapacity:=BufferCapacity)
 		MyListOfValueStatistical = New List(Of IStatistical)
 	End Sub
 #End Region
@@ -52,11 +51,45 @@ Public Class FilterStatisticalQueue
 	''' <param name="Value"></param>
 	''' <returns></returns>
 	Public Function Filter(Value As Double) As IStatistical Implements IFilter(Of IStatistical).Filter
-		Return Me.FilterRun(Value:=Value)
+
+		If MyListOfValueStatistical.Count = 0 OrElse _IsReset Then
+			'initialization
+			MyListOfValueStatistical.Clear()
+			MyCircularBuffer.Clear()
+			ValueLast = Value
+			IsRunReady = False
+			MyStartPoint = 0
+			FilterValueLast = New StatisticalData(Mean:=Value, Variance:=0, NumberPoint:=1)
+			IsRunReady = False
+		Else
+			If IsRunReady = False Then
+				'wait until the value change to start the volatility measurement filter
+				'this is to avoid initial value of zero to be used in the calculation
+				If Value <> ValueLast Then
+					MyStartPoint = MyListOfValueStatistical.Count
+					IsRunReady = True
+				End If
+			End If
+		End If
+		FilterValueLastK1 = FilterValueLast.Copy
+		If IsRunReady Then
+			ThisMean = MyFilterExpMean.FilterRun(Value)
+			ThisM2 = (Value - ThisMean) ^ 2
+			ThisVariance = MyVarianceCorrection * MyFilterExpSquare.FilterRun(ThisM2)
+		Else
+			ThisMean = Value
+			ThisVariance = 0
+		End If
+		FilterValueLast = New StatisticalData(ThisMean, ThisVariance, MyListOfValueStatistical.Count + 1)
+		MyListOfValueStatistical.Add(FilterValueLast)
+		ValueLastK1 = ValueLast
+		ValueLast = Value
+		MyCircularBuffer.AddLast(FilterValueLast)
+		Return FilterValueLast
 	End Function
 
 	Public Function Filter(Value As IPriceVol) As IStatistical Implements IFilter(Of IStatistical).Filter
-		Return Me.Filter(Value.Last)
+		Return Me.FilterRun(Value:=Value.Last)
 	End Function
 
 	''' <summary>
@@ -109,7 +142,7 @@ Public Class FilterStatisticalQueue
 	End Function
 
 	Public Function Filter(Value As Single) As IStatistical Implements IFilter(Of IStatistical).Filter
-		Return Me.Filter(CDbl(Value))
+		Return Me.FilterRun(CDbl(Value))
 	End Function
 
 	Public Function FilterPredictionNext(ByVal Value As Double) As IStatistical Implements IFilter(Of IStatistical).FilterPredictionNext
@@ -225,15 +258,9 @@ Public Class FilterStatisticalQueue
 		End Get
 	End Property
 
-	Private ReadOnly Property IFilterRun_Count As Integer Implements IFilterRun(Of IStatistical).Count
+	Public ReadOnly Property ToBufferList As IList(Of IStatistical) Implements IFilterRun(Of IStatistical).ToBufferList
 		Get
-			Return MyStatQueue.Count
-		End Get
-	End Property
-
-	Private ReadOnly Property IFilterRun_ToList As IList(Of IStatistical) Implements IFilterRun(Of IStatistical).ToList
-		Get
-			Return MyStatQueue.ToList
+			Return MyStatQueue.ToBufferList
 		End Get
 	End Property
 

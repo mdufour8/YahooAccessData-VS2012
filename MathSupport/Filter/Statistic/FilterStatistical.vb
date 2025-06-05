@@ -1,4 +1,5 @@
 ﻿Imports YahooAccessData.MathPlus.Filter
+Imports YahooAccessData.MathPlus.Filter.FilterVolatility
 
 ''' <summary>
 ''' The FilterStatistical class calculates the mean, variance, and standard deviation of a series of values.
@@ -11,19 +12,13 @@ Public Class FilterStatistical
 
 
 	Private MyRate As Integer
-	Private FilterValueLastK1 As IStatistical
 	Private FilterValueLast As IStatistical
 	Private MyStartPoint As Integer
 	Private IsRunReady As Boolean
 
 	Private ValueLast As Double
-	Private ValueLastK1 As Double
-	Private IsValueInitial As Boolean
-	Private MyListOfValue As List(Of Double)
-	Private MyListOfValueSquare As List(Of Double)
-	Private MySumOfValue As Double
-	Private MySumOfValueSquare As Double
 	Private MyListOfValueStatistical As List(Of IStatistical)
+	Private MyStatistic As IFilterRun(Of IStatistical)
 
 	''' <summary>
 	''' Calculate the statistical information from all value 
@@ -40,18 +35,23 @@ Public Class FilterStatistical
 	''' Should be greater than one, otherwise the calculation is done on all the data
 	''' </param>
 	''' <remarks></remarks>
-	Public Sub New(ByVal FilterRate As Integer)
-		'MyListOfValue = New List(Of Double)
-		'MyListOfValueSquare = New List(Of Double)
-		MyListOfValueStatistical = New List(Of IStatistical)
-		MyListOfValue = New List(Of Double)
-		MyListOfValueSquare = New List(Of Double)
+	Public Sub New(
+		ByVal FilterRate As Integer,
+		Optional StatisticType As enuVolatilityStatisticType = enuVolatilityStatisticType.Standard,
+		Optional BufferCapacity As Integer = 0)
+
 		If FilterRate < 2 Then FilterRate = 2
 		MyRate = CInt(FilterRate)
+
+		Select Case StatisticType
+			Case enuVolatilityStatisticType.Exponential
+				MyStatistic = New StatisticExponential(FilterRate, BufferCapacity:=BufferCapacity)
+			Case enuVolatilityStatisticType.Standard
+				MyStatistic = New StatisticWindows(FilterRate, BufferCapacity:=BufferCapacity)
+		End Select
+		MyListOfValueStatistical = New List(Of IStatistical)
 		FilterValueLast = New StatisticalData(0, 0, 0)
-		FilterValueLastK1 = New StatisticalData(0, 0, 0)
 		ValueLast = 0
-		ValueLastK1 = 0
 		MyStartPoint = 0
 		IsRunReady = False
 	End Sub
@@ -115,49 +115,16 @@ Public Class FilterStatistical
 				End If
 			End If
 		End If
-		FilterValueLastK1 = FilterValueLast.Copy
 		If IsRunReady Then
 			If MyListOfValueStatistical.Count >= MyStartPoint Then
-				If MyListOfValue.Count >= MyRate Then
-					ThisValueToRemove = MyListOfValue(0)
-					MyListOfValue.RemoveAt(0)
-					MyListOfValue.Add(Value)
-					MySumOfValue = MySumOfValue + Value - ThisValueToRemove
-					ThisMean = MySumOfValue / MyRate
-
-					ThisM2 = (Value - ThisMean) ^ 2
-					ThisValueSquareToRemove = MyListOfValueSquare(0)
-					MyListOfValueSquare.RemoveAt(0)
-					MyListOfValueSquare.Add(ThisM2)
-					MySumOfValueSquare = MySumOfValueSquare + ThisM2 - ThisValueSquareToRemove
-					'the -1 is for the finite number of samples correction from an infinite number of samples
-					ThisVariance = MySumOfValueSquare / (MyRate - 1)
-				Else
-					MyListOfValue.Add(Value)
-					MySumOfValue = MySumOfValue + Value
-					ThisMean = MySumOfValue / MyListOfValue.Count
-
-					ThisM2 = (Value - ThisMean) ^ 2
-					MyListOfValueSquare.Add(ThisM2)
-					MySumOfValueSquare = MySumOfValueSquare + ThisM2
-					If MyListOfValue.Count > 1 Then
-						'-1 take care of the finite population effect
-						ThisVariance = MySumOfValueSquare / (MyListOfValue.Count - 1)
-					Else
-						ThisVariance = MySumOfValueSquare
-					End If
-				End If
+				FilterValueLast = MyStatistic.FilterRun(Value)
 			Else
-				ThisMean = Value
-				ThisVariance = 0
+				FilterValueLast = New StatisticalData(Mean:=Value, Variance:=0, NumberPoint:=1, ValueLast:=Value)
 			End If
 		Else
-			ThisMean = Value
-			ThisVariance = 0
+			FilterValueLast = New StatisticalData(Mean:=Value, Variance:=0, NumberPoint:=1, ValueLast:=Value)
 		End If
-		FilterValueLast = New StatisticalData(ThisMean, ThisVariance, MyListOfValue.Count) With {.ValueLast = Value}
 		MyListOfValueStatistical.Add(FilterValueLast)
-		ValueLastK1 = ValueLast
 		ValueLast = Value
 		Return FilterValueLast
 	End Function
@@ -166,117 +133,52 @@ Public Class FilterStatistical
 		Return Me.Filter(Value.Last)
 	End Function
 
-	''' <summary>
-	''' This function fix the statistical value at the beginning to reflect the result including the data pass the index
-	''' up to the rate value
-	''' </summary>
-	''' <param name="Value"></param>
-	''' <returns></returns>
-	''' <remarks></remarks>
 	Public Function Filter(ByRef Value() As Double) As IStatistical() Implements IFilter(Of IStatistical).Filter
-		Dim ThisListOfValueStatistical As List(Of IStatistical)
-		Dim ThisValue As Double
-		Dim ThisPosition As Integer
-		Dim ThisPoint As Integer
-		Dim I As Integer
 
 		For Each ThisValue In Value
 			Me.Filter(ThisValue)
 		Next
-		ThisListOfValueStatistical = New List(Of IStatistical)(MyListOfValueStatistical)
-		MyListOfValueStatistical.Clear()
-		ThisPoint = MyStartPoint + MyRate
-		If ThisPoint < ThisListOfValueStatistical.Count Then
-			ThisPosition = ThisPoint - 1
-		Else
-			ThisPosition = ThisListOfValueStatistical.Count - 1
-		End If
-		Dim ThisStatistical = ThisListOfValueStatistical(ThisPosition)
-		For I = 0 To ThisPosition
-			MyListOfValueStatistical.Add(ThisStatistical.Copy)
-		Next
-		For I = I To (ThisListOfValueStatistical.Count - 1)
-			MyListOfValueStatistical.Add(ThisListOfValueStatistical(I))
-		Next
 		Return MyListOfValueStatistical.ToArray
 	End Function
 
-	''' <summary>
-	''' Special filtering that can be used to remove the delay starting at a specific point
-	''' </summary>
-	''' <param name="Value">The value to be filtered</param>
-	''' <param name="DelayRemovedToItem">The point where the delay start to be removed</param>
-	''' <returns>The result</returns>
-	''' <remarks></remarks>
 	Public Function Filter(ByRef Value() As Double, DelayRemovedToItem As Integer) As IStatistical() Implements IFilter(Of IStatistical).Filter
-		Dim ThisValues(0 To Value.Length - 1) As IStatistical
-		Dim I As Integer
-		Dim J As Integer
-
-		Dim ThisFilterLeft As New FilterStatistical(Me.Rate)
-		Dim ThisFilterRight As New FilterStatistical(Me.Rate)
-		Dim ThisFilterLeftItem As IStatistical
-		Dim ThisStatisticalValue As IStatistical
-		MyListOfValueStatistical.Clear()
-		'filter from the left
-		ThisFilterLeft.Filter(Value)
-		'filter from the right the section with the reverse filtering
-		For I = DelayRemovedToItem To 0 Step -1
-			ThisFilterRight.Filter(Value(I))
-		Next
-		'the data in ThisFilterRightList is reversed
-		'need to look at it in reverse order using J
-		J = DelayRemovedToItem
-		For I = 0 To Value.Length - 1
-			ThisFilterLeftItem = ThisFilterLeft.ToList(I)
-			ThisStatisticalValue = ThisFilterLeftItem.Copy
-			If I <= DelayRemovedToItem Then
-				ThisStatisticalValue.Add(ThisFilterRight.ToList(J))
-			End If
-			MyListOfValueStatistical.Add(ThisStatisticalValue)
-			ThisValues(I) = ThisStatisticalValue
-			J = J - 1
-		Next
-		Return ThisValues
+		Throw New NotImplementedException(message:="Filter(ByRef Value() As Double, DelayRemovedToItem As Integer) is not implemented in FilterStatistical class.")
 	End Function
 
 	Public Function FilterErrorLast() As IStatistical Implements IFilter(Of IStatistical).FilterErrorLast
-		Throw New NotImplementedException
+		Throw New NotImplementedException(message:=" FilterErrorLast is not implemented in FilterStatistical class.")
 	End Function
 
 	Public Function FilterBackTo(ByRef Value As IStatistical) As Double Implements IFilter(Of IStatistical).FilterBackTo
-		Throw New NotImplementedException
+		Throw New NotImplementedException(message:="FilterBackTo is not implemented in FilterStatistical class.")
 	End Function
 
 	Public Function FilterLastToPriceVol() As IPriceVol Implements IFilter(Of IStatistical).FilterLastToPriceVol
 		Dim ThisPriceVol As IPriceVol = New PriceVol(CSng(Me.FilterLast.Mean))
 		With ThisPriceVol
-			.LastPrevious = CSng(FilterValueLastK1.Mean)
-			If Me.FilterLast.High > .High Then
-				.High = CSng(Me.FilterLast.High)
-				.Range = RecordPrices.CalculateTrueRange(ThisPriceVol)
-			End If
-			If Me.FilterLast.Low > .Low Then
-				.Low = CSng(Me.FilterLast.Low)
-			End If
+			.LastPrevious = CSng(FilterValueLast.Mean)
+			.Open = CSng(FilterValueLast.Mean)
+			.Last = CSng(FilterValueLast.Mean)
+			.High = CSng(FilterValueLast.Mean + FilterValueLast.StandardDeviation)
+			.Low = CSng(FilterValueLast.Mean - FilterValueLast.StandardDeviation)
 			.Range = RecordPrices.CalculateTrueRange(ThisPriceVol)
 		End With
 		Return ThisPriceVol
 	End Function
 
-	Public Function LastToPriceVol() As IPriceVol Implements IFilter(Of IStatistical).LastToPriceVol
-		Throw New NotSupportedException
+	Private Function LastToPriceVol() As IPriceVol Implements IFilter(Of IStatistical).LastToPriceVol
+		Throw New NotSupportedException(message:="LastToPriceVol is not implemented in FilterStatistical class.")
 	End Function
 
 	Public Function Filter(Value As Single) As IStatistical Implements IFilter(Of IStatistical).Filter
 		Return Me.Filter(CDbl(Value))
 	End Function
 
-	Public Function FilterPredictionNext(ByVal Value As Double) As IStatistical Implements IFilter(Of IStatistical).FilterPredictionNext
-		Throw New NotSupportedException
+	Private Function FilterPredictionNext(ByVal Value As Double) As IStatistical Implements IFilter(Of IStatistical).FilterPredictionNext
+		Throw New NotSupportedException(message:="FilterPredictionNext is not implemented in FilterStatistical class.")
 	End Function
 
-	Public Function FilterPredictionNext(ByVal Value As Single) As IStatistical Implements IFilter(Of IStatistical).FilterPredictionNext
+	Private Function FilterPredictionNext(ByVal Value As Single) As IStatistical Implements IFilter(Of IStatistical).FilterPredictionNext
 		Return Me.FilterPredictionNext(CDbl(Value))
 	End Function
 
@@ -300,15 +202,15 @@ Public Class FilterStatistical
 		End Get
 	End Property
 
-	Public ReadOnly Property Max As Double Implements IFilter(Of IStatistical).Max
+	Private ReadOnly Property Max As Double Implements IFilter(Of IStatistical).Max
 		Get
-			Throw New NotSupportedException
+			Throw New NotSupportedException(message:="Max is not supported in FilterStatistical class.")
 		End Get
 	End Property
 
-	Public ReadOnly Property Min As Double Implements IFilter(Of IStatistical).Min
+	Private ReadOnly Property Min As Double Implements IFilter(Of IStatistical).Min
 		Get
-			Throw New NotSupportedException
+			Throw New NotSupportedException(message:="Min is not supported in FilterStatistical class.")
 		End Get
 	End Property
 
@@ -318,15 +220,15 @@ Public Class FilterStatistical
 		End Get
 	End Property
 
-	Public ReadOnly Property ToListOfError() As IList(Of IStatistical) Implements IFilter(Of IStatistical).ToListOfError
+	Private ReadOnly Property ToListOfError() As IList(Of IStatistical) Implements IFilter(Of IStatistical).ToListOfError
 		Get
-			Throw New NotSupportedException
+			Throw New NotSupportedException(message:="ToListOfError is not supported in FilterStatistical class.")
 		End Get
 	End Property
 
-	Public ReadOnly Property ToListScaled() As ListScaled Implements IFilter(Of IStatistical).ToListScaled
+	Private ReadOnly Property ToListScaled() As ListScaled Implements IFilter(Of IStatistical).ToListScaled
 		Get
-			Throw New NotSupportedException
+			Throw New NotSupportedException(message:="ToListScaled is not supported in FilterStatistical class.")
 		End Get
 	End Property
 

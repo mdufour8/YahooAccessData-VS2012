@@ -217,7 +217,6 @@
     <Compile Include="MathSupport\Filter\FilterGraph.vb" />
     <Compile Include="MathSupport\Filter\Interface\IFilterConnector.vb" />
     <Compile Include="MathSupport\Filter\Statistic\FilterStatisticQueue.vb" />
-    <Compile Include="MathSupport\Filter\Statistic\FilterRunStatisticQueue.vb" />
     <Compile Include="MathSupport\Filter\Statistic\StatisticalData.vb" />
     <Compile Include="MathSupport\Filter\Statistic\FilterStatistical.vb" />
     <Compile Include="MathSupport\FilterCorrelation.vb" />
@@ -248,7 +247,9 @@
     <Compile Include="MathSupport\Filter\PLL\FilterPLL.vb" />
     <Compile Include="MathSupport\Filter\Statistic\FilterStatisticalExp.vb" />
     <Compile Include="MathSupport\Filter\Statistic\IStatistical.vb" />
+    <Compile Include="MathSupport\Filter\Statistic\StatisticExponential.vb" />
     <Compile Include="MathSupport\Filter\Statistic\StatisticLCR.vb" />
+    <Compile Include="MathSupport\Filter\Statistic\StatisticWIndows.vb" />
     <Compile Include="MathSupport\Filter\Volatility\FilterVolatility.vb" />
     <Compile Include="MathSupport\Filter\Volatility\FilterVolatilityYangZhang.vb" />
     <Compile Include="MathSupport\Filter\Volatility\VolatilityEstimator\IStockPriceDuplex.vb" />
@@ -379,6 +380,7 @@
   <ItemGroup>
     <Folder Include="Information\" />
     <Folder Include="MathSupport\Filter\PLL\Documentation\" />
+    <Folder Include="MathSupport\Filter\Statistic\Old Code\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
