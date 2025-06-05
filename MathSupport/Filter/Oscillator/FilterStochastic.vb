@@ -32,10 +32,10 @@ Namespace MathPlus.Filter
     Private MyListOfValueWindowsLow As ListWindow(Of PriceVolLargeAsClass)
     Private MyListOfWindowFrameHigh As ListWindowFrame
     Private MyListOfWindowFrameLow As ListWindowFrame
-    'Private MyListOfWindowFrameHighHalf As ListWindowFrame
-    'Private MyListOfWindowFrameLowHalf As ListWindowFrame
-    Private MyRangeStatistic As FilterStatisticalExp
-    Private MyRate As Integer
+		'Private MyListOfWindowFrameHighHalf As ListWindowFrame
+		'Private MyListOfWindowFrameLowHalf As ListWindowFrame
+		Private MyRangeStatistic As FilterStatistical
+		Private MyRate As Integer
     Private MyRateOutput As Integer
     Private MyRatePreFilter As Integer
     Private MyValueSum As Double
@@ -95,13 +95,15 @@ Namespace MathPlus.Filter
       MyListOfValueWindowsLow = New ListWindow(Of PriceVolLargeAsClass)(FilterRate)
       MyListOfWindowFrameHigh = New ListWindowFrame(FilterRate)
       MyListOfWindowFrameLow = New ListWindowFrame(FilterRate)
-      MyRangeStatistic = New FilterStatisticalExp(FilterRate)
 
+			MyRangeStatistic = New FilterStatistical(
+				FilterRate:=FilterRate,
+				StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
 
-      MyFilterLPOfRange = New FilterLowPassExp(FilterRate)
-      'MyListOfValueWindows = New ListWindowOfPriceVol(Of Double)(FilterRate)
-      'MyListOfValueWindows = New ListWindow(Of IPriceVolLarge)(FilterRate)
-      MyListOfStochasticFast = New ListScaled
+			MyFilterLPOfRange = New FilterLowPassExp(FilterRate)
+			'MyListOfValueWindows = New ListWindowOfPriceVol(Of Double)(FilterRate)
+			'MyListOfValueWindows = New ListWindow(Of IPriceVolLarge)(FilterRate)
+			MyListOfStochasticFast = New ListScaled
       'MyFilterLPOfStochasticSlow = New FilterLowPassExpHull(FilterOutputRate)
       MyFilterLPOfStochasticSlow = New FilterLowPassExp(FilterOutputRate)
       'MyFilterHigh = New FilterAttackDecayExp(1, FILTER_ATTACK_DECAY_RATIO * MyRate)

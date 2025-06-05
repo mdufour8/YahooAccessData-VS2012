@@ -4635,14 +4635,14 @@ Namespace MathPlus
 
 			Private MyFilterStochasticHHSLLS As FilterStochasticHHSLLS
 			Private MyFilterStochastic As FilterStochastic
-			Private MyFilterStatistic As FilterStatisticalExp
+			Private MyFilterStatistic As FilterStatistical
 			Private ThisNormalDist As MathNet.Numerics.Distributions.Normal
 
 			Public Sub New(ByVal FilterRate As Double, Optional ByVal FilterOutputType As FilterStochasticHHSLLS.FilterOutputType = FilterStochasticHHSLLS.FilterOutputType.Exponential)
 				MyBase.New(FilterRate, FilterRate, FilterOutputType)
 				MyFilterStochasticHHSLLS = New FilterStochasticHHSLLS(FilterRate, FilterRate, FilterOutputType)
 				MyFilterStochastic = New FilterStochastic(MyFilterStochasticHHSLLS.Rate, MyFilterStochasticHHSLLS.Rate, 2) With {.Tag = "FilterStochasticDeltaHHSLLS", .IsFilterPeak = True, .IsFilterRange = True}
-				MyFilterStatistic = New FilterStatisticalExp(MyFilterStochasticHHSLLS.Rate)
+				MyFilterStatistic = New FilterStatistical(MyFilterStochasticHHSLLS.Rate, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
 				ThisNormalDist = New MathNet.Numerics.Distributions.Normal(0, 1)
 			End Sub
 
@@ -4650,7 +4650,7 @@ Namespace MathPlus
 				MyBase.New(FilterRate, PostFilterRate, FilterOutputType)
 				MyFilterStochasticHHSLLS = New FilterStochasticHHSLLS(FilterRate, FilterRate, FilterOutputType)
 				MyFilterStochastic = New FilterStochastic(MyFilterStochasticHHSLLS.Rate, MyFilterStochasticHHSLLS.Rate, 2) With {.Tag = "FilterStochasticDeltaHHSLLS", .IsFilterPeak = True, .IsFilterRange = True}
-				MyFilterStatistic = New FilterStatisticalExp(MyFilterStochasticHHSLLS.Rate)
+				MyFilterStatistic = New FilterStatistical(MyFilterStochasticHHSLLS.Rate, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
 				ThisNormalDist = New MathNet.Numerics.Distributions.Normal(0, 1)
 			End Sub
 
@@ -4936,7 +4936,7 @@ Namespace MathPlus
 
 			Private MyFilterSlow As FilterUltimateOscillatorExp
 			Private MyFilterFast As FilterUltimateOscillatorExp
-			Private MyFilterStatistic As FilterStatisticalExp
+			Private MyFilterStatistic As FilterStatistical
 			'Private ThisNormalDist = New MathNet.Numerics.Distributions.Normal(Mean, StandardDeviation)
 			Private ThisNormalDist As MathNet.Numerics.Distributions.Normal
 
@@ -4946,7 +4946,7 @@ Namespace MathPlus
 				MyBase.New(FilterRate, FilterType)
 				MyFilterFast = New FilterUltimateOscillatorExp(FilterRate, FilterType)
 				MyFilterSlow = New FilterUltimateOscillatorExp(FilterDifferenceRatio * FilterRate, FilterType)
-				MyFilterStatistic = New FilterStatisticalExp(MyFilterSlow.Rate)
+				MyFilterStatistic = New FilterStatistical(MyFilterSlow.Rate, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
 				ThisNormalDist = New MathNet.Numerics.Distributions.Normal(0, 1)
 			End Sub
 
@@ -4956,7 +4956,7 @@ Namespace MathPlus
 				Dim ThisFilterRateSlow As Integer = CInt(FilterDifferenceRatio * FilterRate)
 				MyFilterFast = New FilterUltimateOscillatorExp(FilterRate, FilterRate, FilterType)
 				MyFilterSlow = New FilterUltimateOscillatorExp(ThisFilterRateSlow, ThisFilterRateSlow, FilterType)
-				MyFilterStatistic = New FilterStatisticalExp(MyFilterSlow.Rate)
+				MyFilterStatistic = New FilterStatistical(MyFilterSlow.Rate, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
 				ThisNormalDist = New MathNet.Numerics.Distributions.Normal(0, 1)
 			End Sub
 
@@ -4964,7 +4964,7 @@ Namespace MathPlus
 				MyBase.New(FilterRate, FilterType)
 				MyFilterFast = New FilterUltimateOscillatorExp(FilterRate, PostFilterRate, FilterType)
 				MyFilterSlow = New FilterUltimateOscillatorExp(CInt(FilterDifferenceRatio * FilterRate), PostFilterRate, FilterType)
-				MyFilterStatistic = New FilterStatisticalExp(MyFilterSlow.Rate)
+				MyFilterStatistic = New FilterStatistical(MyFilterSlow.Rate, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
 				ThisNormalDist = New MathNet.Numerics.Distributions.Normal(0, 1)
 			End Sub
 

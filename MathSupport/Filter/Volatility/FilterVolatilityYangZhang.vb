@@ -131,19 +131,20 @@ Namespace MathPlus.Filter
       'MyStatisticType = FilterVolatility.enuVolatilityStatisticType.Standard
       Select Case MyStatisticType
         Case FilterVolatility.enuVolatilityStatisticType.Exponential
-          MyStatisticalForOpen = New FilterStatisticalExp(FilterRate)
-          MyStatisticalForClose = New FilterStatisticalExp(FilterRate)
-          MyStatisticalForOpenToLow = New FilterStatisticalExp(FilterRate)
-          MyStatisticalForOpenToHigh = New FilterStatisticalExp(FilterRate)
-          MyStatisticalForPreviousCloseToHigh = New FilterStatisticalExp(FilterRate)
-          MyStatisticalForPreviousCloseToLow = New FilterStatisticalExp(FilterRate)
-          MyStatisticalForVRSTotal = New FilterStatisticalExp(FilterRate)
-          MyStatisticalForVRSHigh = New FilterStatisticalExp(FilterRate)
-          MyStatisticalForVRSLow = New FilterStatisticalExp(FilterRate)
-          MyStatisticalForVRSHighAsClose = New FilterStatisticalExp(FilterRate)
-          MyStatisticalForVRSLowAsClose = New FilterStatisticalExp(FilterRate)
-        Case Else
-          MyStatisticalForOpen = New FilterStatistical(FilterRate)
+					MyStatisticalForOpen = New FilterStatistical(FilterRate, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
+					MyStatisticalForClose = New FilterStatistical(FilterRate, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
+					MyStatisticalForOpenToLow = New FilterStatistical(FilterRate, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
+					MyStatisticalForOpenToHigh = New FilterStatistical(FilterRate, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
+					MyStatisticalForPreviousCloseToHigh = New FilterStatistical(FilterRate, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
+					MyStatisticalForPreviousCloseToLow = New FilterStatistical(FilterRate, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
+					MyStatisticalForVRSTotal = New FilterStatistical(FilterRate, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
+					MyStatisticalForVRSHigh = New FilterStatistical(FilterRate, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
+					MyStatisticalForVRSLow = New FilterStatistical(FilterRate, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
+					MyStatisticalForVRSHighAsClose = New FilterStatistical(FilterRate, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
+					MyStatisticalForVRSLowAsClose = New FilterStatistical(FilterRate, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
+				Case Else
+					'the default is a windows statistic
+					MyStatisticalForOpen = New FilterStatistical(FilterRate)
           MyStatisticalForClose = New FilterStatistical(FilterRate)
           MyStatisticalForOpenToLow = New FilterStatistical(FilterRate)
           MyStatisticalForOpenToHigh = New FilterStatistical(FilterRate)

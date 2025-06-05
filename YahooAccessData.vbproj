@@ -216,7 +216,6 @@
     <Compile Include="MathSupport\Filter\Exponential\FilterDoubleExp.vb" />
     <Compile Include="MathSupport\Filter\FilterGraph.vb" />
     <Compile Include="MathSupport\Filter\Interface\IFilterConnector.vb" />
-    <Compile Include="MathSupport\Filter\Statistic\FilterStatisticQueue.vb" />
     <Compile Include="MathSupport\Filter\Statistic\StatisticalData.vb" />
     <Compile Include="MathSupport\Filter\Statistic\FilterStatistical.vb" />
     <Compile Include="MathSupport\FilterCorrelation.vb" />
@@ -245,7 +244,6 @@
     <Compile Include="MathSupport\Filter\PLL\FilterLowPassPLLPredict.vb" />
     <Compile Include="MathSupport\Filter\PLL\FilterLowPassPLL.vb" />
     <Compile Include="MathSupport\Filter\PLL\FilterPLL.vb" />
-    <Compile Include="MathSupport\Filter\Statistic\FilterStatisticalExp.vb" />
     <Compile Include="MathSupport\Filter\Statistic\IStatistical.vb" />
     <Compile Include="MathSupport\Filter\Statistic\StatisticExponential.vb" />
     <Compile Include="MathSupport\Filter\Statistic\StatisticLCR.vb" />

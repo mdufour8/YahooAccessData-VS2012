@@ -55,13 +55,7 @@ Public Class FilterCDFProbability
 		End Get
 	End Property
 
-	Public ReadOnly Property Count As Integer Implements IFilterRun.Count
-		Get
-			Throw New NotImplementedException()
-		End Get
-	End Property
-
-	Public ReadOnly Property ToList As IList(Of Double) Implements IFilterRun.ToList
+	Public ReadOnly Property ToBufferList As IList(Of Double) Implements IFilterRun.ToBufferList
 		Get
 			Throw New NotImplementedException()
 		End Get

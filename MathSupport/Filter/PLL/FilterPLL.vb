@@ -210,11 +210,6 @@ Public Class FilterPLL
 		End Get
 	End Property
 
-	Public ReadOnly Property Count As Integer Implements IFilterRun.Count
-		Get
-			Return MyCircularBuffer.Count
-		End Get
-	End Property
 	Public ReadOnly Property FilterDetails As String Implements IFilterRun.FilterDetails
 		Get
 			Return $"{Me.GetType().Name}({MyFilterRate},{MyDampingFactor})"
@@ -226,7 +221,7 @@ Public Class FilterPLL
 		End Get
 	End Property
 
-	Public ReadOnly Property ToList As IList(Of Double) Implements IFilterRun.ToList
+	Public ReadOnly Property ToBufferList As IList(Of Double) Implements IFilterRun.ToBufferList
 		Get
 			Return MyCircularBuffer.ToList()
 		End Get
@@ -323,7 +318,7 @@ Public Class FilterPLL
 #Region "IFilter"
 	Private ReadOnly Property IFilter_Count As Integer Implements IFilter.Count
 		Get
-			Return Me.Count
+			Return 0
 		End Get
 	End Property
 

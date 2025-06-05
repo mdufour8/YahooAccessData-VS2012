@@ -105,21 +105,15 @@ Public Class FilterDoubleExp
 		End Get
 	End Property
 
-	Public ReadOnly Property Count As Integer Implements IFilterRun.Count
-		Get
-			Return SecondFilter.Count
-		End Get
-	End Property
-
 	Public ReadOnly Property InputLast As Double Implements IFilterRun.InputLast
 		Get
 			Return FirstFilter.InputLast
 		End Get
 	End Property
 
-	Public ReadOnly Property ToList As IList(Of Double) Implements IFilterRun.ToList
+	Public ReadOnly Property ToBufferList As IList(Of Double) Implements IFilterRun.ToBufferList
 		Get
-			Return SecondFilter.ToList
+			Return SecondFilter.ToBufferList
 		End Get
 	End Property
 
@@ -157,7 +151,7 @@ Public Class FilterDoubleExp
 
 	Private ReadOnly Property IFilter_Count As Integer Implements IFilter.Count
 		Get
-			Return Me.Count
+			Return 0
 		End Get
 	End Property
 

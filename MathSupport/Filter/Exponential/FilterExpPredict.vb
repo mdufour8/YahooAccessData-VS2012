@@ -32,7 +32,7 @@ Public Class FilterExpPredict
 	Private MyNumberToPredict As Double
 	Private MyGainYearlyEstimate As Double
 	Private _IsReset As Boolean
-	Private MyStatisticalForGain As FilterStatisticalQueue
+	Private MyStatisticalForGain As FilterStatistical
 	Private MyFilterRateYearlyScaling As Double
 	Private MyFilterRateYearlyGainVolatilitySQRTScaling As Double
 	Private MyCircularBuffer As CircularBuffer(Of Double)
@@ -102,7 +102,10 @@ Public Class FilterExpPredict
 			'just to garanty a certain validity long term for the statistical filter	
 			ThisFilterRateForStatistical = FILTER_RATE_MINIMUM_SAMPLE_FOR_STATISTICAL
 		End If
-		MyStatisticalForGain = New FilterStatisticalQueue(FilterRate:=CInt(ThisFilterRateForStatistical))
+		MyStatisticalForGain = New FilterStatistical(
+			FilterRate:=CInt(ThisFilterRateForStatistical),
+			StatisticType:=FilterVolatility.enuVolatilityStatisticType.Standard)
+
 		MyNumberToPredict = NumberToPredict
 
 		FilterValueLast = 0
@@ -288,19 +291,13 @@ Public Class FilterExpPredict
 		End Get
 	End Property
 
-	Public ReadOnly Property Count As Integer Implements IFilterRun.Count
-		Get
-			Return MyCircularBuffer.Count
-		End Get
-	End Property
-
 	Public ReadOnly Property InputLast As Double Implements IFilterRun.InputLast
 		Get
 			Return ValueLast
 		End Get
 	End Property
 
-	Public ReadOnly Property ToList As IList(Of Double) Implements IFilterRun.ToList
+	Public ReadOnly Property ToBufferList As IList(Of Double) Implements IFilterRun.ToBufferList
 		Get
 			Return MyCircularBuffer.ToList()
 		End Get
@@ -347,7 +344,7 @@ Public Class FilterExpPredict
 
 	Private ReadOnly Property IFilter_Count As Integer Implements IFilter.Count
 		Get
-			Return Me.Count
+			Return 0
 		End Get
 	End Property
 

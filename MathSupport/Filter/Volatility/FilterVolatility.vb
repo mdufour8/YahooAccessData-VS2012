@@ -47,7 +47,6 @@ Namespace MathPlus.Filter
 	''' </remarks>
 	<Serializable()>
   Public Class FilterVolatility
-		Implements IFilterRun(Of IStatistical)
 		Implements IFilter
 		Implements IRegisterKey(Of String)
 
@@ -99,14 +98,7 @@ Namespace MathPlus.Filter
 			MyStatisticType = StatisticType
 			If FilterRate < 1 Then FilterRate = 1
 			MyRate = CInt(FilterRate)
-			Select Case MyStatisticType
-				Case enuVolatilityStatisticType.Exponential
-					MyStatistical = New FilterStatisticalExp(FilterRate)
-				Case Else
-					'MyStatistical = New FilterStatistical(FilterRate)
-					'The queue is base on a queue memory rather than a list and is more efficient
-					MyStatistical = New FilterStatisticalQueue(FilterRate)
-			End Select
+			MyStatistical = New FilterStatistical(FilterRate, StatisticType:=MyStatisticType)
 			FilterValueLast = 0
 			FilterValueLastK1 = 0
 			ValueLast = 0

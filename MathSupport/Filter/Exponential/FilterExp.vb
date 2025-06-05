@@ -242,19 +242,13 @@ Public Class FilterExp
 		End Get
 	End Property
 
-	Public ReadOnly Property Count As Integer Implements IFilterRun.Count
-		Get
-			Return MyCircularBuffer.Count
-		End Get
-	End Property
-
 	Public ReadOnly Property InputLast As Double Implements IFilterRun.InputLast
 		Get
 			Return ValueLast
 		End Get
 	End Property
 
-	Public ReadOnly Property ToList As IList(Of Double) Implements IFilterRun.ToList
+	Public ReadOnly Property ToBufferList As IList(Of Double) Implements IFilterRun.ToBufferList
 		Get
 			Return MyCircularBuffer.ToList()
 		End Get
@@ -295,7 +289,7 @@ Public Class FilterExp
 
 	Private ReadOnly Property IFilter_Count As Integer Implements IFilter.Count
 		Get
-			Return Me.Count
+			Return 0
 		End Get
 	End Property
 

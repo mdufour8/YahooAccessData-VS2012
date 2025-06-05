@@ -52,8 +52,8 @@ Namespace MathPlus.Filter
 		Private MyListOfStatisticalVarianceError As ListScaled
 		Private MyListOfAFilter As List(Of Double)
 		Private MyListOfBFilter As List(Of Double)
-		Private MyStatisticalForPredictionError As FilterStatisticalQueue
-		Private MyStatisticalForGain As FilterStatisticalQueue
+		Private MyStatisticalForPredictionError As FilterStatistical
+		Private MyStatisticalForGain As FilterStatistical
 		Private MyFilter As IFilter
 		Private MyFilterY As IFilter
 		Private MyNumberToPredict As Double
@@ -107,8 +107,14 @@ Namespace MathPlus.Filter
 			'should be enogh for a good estimate of the variance to limit and evaluate the gain
 			'ThisFilterRateForStatistical = YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_MONTH
 
-			MyStatisticalForPredictionError = New FilterStatisticalQueue(CInt(ThisFilterRateForStatistical))
-			MyStatisticalForGain = New FilterStatisticalQueue(CInt(ThisFilterRateForStatistical))
+			MyStatisticalForPredictionError = New FilterStatistical(
+				FilterRate:=CInt(ThisFilterRateForStatistical),
+				StatisticType:=FilterVolatility.enuVolatilityStatisticType.Standard)
+
+			MyStatisticalForGain = New FilterStatistical(
+					FilterRate:=CInt(ThisFilterRateForStatistical),
+				StatisticType:=FilterVolatility.enuVolatilityStatisticType.Standard)
+
 			'MyListOfStatisticalExp = New FilterStatisticalExp(MyRate)
 			MyListOfStatisticalVarianceError = New YahooAccessData.ListScaled
 
@@ -534,7 +540,9 @@ Namespace MathPlus.Filter
 
 			MyListOfValue.Clear()
 			MyListOfPredictionGainPerYear.Clear()
-			MyStatisticalForPredictionError = New FilterStatisticalQueue(YahooAccessData.MathPlus.NUMBER_WORKDAY_PER_YEAR)
+			'the default is a windows filter
+			MyStatisticalForPredictionError = New FilterStatistical(YahooAccessData.MathPlus.NUMBER_WORKDAY_PER_YEAR)
+
 			MyListOfStatisticalVarianceError.Clear()
 			MyListOfAFilter.Clear()
 			MyListOfBFilter.Clear()

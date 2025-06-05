@@ -40,11 +40,11 @@ Namespace OptionValuation
 		Private MyProbabilityRatioToSigma As Double
 
 		Private MyFilterForProbability As FilterExp
-		Private MyStatisticalOfProbOfExcesDeltaHighLow As FilterStatisticalExp
+		Private MyStatisticalOfProbOfExcesDeltaHighLow As FilterStatistical
 		Private MyFilterBrownExpPredict As FilterExpPredict
 		Private MyFilterBrownExpPredictDerivative As FilterExpPredict
 		Private MyFilterVolatilityYZ As FilterVolatilityYangZhang
-		Private MyStatisticalOfStockPriceGain As FilterStatisticalQueue
+		Private MyStatisticalOfStockPriceGain As FilterStatistical
 		Private MyVolatilityDelta As Double
 		Private MyVolatilityDeltaHigh As Double
 		Private MyVolatilityDeltaLow As Double
@@ -80,8 +80,14 @@ Namespace OptionValuation
 			MyVolatilityMeasurementPeriod = VolatilityMeasurementPeriodInDays
 			MyFilterForProbability = New FilterExp(FilterRate:=VolatilityMeasurementPeriodInDays)
 			MyQueue = New Queue(Of StockPriceVolatilityEstimateData)(capacity:=VolatilityMeasurementPeriodInDays)
-			MyStatisticalOfProbOfExcesDeltaHighLow = New FilterStatisticalExp(FilterRate:=VolatilityMeasurementPeriodInDays)
-			MyStatisticalOfStockPriceGain = New FilterStatisticalQueue(FilterRate:=VolatilityMeasurementPeriodInDays)
+			MyStatisticalOfProbOfExcesDeltaHighLow = New FilterStatistical(
+				FilterRate:=VolatilityMeasurementPeriodInDays,
+				StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
+
+			MyStatisticalOfStockPriceGain = New FilterStatistical(
+				FilterRate:=VolatilityMeasurementPeriodInDays,
+				StatisticType:=FilterVolatility.enuVolatilityStatisticType.Standard)
+
 			'this Is base on a	Brown exponential filter to calculate the gain And the derivative of the stock price
 			'this Is use when the user does not provide a value for the Gain And its derivative
 			MyFilterBrownExpPredict = New FilterExpPredict(FilterRate:=FILTER_RATE_FOR_GAIN) With {.Tag = "StockPriceVolatilityEstimateRun_BrownExpPredict"}

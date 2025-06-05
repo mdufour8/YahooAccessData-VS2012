@@ -48,15 +48,9 @@
 		End Get
 	End Property
 
-	Public ReadOnly Property Count As Integer Implements IFilterRun.Count
+	Public ReadOnly Property ToBufferList As IList(Of Double) Implements IFilterRun.ToBufferList
 		Get
-			Return _filters.Last().Count
-		End Get
-	End Property
-
-	Public ReadOnly Property ToList As IList(Of Double) Implements IFilterRun.ToList
-		Get
-			Return _filters.Last().ToList
+			Return _filters.Last().ToBufferList
 		End Get
 	End Property
 
