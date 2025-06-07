@@ -67,7 +67,7 @@
 		End Get
 	End Property
 
-	Private ReadOnly Property IFilterRun_FilterLast As IStatistical Implements IFilterRun(Of IStatistical).FilterLast
+	Public ReadOnly Property FilterLast As IStatistical Implements IFilterRun(Of IStatistical).FilterLast
 		Get
 			Return MyCircularBuffer.PeekLast
 		End Get

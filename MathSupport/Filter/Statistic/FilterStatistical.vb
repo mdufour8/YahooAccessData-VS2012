@@ -7,6 +7,7 @@ Imports YahooAccessData.MathPlus.Filter.FilterVolatility
 ''' </summary>
 <Serializable()>
 Public Class FilterStatistical
+	Implements IFilterRun(Of IStatistical)
 	Implements IFilter(Of IStatistical)
 	Implements IRegisterKey(Of String)
 
@@ -250,10 +251,73 @@ Public Class FilterStatistical
 		Return Me.FilterLast.ToString
 	End Function
 
+#Region "IFilterRun"
+	Public Function FilterRun(Value As Double) As IStatistical Implements IFilterRun(Of IStatistical).FilterRun
+		Throw New NotImplementedException()
+	End Function
+
+	Public Sub Reset() Implements IFilterRun(Of IStatistical).Reset
+		Throw New NotImplementedException()
+	End Sub
+
+	Public Sub Reset(BufferCapacity As Integer) Implements IFilterRun(Of IStatistical).Reset
+		Throw New NotImplementedException()
+	End Sub
+
+	Public ReadOnly Property InputLast As Double Implements IFilterRun(Of IStatistical).InputLast
+		Get
+			Throw New NotImplementedException()
+		End Get
+	End Property
+
+	Private ReadOnly Property IFilterRun_FilterLast As IStatistical Implements IFilterRun(Of IStatistical).FilterLast
+		Get
+			Throw New NotImplementedException()
+		End Get
+	End Property
+
+	Private ReadOnly Property IFilterRun_FilterLast1(Index As Integer) As IStatistical Implements IFilterRun(Of IStatistical).FilterLast
+		Get
+			Throw New NotImplementedException()
+		End Get
+	End Property
+
+	Public ReadOnly Property FilterTrendLast As IStatistical Implements IFilterRun(Of IStatistical).FilterTrendLast
+		Get
+			Throw New NotImplementedException()
+		End Get
+	End Property
+
+	Public ReadOnly Property FilterRate As Double Implements IFilterRun(Of IStatistical).FilterRate
+		Get
+			Throw New NotImplementedException()
+		End Get
+	End Property
+
+	Public ReadOnly Property ToBufferList As IList(Of IStatistical) Implements IFilterRun(Of IStatistical).ToBufferList
+		Get
+			Throw New NotImplementedException()
+		End Get
+	End Property
+	Public ReadOnly Property FilterDetails As String Implements IFilterRun(Of IStatistical).FilterDetails
+		Get
+			Throw New NotImplementedException()
+		End Get
+	End Property
+
+	Public ReadOnly Property IsReset As Boolean Implements IFilterRun(Of IStatistical).IsReset
+		Get
+			Throw New NotImplementedException()
+		End Get
+	End Property
+
+#End Region
+
 #Region "IRegisterKey"
 	Public Function AsIRegisterKey() As IRegisterKey(Of String)
 		Return Me
 	End Function
+
 	Private Property IRegisterKey_KeyID As Integer Implements IRegisterKey(Of String).KeyID
 	Dim MyKeyValue As String
 	Private Property IRegisterKey_KeyValue As String Implements IRegisterKey(Of String).KeyValue

@@ -137,7 +137,7 @@ Public Class CircularBuffer(Of T)
 	Public Function ToList() As IList(Of T)
 		Dim ThisList = New List(Of T)(MyBufferCount)
 		For i = 0 To MyBufferCount - 1
-			ThisList.Add(Me(i))
+			ThisList.Add(Me.Item(i))
 		Next
 		Return ThisList
 	End Function

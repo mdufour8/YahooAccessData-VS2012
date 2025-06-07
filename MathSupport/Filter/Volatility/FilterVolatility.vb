@@ -47,6 +47,7 @@ Namespace MathPlus.Filter
 	''' </remarks>
 	<Serializable()>
   Public Class FilterVolatility
+		Implements IFilterRun
 		Implements IFilter
 		Implements IRegisterKey(Of String)
 
@@ -59,12 +60,12 @@ Namespace MathPlus.Filter
 		Public Const VOLATILITY_FILTER_RATE_DEFAULT As Integer = MathPlus.NUMBER_TRADINGDAY_PER_YEAR \ 12
 
 		Private MyRate As Integer
-		Private FilterValueLastK1 As Double
-		Private FilterValueLast As Double
-		Private ValueLast As Double
+		Private MyFilterValueLastK1 As Double
+		Private MyFilterValueLast As Double
+		Private MyValueLast As Double
 		Private ValueLastK1 As Double
 		Private MyFilterVolatilityYearlyCorrection As Double
-		Private MyListOfValue As ListScaled
+		Private MyListOfFilterValue As ListScaled
 		Private MyStatistical As IFilter(Of IStatistical)
 		Private MyStatisticType As enuVolatilityStatisticType
 		'Private MyPriceNextDailyHighPreviousCloseToOpenSigma2 As Double
@@ -94,14 +95,14 @@ Namespace MathPlus.Filter
 			Optional StatisticType As enuVolatilityStatisticType = enuVolatilityStatisticType.Standard)
 
 			MyFilterVolatilityYearlyCorrection = ScaleCorrection
-			MyListOfValue = New ListScaled
+			MyListOfFilterValue = New ListScaled
 			MyStatisticType = StatisticType
 			If FilterRate < 1 Then FilterRate = 1
 			MyRate = CInt(FilterRate)
 			MyStatistical = New FilterStatistical(FilterRate, StatisticType:=MyStatisticType)
-			FilterValueLast = 0
-			FilterValueLastK1 = 0
-			ValueLast = 0
+			MyFilterValueLast = 0
+			MyFilterValueLastK1 = 0
+			MyValueLast = 0
 			ValueLastK1 = 0
 			IsSpecialDividendPayoutLocal = False
 		End Sub
@@ -131,20 +132,20 @@ Namespace MathPlus.Filter
 		Public Function Filter(ByVal Value As Double, ByVal ValueRef As Double) As Double
 			Dim ThisReturnLog As Double
 
-			If MyListOfValue.Count = 0 Then
+			If MyListOfFilterValue.Count = 0 Then
 				'assume volatility of zero at start
-				FilterValueLast = 0
+				MyFilterValueLast = 0
 			Else
 				If IsFilterVolatilityJump Then
-					If FilterValueLast > 0 Then
+					If MyFilterValueLast > 0 Then
 						'nothing to calculate if the volatility is zero
 						'calculate the 2 sigma range for the current stock and volatility
 						Dim ThisPriceNextDailyHighPreviousCloseToClose = StockOption.StockPricePrediction(
 							NumberTradingDays:=1,
-							Me.ValueLast,
+							Me.MyValueLast,
 							Gain:=0.0,
 							GainDerivative:=0.0,
-							Me.FilterValueLast,
+							Me.MyFilterValueLast,
 							GAUSSIAN_PROBABILITY_SIGMA3)
 
 						If Value > ThisPriceNextDailyHighPreviousCloseToClose Then
@@ -172,25 +173,25 @@ Namespace MathPlus.Filter
 			Else
 				MyStatistical.Filter(ThisReturnLog)
 			End If
-			FilterValueLastK1 = FilterValueLast
+			MyFilterValueLastK1 = MyFilterValueLast
 			'correct the value for the yearly variation
-			FilterValueLast = MyFilterVolatilityYearlyCorrection * MyStatistical.FilterLast.StandardDeviation
-			MyListOfValue.Add(FilterValueLast)
+			MyFilterValueLast = MyFilterVolatilityYearlyCorrection * MyStatistical.FilterLast.StandardDeviation
+			MyListOfFilterValue.Add(MyFilterValueLast)
 			'calculate the next sample 2 sigma normal last price range
-			If MyListOfValue.Count > 0 Then
+			If MyListOfFilterValue.Count > 0 Then
 				If IsFilterVolatilityJump Then
 					'MyPriceNextDailyHighPreviousCloseToOpenSigma2 = OptionValuation.StockOption.StockPricePrediction(
 					'  NumberTradingDays:=TIME_TO_MARKET_PREVIOUS_CLOSE_TO_OPEN_IN_DAY,
 					'  StockPrice:=Value,
 					'  Gain:=0.0,
 					'  GainDerivative:=0.0,
-					'  Volatility:=FilterValueLast,
+					'  Volatility:=MyFilterValueLast,
 					'  Probability:=GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
 				End If
 			End If
-			ValueLastK1 = ValueLast
-			ValueLast = Value
-			Return FilterValueLast
+			ValueLastK1 = MyValueLast
+			MyValueLast = Value
+			Return MyFilterValueLast
 		End Function
 
 		''' <summary>
@@ -204,21 +205,21 @@ Namespace MathPlus.Filter
 		''' is not at the daily sample rate and the yearly volatility is needed.
 		''' </remarks>
 		Public Function Filter(ByVal Value As Double) As Double Implements IFilter.Filter
-			Return Me.Filter(Value, ValueLast)
+			Return Me.Filter(Value, MyValueLast)
 		End Function
 
 
 		Public Function Filter(Value As IPriceVol) As Double Implements IFilter.Filter
 			IsSpecialDividendPayoutLocal = Value.IsSpecialDividendPayout
 			If Value.Vol > 0 Then
-				Return Me.Filter(CDbl(Value.Last), ValueLast)
+				Return Me.Filter(CDbl(Value.Last), MyValueLast)
 			Else
 				'no volume mean no volatility
 				'and the point should not be included in the calculation
-				MyListOfValue.Add(Me.FilterValueLast)
-				ValueLastK1 = ValueLast
-				ValueLast = Value.Last
-				Return Me.FilterValueLast
+				MyListOfFilterValue.Add(Me.MyFilterValueLast)
+				ValueLastK1 = MyValueLast
+				MyValueLast = Value.Last
+				Return Me.MyFilterValueLast
 			End If
 		End Function
 
@@ -236,10 +237,10 @@ Namespace MathPlus.Filter
 
 
 		'  Throw New NotImplementedException
-		'  'If MyListOfValue.Count = 0 Then
-		'  '  FilterValueLast = Value.Last
+		'  'If MyListOfFilterValue.Count = 0 Then
+		'  '  MyFilterValueLast = Value.Last
 		'  'End If
-		'  'If ValueLast <= 0 Then
+		'  'If MyValueLast <= 0 Then
 		'  '  ThisReturnLog = 0
 		'  '  ThisReturnLogHighLow = 0
 		'  'Else
@@ -247,17 +248,17 @@ Namespace MathPlus.Filter
 		'  '    ThisReturnLog = 0
 		'  '    ThisReturnLogHighLow = 0
 		'  '  Else
-		'  '    ThisReturnLog = Math.Log(Value / ValueLast)
+		'  '    ThisReturnLog = Math.Log(Value / MyValueLast)
 		'  '  End If
 		'  'End If
 		'  'MyStatistical.Filter(ThisReturnLog)
-		'  'FilterValueLastK1 = FilterValueLast
+		'  'MyFilterValueLastK1 = MyFilterValueLast
 		'  ''correct the value for the yearly variation
-		'  'FilterValueLast = MyFilterVolatilityYearlyCorrection * MyStatistical.FilterLast.StandardDeviation
-		'  'MyListOfValue.Add(FilterValueLast)
-		'  'ValueLastK1 = ValueLast
-		'  'ValueLast = Value
-		'  'Return FilterValueLast
+		'  'MyFilterValueLast = MyFilterVolatilityYearlyCorrection * MyStatistical.FilterLast.StandardDeviation
+		'  'MyListOfFilterValue.Add(MyFilterValueLast)
+		'  'ValueLastK1 = MyValueLast
+		'  'MyValueLast = Value
+		'  'Return MyFilterValueLast
 		'End Function
 
 		Public Function Filter(ByRef Value() As Double) As Double() Implements IFilter.Filter
@@ -283,7 +284,7 @@ Namespace MathPlus.Filter
 		Public Function FilterLastToPriceVol() As IPriceVol Implements IFilter.FilterLastToPriceVol
 			Dim ThisPriceVol As IPriceVol = New PriceVol(CSng(Me.FilterLast))
 			With ThisPriceVol
-				.LastPrevious = CSng(FilterValueLastK1)
+				.LastPrevious = CSng(MyFilterValueLastK1)
 				If Me.FilterLast > .Last Then
 					.High = CSng(Me.FilterLast)
 					.Range = RecordPrices.CalculateTrueRange(ThisPriceVol)
@@ -323,11 +324,11 @@ Namespace MathPlus.Filter
 		End Function
 
 		Public Function FilterLast() As Double Implements IFilter.FilterLast
-			Return FilterValueLast
+			Return MyFilterValueLast
 		End Function
 
 		Public Function Last() As Double Implements IFilter.Last
-			Return ValueLast
+			Return MyValueLast
 		End Function
 
 		Public ReadOnly Property Rate As Integer Implements IFilter.Rate
@@ -338,25 +339,25 @@ Namespace MathPlus.Filter
 
 		Public ReadOnly Property Count As Integer Implements IFilter.Count
 			Get
-				Return MyListOfValue.Count
+				Return MyListOfFilterValue.Count
 			End Get
 		End Property
 
 		Public ReadOnly Property Max As Double Implements IFilter.Max
 			Get
-				Return MyListOfValue.Max
+				Return MyListOfFilterValue.Max
 			End Get
 		End Property
 
 		Public ReadOnly Property Min As Double Implements IFilter.Min
 			Get
-				Return MyListOfValue.Min
+				Return MyListOfFilterValue.Min
 			End Get
 		End Property
 
 		Public ReadOnly Property ToList() As IList(Of Double) Implements IFilter.ToList
 			Get
-				Return MyListOfValue
+				Return MyListOfFilterValue
 			End Get
 		End Property
 
@@ -368,20 +369,20 @@ Namespace MathPlus.Filter
 
 		Public ReadOnly Property ToListScaled() As ListScaled Implements IFilter.ToListScaled
 			Get
-				Return MyListOfValue
+				Return MyListOfFilterValue
 			End Get
 		End Property
 
 		Public Function ToArray() As Double() Implements IFilter.ToArray
-			Return MyListOfValue.ToArray
+			Return MyListOfFilterValue.ToArray
 		End Function
 
 		Public Function ToArray(ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double() Implements IFilter.ToArray
-			Return MyListOfValue.ToArray(ScaleToMinValue, ScaleToMaxValue)
+			Return MyListOfFilterValue.ToArray(ScaleToMinValue, ScaleToMaxValue)
 		End Function
 
 		Public Function ToArray(ByVal MinValueInitial As Double, ByVal MaxValueInitial As Double, ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double() Implements IFilter.ToArray
-			Return MyListOfValue.ToArray(MinValueInitial, MaxValueInitial, ScaleToMinValue, ScaleToMaxValue)
+			Return MyListOfFilterValue.ToArray(MinValueInitial, MaxValueInitial, ScaleToMinValue, ScaleToMaxValue)
 		End Function
 
 		Public Property Tag As String Implements IFilter.Tag
@@ -391,12 +392,84 @@ Namespace MathPlus.Filter
 		End Function
 
 #Region "IFilterRun"
+		Private ReadOnly Property IFilterRun_InputLast As Double Implements IFilterRun.InputLast
+			Get
+				Return MyValueLast
+			End Get
+		End Property
 
+		Private ReadOnly Property IFilterRun_FilterLast As Double Implements IFilterRun.FilterLast
+			Get
+				Return MyFilterValueLast
+			End Get
+		End Property
+
+		Private ReadOnly Property IFilterRun_FilterLast(Index As Integer) As Double Implements IFilterRun.FilterLast
+			Get
+				'we can use the current List to get data at a specific index
+				'note 0 is the oldest value MyCircularBuffer.Count -1 is the most recent value.
+				'The index reversed in the range [0, MyListOfFilterValue.Count - 1].
+				Dim ThisBufferIndex As Integer = MyListOfFilterValue.Count - 1 - Index
+				Select Case ThisBufferIndex
+					Case < 0
+						'return the oldest value
+						Return MyListOfFilterValue.First
+					Case >= MyListOfFilterValue.Count
+						'return the last value (most recent value)
+						Return MyListOfFilterValue.Last
+					Case Else
+						'return at a sppecific location in the buffer	
+						Return MyListOfFilterValue.Item(index:=ThisBufferIndex)
+				End Select
+			End Get
+		End Property
+
+		Private ReadOnly Property IFilterRun_FilterTrendLast As Double Implements IFilterRun.FilterTrendLast
+			Get
+				Throw New NotImplementedException(message:=Me.ToString & " does not support FilterTrendLast")
+			End Get
+		End Property
+
+		Private ReadOnly Property IFilterRun_FilterRate As Double Implements IFilterRun.FilterRate
+			Get
+				Return MyRate
+			End Get
+		End Property
+
+		Private ReadOnly Property IFilterRun_ToBufferList As IList(Of Double) Implements IFilterRun.ToBufferList
+			Get
+				Throw New NotImplementedException(message:=Me.ToString & " does not support IFilterRun_ToBufferList")
+			End Get
+		End Property
+
+		Private ReadOnly Property IFilterRun_FilterDetails As String Implements IFilterRun.FilterDetails
+			Get
+				Return $"{Me.GetType().Name}({MyRate},{MyStatisticType})"
+			End Get
+		End Property
+
+		Public ReadOnly Property IsReset As Boolean Implements IFilterRun.IsReset
+			Get
+				Throw New NotImplementedException()
+			End Get
+		End Property
+		Public Function FilterRun(Value As Double) As Double Implements IFilterRun.FilterRun
+			Throw New NotImplementedException()
+		End Function
+
+		Public Sub Reset() Implements IFilterRun.Reset
+			Throw New NotImplementedException()
+		End Sub
+
+		Public Sub Reset(BufferCapacity As Integer) Implements IFilterRun.Reset
+			Throw New NotImplementedException()
+		End Sub
 #End Region
 #Region "IRegisterKey"
 		Public Function AsIRegisterKey() As IRegisterKey(Of String)
 			Return Me
 		End Function
+
 		Private Property IRegisterKey_KeyID As Integer Implements IRegisterKey(Of String).KeyID
 		Dim MyKeyValue As String
 		Private Property IRegisterKey_KeyValue As String Implements IRegisterKey(Of String).KeyValue
