@@ -404,11 +404,21 @@ Namespace MathPlus.Filter
 			End Get
 		End Property
 
+
+		''' <summary>
+		''' Compare to a standard list to get the data at a specific index, the current 
+		''' data access is reversed.
+		''' The index is in the range [0, MyListOfFilterValue.Count - 1].
+		''' The index 0 is the most recent value and MyListOfFilterValue.Count -1 is the oldest value.	
+		''' </summary>
+		''' <param name="Index"></param>
+		''' <returns></returns>
 		Private ReadOnly Property IFilterRun_FilterLast(Index As Integer) As Double Implements IFilterRun.FilterLast
 			Get
 				'we can use the current List to get data at a specific index
 				'note 0 is the oldest value MyCircularBuffer.Count -1 is the most recent value.
 				'The index reversed in the range [0, MyListOfFilterValue.Count - 1].
+				'change the access range to be in the range [0, MyListOfFilterValue.Count - 1]	
 				Dim ThisBufferIndex As Integer = MyListOfFilterValue.Count - 1 - Index
 				Select Case ThisBufferIndex
 					Case < 0
@@ -418,7 +428,7 @@ Namespace MathPlus.Filter
 						'return the last value (most recent value)
 						Return MyListOfFilterValue.Last
 					Case Else
-						'return at a sppecific location in the buffer	
+						'return at a specific location in the buffer	
 						Return MyListOfFilterValue.Item(index:=ThisBufferIndex)
 				End Select
 			End Get
@@ -436,6 +446,11 @@ Namespace MathPlus.Filter
 			End Get
 		End Property
 
+		''' <summary>
+		''' is not supported here, the filter is not a circular buffer but a list of values.
+		''' The data can be accessed using the IFilter ToList or ToArray method.
+		''' </summary>
+		''' <returns></returns>
 		Private ReadOnly Property IFilterRun_ToBufferList As IList(Of Double) Implements IFilterRun.ToBufferList
 			Get
 				Throw New NotImplementedException(message:=Me.ToString & " does not support IFilterRun_ToBufferList")
