@@ -16,14 +16,16 @@
 		'Beta = 1 - Alpha
 		MyFilterForMean = New FilterExp(FilterRate)
 		MyFilterForMeanSquare = New FilterExp(FilterRate)
+		MyFilterRate = FilterRate
 		'just for simplification and speed
-		MyVarianceCorrectionForPopulationSize = FilterRate / (FilterRate - 1)
+		MyVarianceCorrectionForPopulationSize = MyFilterRate / (MyFilterRate - 1)
 		Me.Reset(BufferCapacity:=BufferCapacity)
 	End Sub
 
 #Region "IFilterRun"
 	Public Function FilterRun(Value As Double) As IStatistical Implements IFilterRun(Of IStatistical).FilterRun
 		If _IsReset Then
+			_IsReset = False
 			MyCircularBuffer.Clear()
 			MyFilterForMean.Reset()
 			MyFilterForMeanSquare.Reset()
@@ -32,8 +34,9 @@
 		Dim ThisMean = MyFilterForMean.FilterRun(Value)
 		Dim ThisM2 = (Value - ThisMean) ^ 2
 		Dim ThisVariance = MyVarianceCorrectionForPopulationSize * MyFilterForMeanSquare.FilterRun(ThisM2)
-		StatisticCount += 1
-		If StatisticCount > FilterRate Then StatisticCount = CInt(MyFilterRate)
+		If StatisticCount < MyFilterRate Then
+			StatisticCount += 1
+		End If
 		MyCircularBuffer.AddLast(New StatisticalData(Mean:=ThisMean, Variance:=ThisVariance, NumberPoint:=StatisticCount, ValueLast:=Value))
 		Return MyCircularBuffer.PeekLast
 	End Function

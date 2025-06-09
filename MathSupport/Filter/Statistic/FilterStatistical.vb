@@ -19,7 +19,8 @@ Public Class FilterStatistical
 
 	Private ValueLast As Double
 	Private MyListOfValueStatistical As List(Of IStatistical)
-	Private MyStatistic As IFilterRun(Of IStatistical)
+	Private MyStatistical As IFilterRun(Of IStatistical)
+	Private MyStatisticType As enuVolatilityStatisticType
 
 	''' <summary>
 	''' Calculate the statistical information from all value 
@@ -44,11 +45,12 @@ Public Class FilterStatistical
 		If FilterRate < 2 Then FilterRate = 2
 		MyRate = CInt(FilterRate)
 
+		MyStatisticType = StatisticType
 		Select Case StatisticType
 			Case enuVolatilityStatisticType.Exponential
-				MyStatistic = New StatisticExponential(FilterRate, BufferCapacity:=BufferCapacity)
+				MyStatistical = New StatisticExponential(FilterRate, BufferCapacity:=BufferCapacity)
 			Case enuVolatilityStatisticType.Standard
-				MyStatistic = New StatisticWindows(FilterRate, BufferCapacity:=BufferCapacity)
+				MyStatistical = New StatisticWindows(FilterRate, BufferCapacity:=BufferCapacity)
 		End Select
 		MyListOfValueStatistical = New List(Of IStatistical)
 		FilterValueLast = New StatisticalData(0, 0, 0)
@@ -118,7 +120,7 @@ Public Class FilterStatistical
 		End If
 		If IsRunReady Then
 			If MyListOfValueStatistical.Count >= MyStartPoint Then
-				FilterValueLast = MyStatistic.FilterRun(Value)
+				FilterValueLast = MyStatistical.FilterRun(Value)
 			Else
 				FilterValueLast = New StatisticalData(Mean:=Value, Variance:=0, NumberPoint:=1, ValueLast:=Value)
 			End If
@@ -252,65 +254,97 @@ Public Class FilterStatistical
 	End Function
 
 #Region "IFilterRun"
-	Public Function FilterRun(Value As Double) As IStatistical Implements IFilterRun(Of IStatistical).FilterRun
-		Throw New NotImplementedException()
-	End Function
-
-	Public Sub Reset() Implements IFilterRun(Of IStatistical).Reset
-		Throw New NotImplementedException()
-	End Sub
-
-	Public Sub Reset(BufferCapacity As Integer) Implements IFilterRun(Of IStatistical).Reset
-		Throw New NotImplementedException()
-	End Sub
-
-	Public ReadOnly Property InputLast As Double Implements IFilterRun(Of IStatistical).InputLast
+	Private ReadOnly Property IFilterRun_InputLast As Double Implements IFilterRun(Of IStatistical).InputLast
 		Get
-			Throw New NotImplementedException()
+			Return ValueLast
 		End Get
 	End Property
 
 	Private ReadOnly Property IFilterRun_FilterLast As IStatistical Implements IFilterRun(Of IStatistical).FilterLast
 		Get
-			Throw New NotImplementedException()
+			Return FilterValueLast
 		End Get
 	End Property
 
-	Private ReadOnly Property IFilterRun_FilterLast1(Index As Integer) As IStatistical Implements IFilterRun(Of IStatistical).FilterLast
+
+	''' <summary>
+	''' Compare to a standard list to get the data at a specific index, the current 
+	''' data access is reversed.
+	''' The index is in the range [0, MyListOfFilterValue.Count - 1].
+	''' The index 0 is the most recent value and MyListOfFilterValue.Count -1 is the oldest value.	
+	''' </summary>
+	''' <param name="Index"></param>
+	''' <returns></returns>
+	Private ReadOnly Property IFilterRun_FilterLast(Index As Integer) As IStatistical Implements IFilterRun(Of IStatistical).FilterLast
 		Get
-			Throw New NotImplementedException()
+			'we can use the current List to get data at a specific index
+			'note 0 is the oldest value MyCircularBuffer.Count -1 is the most recent value.
+			'The index reversed in the range [0, MyListOfFilterValue.Count - 1].
+			'change the access range to be in the range [0, MyListOfFilterValue.Count - 1]	
+			Dim ThisBufferIndex As Integer = MyListOfValueStatistical.Count - 1 - Index
+			Select Case ThisBufferIndex
+				Case < 0
+					'return the oldest value
+					Return MyListOfValueStatistical.First
+				Case >= MyListOfValueStatistical.Count
+					'return the last value (most recent value)
+					Return MyListOfValueStatistical.Last
+				Case Else
+					'return at a specific location in the buffer	
+					Return MyListOfValueStatistical.Item(index:=ThisBufferIndex)
+			End Select
 		End Get
 	End Property
 
-	Public ReadOnly Property FilterTrendLast As IStatistical Implements IFilterRun(Of IStatistical).FilterTrendLast
+	Private ReadOnly Property IFilterRun_FilterTrendLast As IStatistical Implements IFilterRun(Of IStatistical).FilterTrendLast
 		Get
-			Throw New NotImplementedException()
+			Throw New NotImplementedException(message:=Me.ToString & " does not support FilterTrendLast")
 		End Get
 	End Property
 
-	Public ReadOnly Property FilterRate As Double Implements IFilterRun(Of IStatistical).FilterRate
+	Private ReadOnly Property IFilterRun_FilterRate As Double Implements IFilterRun(Of IStatistical).FilterRate
 		Get
-			Throw New NotImplementedException()
+			Return MyRate
 		End Get
 	End Property
 
-	Public ReadOnly Property ToBufferList As IList(Of IStatistical) Implements IFilterRun(Of IStatistical).ToBufferList
+	''' <summary>
+	''' is not supported here, the filter is not a circular buffer but a list of values.
+	''' The data in can be accessed using the IFilter ToList or ToArray method.
+	''' </summary>
+	''' <returns></returns>
+	Private ReadOnly Property IFilterRun_ToBufferList As IList(Of IStatistical) Implements IFilterRun(Of IStatistical).ToBufferList
 		Get
-			Throw New NotImplementedException()
-		End Get
-	End Property
-	Public ReadOnly Property FilterDetails As String Implements IFilterRun(Of IStatistical).FilterDetails
-		Get
-			Throw New NotImplementedException()
-		End Get
-	End Property
-
-	Public ReadOnly Property IsReset As Boolean Implements IFilterRun(Of IStatistical).IsReset
-		Get
-			Throw New NotImplementedException()
+			Throw New NotImplementedException(message:=Me.ToString & " does not support IFilterRun_ToBufferList")
 		End Get
 	End Property
 
+	Private ReadOnly Property IFilterRun_FilterDetails As String Implements IFilterRun(Of IStatistical).FilterDetails
+		Get
+			Return $"{Me.GetType().Name}({MyRate},{MyStatisticType})"
+		End Get
+	End Property
+	Private Function IFilterRun_FilterRun(Value As Double) As IStatistical Implements IFilterRun(Of IStatistical).FilterRun
+		Return Me.Filter(Value)
+	End Function
+
+	Private ReadOnly Property IFilterRun_IsReset As Boolean Implements IFilterRun(Of IStatistical).IsReset
+		Get
+			Return MyListOfValueStatistical.Count = 0
+		End Get
+	End Property
+	Private Sub IFilterRun_Reset() Implements IFilterRun(Of IStatistical).Reset
+		MyListOfValueStatistical.Clear()
+		MyStatistical.Reset()
+	End Sub
+
+	''' <summary>
+	''' 'BufferCapacity is not use at this level and can be ignore here
+	''' </summary>
+	''' <param name="BufferCapacity"></param>
+	Private Sub IFilterRun_Reset(BufferCapacity As Integer) Implements IFilterRun(Of IStatistical).Reset
+		IFilterRun_Reset()
+	End Sub
 #End Region
 
 #Region "IRegisterKey"

@@ -11,6 +11,7 @@
 	Public Sub New(ByVal FilterRate As Integer, Optional BufferCapacity As Integer = 0)
 		MyQueueOfValue = New Queue(Of Double)
 		MyQueueOfValueSquare = New Queue(Of Double)
+		MyFilterRate = FilterRate
 		'just for simplification and speed
 		Me.Reset(BufferCapacity:=BufferCapacity)
 	End Sub
@@ -18,6 +19,7 @@
 #Region "IFilterRun"
 	Public Function FilterRun(Value As Double) As IStatistical Implements IFilterRun(Of IStatistical).FilterRun
 		If _IsReset Then
+			_IsReset = False
 			MyCircularBuffer.Clear()
 			MyQueueOfValue.Clear()
 			MyQueueOfValueSquare.Clear()

@@ -143,7 +143,7 @@ Namespace MathPlus.Filter
 					MyStatisticalForVRSHighAsClose = New FilterStatistical(FilterRate, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
 					MyStatisticalForVRSLowAsClose = New FilterStatistical(FilterRate, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
 				Case Else
-					'the default is a windows statistic
+					'the default is a windows Square of data statistic
 					MyStatisticalForOpen = New FilterStatistical(FilterRate)
           MyStatisticalForClose = New FilterStatistical(FilterRate)
           MyStatisticalForOpenToLow = New FilterStatistical(FilterRate)
@@ -177,14 +177,15 @@ Namespace MathPlus.Filter
     Public Property IsFilterVolatilityJump As Boolean
 
     Public Function Filter(ByVal Value As YahooAccessData.IPriceVol, ByVal IsVolatityHoldToLast As Boolean) As Double
-      Dim ThisResult As Double
-      If Value.IsSpecialDividendPayout Or IsVolatityHoldToLast Then
+			Dim ThisResult As Double
+
+			If Value.IsSpecialDividendPayout Or IsVolatityHoldToLast Then
 				ThisResult = Me.CalculateFilterLocal(MyValueLast, False)
 				'restore the correct value for the last parameters
 				MyValueLast = Value
-        MyValueLastK1 = MyValueLast
-      Else
-        ThisResult = Me.CalculateFilterLocal(Value, False)
+				MyValueLastK1 = MyValueLast
+			Else
+				ThisResult = Me.CalculateFilterLocal(Value, False)
       End If
       Return ThisResult
     End Function
@@ -209,9 +210,8 @@ Namespace MathPlus.Filter
       Dim ThisVRSUp2 As Double
       Dim ThisVRSDown2 As Double
 
-
-      ThisValueLow = Value.Low
-      ThisValueHigh = Value.High
+			ThisValueLow = Value.Low
+			ThisValueHigh = Value.High
       If MyListOfPreviousCloseToOpenHighLowClose.Count = 0 Then
         'measure volatility from initial value only at start
         MyFilterValueLast = 0

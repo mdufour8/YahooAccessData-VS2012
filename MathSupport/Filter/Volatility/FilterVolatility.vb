@@ -132,26 +132,31 @@ Namespace MathPlus.Filter
 		Public Function Filter(ByVal Value As Double, ByVal ValueRef As Double) As Double
 			Dim ThisReturnLog As Double
 
+			'If Value < 0.0 Then
+			'	Throw New ArgumentOutOfRangeException($"{Me.GetType().Name}:{NameOf(Value)}, The value must be positive")
+			'End If
 			If MyListOfFilterValue.Count = 0 Then
 				'assume volatility of zero at start
+				MyStatistical.ToList.Clear()
 				MyFilterValueLast = 0
 			Else
 				If IsFilterVolatilityJump Then
-					If MyFilterValueLast > 0 Then
-						'nothing to calculate if the volatility is zero
-						'calculate the 2 sigma range for the current stock and volatility
-						Dim ThisPriceNextDailyHighPreviousCloseToClose = StockOption.StockPricePrediction(
-							NumberTradingDays:=1,
-							Me.MyValueLast,
-							Gain:=0.0,
-							GainDerivative:=0.0,
-							Me.MyFilterValueLast,
-							GAUSSIAN_PROBABILITY_SIGMA3)
+					'Todo: Investigate is it would be appropriate to ignore the data when there is an abnormal volatility
+					'If MyFilterValueLast > 0 Then
+					'	'nothing to calculate if the volatility is zero
+					'	'calculate the 4 sigma range for the current stock and volatility
+					'	Dim ThisPriceNextDailyHighPreviousCloseToClose = StockOption.StockPricePrediction(
+					'		NumberTradingDays:=1,
+					'		Me.MyValueLast,
+					'		Gain:=0.0,
+					'		GainDerivative:=0.0,
+					'		Me.MyFilterValueLast,
+					'		GAUSSIAN_PROBABILITY_SIGMA3)
 
-						If Value > ThisPriceNextDailyHighPreviousCloseToClose Then
-							ThisPriceNextDailyHighPreviousCloseToClose = ThisPriceNextDailyHighPreviousCloseToClose
-						End If
-					End If
+					'	If Value > ThisPriceNextDailyHighPreviousCloseToClose Then
+					'		ThisPriceNextDailyHighPreviousCloseToClose = ThisPriceNextDailyHighPreviousCloseToClose
+					'		Return MyStatistical.Last
+					'	End If
 				End If
 			End If
 			If IsSpecialDividendPayoutLocal Then
@@ -159,8 +164,6 @@ Namespace MathPlus.Filter
 				IsSpecialDividendPayoutLocal = False
 				ThisReturnLog = MyStatistical.Last
 			Else
-				'same thing should be fixed
-				'ThisReturnLog = GainLog(Value, ValueRef)
 				ThisReturnLog = LogPriceReturn(Value, ValueRef)
 			End If
 			If MyStatistical.Count = 0 Then
@@ -214,12 +217,21 @@ Namespace MathPlus.Filter
 			If Value.Vol > 0 Then
 				Return Me.Filter(CDbl(Value.Last), MyValueLast)
 			Else
-				'no volume mean no volatility
+				'no volume may mean no volatility but also only if the new value egual the last value
 				'and the point should not be included in the calculation
-				MyListOfFilterValue.Add(Me.MyFilterValueLast)
-				ValueLastK1 = MyValueLast
-				MyValueLast = Value.Last
-				Return Me.MyFilterValueLast
+				'just return le last value
+				If Value.Last = MyValueLast Then
+					MyListOfFilterValue.Add(Me.MyFilterValueLast)
+					ValueLastK1 = MyValueLast
+					MyValueLast = Value.Last
+					Return Me.MyFilterValueLast
+				Else
+					'if the value is not the same as the last value then we have a new value to process
+					'and we can return the change in volatility. This can happen 
+					'if we are dealing with a stock or asset that has no volume. An example
+					'would be the XAUUSA.FOREX Gold spot market delivery where the volume is not use
+					Return Me.Filter(CDbl(Value.Last), MyValueLast)
+				End If
 			End If
 		End Function
 
@@ -448,7 +460,7 @@ Namespace MathPlus.Filter
 
 		''' <summary>
 		''' is not supported here, the filter is not a circular buffer but a list of values.
-		''' The data can be accessed using the IFilter ToList or ToArray method.
+		''' The data in can be accessed using the IFilter ToList or ToArray method.
 		''' </summary>
 		''' <returns></returns>
 		Private ReadOnly Property IFilterRun_ToBufferList As IList(Of Double) Implements IFilterRun.ToBufferList
@@ -462,22 +474,26 @@ Namespace MathPlus.Filter
 				Return $"{Me.GetType().Name}({MyRate},{MyStatisticType})"
 			End Get
 		End Property
-
-		Public ReadOnly Property IsReset As Boolean Implements IFilterRun.IsReset
-			Get
-				Throw New NotImplementedException()
-			End Get
-		End Property
-		Public Function FilterRun(Value As Double) As Double Implements IFilterRun.FilterRun
-			Throw New NotImplementedException()
+		Private Function IFilterRun_FilterRun(Value As Double) As Double Implements IFilterRun.FilterRun
+			Return Me.Filter(Value, MyValueLast)
 		End Function
 
-		Public Sub Reset() Implements IFilterRun.Reset
-			Throw New NotImplementedException()
+		Private ReadOnly Property IFilterRun_IsReset As Boolean Implements IFilterRun.IsReset
+			Get
+				Return MyListOfFilterValue.Count = 0
+			End Get
+		End Property
+		Private Sub IFilterRun_Reset() Implements IFilterRun.Reset
+			MyListOfFilterValue.Clear()
+			MyStatistical.ToList.Clear()
 		End Sub
 
-		Public Sub Reset(BufferCapacity As Integer) Implements IFilterRun.Reset
-			Throw New NotImplementedException()
+		''' <summary>
+		''' 'BufferCapacity is not use at this level and can be ignore here
+		''' </summary>
+		''' <param name="BufferCapacity"></param>
+		Private Sub IFilterRun_Reset(BufferCapacity As Integer) Implements IFilterRun.Reset
+			IFilterRun_Reset()
 		End Sub
 #End Region
 #Region "IRegisterKey"
