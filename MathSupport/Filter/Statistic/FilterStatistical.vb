@@ -1,4 +1,5 @@
-﻿Imports YahooAccessData.MathPlus.Filter
+﻿Imports Newtonsoft.Json.Linq
+Imports YahooAccessData.MathPlus.Filter
 Imports YahooAccessData.MathPlus.Filter.FilterVolatility
 
 ''' <summary>
@@ -7,6 +8,7 @@ Imports YahooAccessData.MathPlus.Filter.FilterVolatility
 ''' </summary>
 <Serializable()>
 Public Class FilterStatistical
+	Implements IFilterRun(Of (Mean As Double, StandardDeviation As Double))
 	Implements IFilterRun(Of IStatistical)
 	Implements IFilter(Of IStatistical)
 	Implements IRegisterKey(Of String)
@@ -253,7 +255,7 @@ Public Class FilterStatistical
 		Return Me.FilterLast.ToString
 	End Function
 
-#Region "IFilterRun"
+#Region "IFilterRun(Of IStatistical)"
 	Private ReadOnly Property IFilterRun_InputLast As Double Implements IFilterRun(Of IStatistical).InputLast
 		Get
 			Return ValueLast
@@ -315,7 +317,7 @@ Public Class FilterStatistical
 	''' <returns></returns>
 	Private ReadOnly Property IFilterRun_ToBufferList As IList(Of IStatistical) Implements IFilterRun(Of IStatistical).ToBufferList
 		Get
-			Throw New NotImplementedException(message:=Me.ToString & " does not support IFilterRun_ToBufferList")
+			Throw New NotImplementedException(message:=Me.ToString & " does not support ToBufferList")
 		End Get
 	End Property
 
@@ -346,7 +348,72 @@ Public Class FilterStatistical
 		IFilterRun_Reset()
 	End Sub
 #End Region
+#Region "IFilterRun(Of (Mean, StandardDeviation))"
+	Private Function IFilterRun__FilterRun(Value As Double) As (Mean As Double, StandardDeviation As Double) Implements IFilterRun(Of (Mean As Double, StandardDeviation As Double)).FilterRun
+		Dim ThisResult As IStatistical = Me.Filter(Value)
+		Return (Mean:=ThisResult.Mean, StandardDeviation:=ThisResult.StandardDeviation)
+	End Function
 
+	Private Sub IFilterRun__Reset() Implements IFilterRun(Of (Mean As Double, StandardDeviation As Double)).Reset
+		IFilterRun_Reset()
+	End Sub
+
+	Private Sub IFilterRun__Reset(BufferCapacity As Integer) Implements IFilterRun(Of (Mean As Double, StandardDeviation As Double)).Reset
+		IFilterRun_Reset(BufferCapacity)
+	End Sub
+
+	Private ReadOnly Property IFilterRun__InputLast As Double Implements IFilterRun(Of (Mean As Double, StandardDeviation As Double)).InputLast
+		Get
+			Return IFilterRun_InputLast
+		End Get
+	End Property
+
+	Private ReadOnly Property IFilterRun__FilterLast As (Mean As Double, StandardDeviation As Double) Implements IFilterRun(Of (Mean As Double, StandardDeviation As Double)).FilterLast
+		Get
+			With FilterValueLast
+				Return (Mean:= .Mean, StandardDeviation:= .StandardDeviation)
+			End With
+		End Get
+	End Property
+
+	Private ReadOnly Property IFilterRun__FilterLast(Index As Integer) As (Mean As Double, StandardDeviation As Double) Implements IFilterRun(Of (Mean As Double, StandardDeviation As Double)).FilterLast
+		Get
+			With IFilterRun_FilterLast(Index)
+				Return (Mean:= .Mean, StandardDeviation:= .StandardDeviation)
+			End With
+		End Get
+	End Property
+
+	Private ReadOnly Property IFilterRun__FilterTrendLast As (Mean As Double, StandardDeviation As Double) Implements IFilterRun(Of (Mean As Double, StandardDeviation As Double)).FilterTrendLast
+		Get
+			Throw New NotImplementedException(message:=Me.ToString & " does not support FilterTrendLast")
+		End Get
+	End Property
+
+	Private ReadOnly Property IFilterRun__FilterRate As Double Implements IFilterRun(Of (Mean As Double, StandardDeviation As Double)).FilterRate
+		Get
+			Return MyRate
+		End Get
+	End Property
+
+	Private ReadOnly Property IFilterRun__ToBufferList As IList(Of (Mean As Double, StandardDeviation As Double)) Implements IFilterRun(Of (Mean As Double, StandardDeviation As Double)).ToBufferList
+		Get
+			Throw New NotImplementedException(message:=Me.ToString & " does not support ToBufferList")
+		End Get
+	End Property
+
+	Private ReadOnly Property IFilterRun__FilterDetails As String Implements IFilterRun(Of (Mean As Double, StandardDeviation As Double)).FilterDetails
+		Get
+			Return IFilterRun_FilterDetails
+		End Get
+	End Property
+
+	Private ReadOnly Property IFilterRun__IsReset As Boolean Implements IFilterRun(Of (Mean As Double, StandardDeviation As Double)).IsReset
+		Get
+			Return IFilterRun_IsReset
+		End Get
+	End Property
+#End Region
 #Region "IRegisterKey"
 	Public Function AsIRegisterKey() As IRegisterKey(Of String)
 		Return Me
