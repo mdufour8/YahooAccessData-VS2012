@@ -28,7 +28,7 @@ Partial Public Class Stock
 	Implements IStockProcess
 	Implements IStockInfo
 	Implements IStockRank
-	Implements StockViewInterface.IWebYahooDescriptor
+	Implements IWebYahooDescriptor
 
 
 #Region "Definition"
@@ -2834,13 +2834,13 @@ Partial Public Class Stock
 		End Set
 	End Property
 
-	Private ReadOnly Property IWebYahooDescriptor_Symbol As String Implements StockViewInterface.IWebYahooDescriptor.Symbol
+	Private ReadOnly Property IWebYahooDescriptor_Symbol As String Implements IWebYahooDescriptor.Symbol
 		Get
 			Return Me.Symbol
 		End Get
 	End Property
 
-	Private ReadOnly Property IWebYahooDescriptor_Exchange As String Implements StockViewInterface.IWebYahooDescriptor.Exchange
+	Private ReadOnly Property IWebYahooDescriptor_Exchange As String Implements IWebYahooDescriptor.Exchange
 		Get
 			Return Me.Exchange
 		End Get
