@@ -255,21 +255,21 @@ Partial Public Class Stock
 		Return ThisResult.Result
 	End Function
 
-	''' <summary>
-	''' This function return teh exchange code and code symbol needed to access the web database. It if fails it return nothing
-	''' </summary>
-	''' <returns>
-	'''	the tuple with the exchange and symbol code. It it fail it return nothing
-	''' </returns>
-	Public Function WebExchangeCode() As Tuple(Of String, String)
-		Dim ThisWebEodStockDescriptor As IWebEodDescriptor = Nothing
-		Try
-			ThisWebEodStockDescriptor = New WebEODData.WebStockDescriptor(Me)
-		Catch ex As Exception
-			Return Nothing
-		End Try
-		Return New Tuple(Of String, String)(ThisWebEodStockDescriptor.ExchangeCode, ThisWebEodStockDescriptor.SymbolCode)
-	End Function
+	'''' <summary>
+	'''' This function return teh exchange code and code symbol needed to access the web database. It if fails it return nothing
+	'''' </summary>
+	'''' <returns>
+	''''	the tuple with the exchange and symbol code. It it fail it return nothing
+	'''' </returns>
+	'Public Function WebEODCode() As (ExchangeCode As String, SymbolCode As String)
+	'	Dim ThisWebEodStockDescriptor As IWebEodDescriptor = Nothing
+	'	Try
+	'		ThisWebEodStockDescriptor = New WebEODData.WebStockDescriptor(Me)
+	'	Catch ex As Exception
+	'		Return (Nothing, Nothing)
+	'	End Try
+	'	Return (ThisWebEodStockDescriptor.ExchangeCode, ThisWebEodStockDescriptor.SymbolCode)
+	'End Function
 
 
 
@@ -282,7 +282,6 @@ Partial Public Class Stock
 	''' </returns>
 	Public Async Function WebRefreshRecordAsync(ByVal RecordDateStop As Date) As Task(Of IResponseStatus(Of Date))
 		Dim ThisWebDataSource = Me.Report.WebDataSource
-		Dim ThisExchangeSymbol As Tuple(Of String, String)
 		Dim IsLastRecordLive As Boolean
 		Dim IsNewRecordLive As Boolean
 
@@ -296,18 +295,24 @@ Partial Public Class Stock
 		'	Me.Symbol = Me.Symbol
 		'End If
 		Me.IsSplitEnabled = False
-		ThisExchangeSymbol = Me.WebExchangeCode()
+		Dim ThisWebEOD = SerializationKeyHelper.ToWebEOD(Me)
+
+		'ThisWebDataSource, ThisWebEOD.ExchangeCode, ThisWebEOD.SymbolCode)
+
+		'SerializationKeyHelper.ToWebEODCode(ThisWebDataSource, ThisWebEOD.ExchangeCode, ThisWebEOD.SymbolCode)
+		'SerializationKeyHelper.NormalizeKey(ThisWebEOD.SymbolCode)
+
 		'If Me.Symbol = "GOLD" Then
 		'	Debugger.Break()
 		'End If
-		If ThisExchangeSymbol Is Nothing Then
+		If ThisWebEOD.ExchangeCode Is Nothing OrElse ThisWebEOD.SymbolCode Is Nothing Then
 			Return New ResponseStatus(Of Date)(Me.DateStop, IsSuccess:=False, Message:="Invalid exchange and or symbol combination...")
 		End If
 		RecordDateStop = Now
 
-		Dim ThisDateOfLastTrading = ThisWebDataSource.DayTimeOfLastTrading(ThisExchangeSymbol.Item1, DateValue:=RecordDateStop)
-		Dim ThisDateOfNextTrading = ThisWebDataSource.DayTimeOfNextTrading(ThisExchangeSymbol.Item1, DateValue:=RecordDateStop)
-		Dim IsLiveUpdateReady = ThisWebDataSource.IsLiveUpdateReady(ThisExchangeSymbol.Item1, DateValue:=RecordDateStop)
+		Dim ThisDateOfLastTrading = ThisWebDataSource.DayTimeOfLastTrading(ThisWebEOD.ExchangeCode, DateValue:=RecordDateStop)
+		Dim ThisDateOfNextTrading = ThisWebDataSource.DayTimeOfNextTrading(ThisWebEOD.ExchangeCode, DateValue:=RecordDateStop)
+		Dim IsLiveUpdateReady = ThisWebDataSource.IsLiveUpdateReady(ThisWebEOD.ExchangeCode, DateValue:=RecordDateStop)
 		Dim ThisWebDateStart As Date
 		If _Records.Count = 0 Then
 			'reset the date
@@ -349,11 +354,11 @@ Partial Public Class Stock
 		Dim ThisResponseQuery As IResponseStatus(Of Dictionary(Of String, List(Of IStockQuote))) = Nothing
 		Dim ThisResponseLiveQuery As IResponseStatus(Of IStockQuote) = Nothing
 		'check if the symbol exit
-		If ThisWebDataSource.GetDictionaryOfStockSymbolBySymbol(ThisExchangeSymbol.Item1).ContainsKey(ThisExchangeSymbol.Item2) Then
+		If ThisWebDataSource.GetDictionaryOfStockSymbolBySymbol(ThisWebEOD.ExchangeCode).ContainsKey(ThisWebEOD.SymbolCode) Then
 			'ToDo: A timeout is needed here in case the server is not availaible anymore.
 			ThisResponseQuery = Await ThisWebDataSource.LoadStockQuoteAsync(
-				ExchangeCode:=ThisExchangeSymbol.Item1,
-				Symbol:=ThisExchangeSymbol.Item2,
+				ExchangeCode:=ThisWebEOD.ExchangeCode,
+				Symbol:=ThisWebEOD.SymbolCode,
 				DateStart:=ThisWebDateStart,
 				DateStop:=RecordDateStop,
 				IsRealTimeAPI:=True)
