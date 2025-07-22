@@ -2200,17 +2200,18 @@ Partial Public Class Report
 						'if we work with an exchange other than the US, append the exchange to the symbol
 						'to make sure there is no conflicting symbol. This is the method use by yahoo. However marketwatch use the
 						'country prefix code. In the past this software use the Yahoo method
-						Dim ThisWebYahooStockDescriptor As IWebYahooDescriptor
+						'Dim ThisWebYahooStockDescriptor As IWebYahooDescriptor
 						For Each ThisStockSymbol As IStockSymbol In ThisListOfStockSymbol
-							ThisWebYahooStockDescriptor = New WebStockDescriptor(ThisExchange, ThisStockSymbol)
-							ThisStock = ThisReport.StockAdd(StockSymbol:=ThisWebYahooStockDescriptor.Symbol, SectorName:="", IndustryName:="")
+							'ThisWebYahooStockDescriptor = New WebStockDescriptor(ThisExchange, ThisStockSymbol)
+							Dim ThisWebYahooStockDescriptor = SerializationKeyHelper.ToWebYahoo(ThisStockSymbol)
+							ThisStock = ThisReport.StockAdd(StockSymbol:=ThisWebYahooStockDescriptor.SymbolCode, SectorName:="", IndustryName:="")
 							'if ThisStock is nothing the stock could not be addded likely due conflicting Symbol
 							'in that case the stock is ignored
 							If ThisStock IsNot Nothing Then
 								With ThisStock
 									'	'keep most of the information except a few item
 									.Name = ThisStockSymbol.Name
-									.Exchange = ThisWebYahooStockDescriptor.Exchange
+									.Exchange = ThisWebYahooStockDescriptor.ExchangeCode
 									.DateStart = ThisReport.DateStart
 									.DateStop = .DateStart
 									.IsInternational = ThisStockSymbol.IsInternational
