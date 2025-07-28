@@ -209,69 +209,104 @@ Partial Public Class Stock
 	End Sub
 #End Region
 #Region "Main Control Function"
-	Public Function WebRefreshRecord(ByVal RecordDateStop As Date) As Date
-		Dim ThisTask As Task(Of IResponseStatus(Of Date)) = Nothing
-		If Me.Report.WebDataSource Is Nothing Then Return Now
+	'Public Function WebRefreshRecord1(ByVal RecordDateStop As Date) As Date
+	'	Dim ThisTask As Task(Of IResponseStatus(Of Date)) = Nothing
+	'	If Me.Report.WebDataSource Is Nothing Then Return Now
 
-		Dim ThisTaskOfWebRefreshRecord = New Task(Of IResponseStatus(Of Date))(
-		 Function()
-			 ThisTask = Me.WebRefreshRecordAsync(RecordDateStop)
-			 Return ThisTask.Result
-		 End Function)
+	'	Dim ThisTaskOfWebRefreshRecord = New Task(Of IResponseStatus(Of Date))(
+	'	 Function()
+	'		 ThisTask = Me.WebRefreshRecordAsync(RecordDateStop)
+	'		 Return ThisTask.Result
+	'	 End Function)
 
-		'TODO: Investigate: Is this the same than the code above? It seem that is is! NO
-		'Dim ThisTaskOfWebRefreshRecord As Task(Of Date) = Task.Run(Function() Me.WebRefreshRecordAsync(RecordDateStop))
-		'Gets the number of remaining threads that can enter the SemaphoreSlim object.
-		'TODO: Better or not to get out or wait?
-		If MySemaphoreSlimWebStockReading.CurrentCount = 0 Then
-			'Debug.Print($"WebRefreshRecord: {Me.Symbol} escape with CurrentCount at {0}")
-			'Return Now
-		End If
-		Trace.WriteLine($"WebRefreshRecord: {Me.Symbol} Started with CurrentCount at {MySemaphoreSlimWebStockReading.CurrentCount}")
-		Dim ThisWaitingCount = MySemaphoreSlimWebStockReading.CurrentCount
-		Do
-			If MySemaphoreSlimWebStockReading.Wait(millisecondsTimeout:=1000) = True Then
-				Exit Do
-			Else
-				Trace.WriteLine(($"WebRefreshRecord: {Me.Symbol} still waiting with CurrentCount at {MySemaphoreSlimWebStockReading.CurrentCount}"))
-			End If
-		Loop
-		Dim ThisStockWatch As New Stopwatch
-		ThisStockWatch.Restart()
-		'ThisTaskOfWebRefreshRecord.RunSynchronously()
-		ThisTaskOfWebRefreshRecord.Start()
-		ThisTaskOfWebRefreshRecord.Wait()
-		ThisStockWatch.Stop()
-		MySemaphoreSlimWebStockReading.Release()
-		Debug.Print($"WebRefreshRecord: {Me.Symbol} executed in {ThisStockWatch.ElapsedMilliseconds} ms")
-		Dim ThisResult = ThisTaskOfWebRefreshRecord.Result
-		If ThisResult.IsSuccess = False Then
-			MsgBox(ThisResult.Message)
-		Else
-			If ThisResult.Message.Length() > 0 Then
-				Trace.WriteLine(ThisResult.Message)
-			End If
-		End If
-		Return ThisResult.Result
-	End Function
-
-	'''' <summary>
-	'''' This function return teh exchange code and code symbol needed to access the web database. It if fails it return nothing
-	'''' </summary>
-	'''' <returns>
-	''''	the tuple with the exchange and symbol code. It it fail it return nothing
-	'''' </returns>
-	'Public Function WebEODCode() As (ExchangeCode As String, SymbolCode As String)
-	'	Dim ThisWebEodStockDescriptor As IWebEodDescriptor = Nothing
-	'	Try
-	'		ThisWebEodStockDescriptor = New WebEODData.WebStockDescriptor(Me)
-	'	Catch ex As Exception
-	'		Return (Nothing, Nothing)
-	'	End Try
-	'	Return (ThisWebEodStockDescriptor.ExchangeCode, ThisWebEodStockDescriptor.SymbolCode)
+	'	'TODO: Investigate: Is this the same than the code above? It seem that is is! NO
+	'	'Dim ThisTaskOfWebRefreshRecord As Task(Of Date) = Task.Run(Function() Me.WebRefreshRecordAsync(RecordDateStop))
+	'	'Gets the number of remaining threads that can enter the SemaphoreSlim object.
+	'	'TODO: Better or not to get out or wait?
+	'	If MySemaphoreSlimWebStockReading.CurrentCount = 0 Then
+	'		'Debug.Print($"WebRefreshRecord: {Me.Symbol} escape with CurrentCount at {0}")
+	'		'Return Now
+	'	End If
+	'	Trace.WriteLine($"WebRefreshRecord: {Me.Symbol} Started with CurrentCount at {MySemaphoreSlimWebStockReading.CurrentCount}")
+	'	Dim ThisWaitingCount = MySemaphoreSlimWebStockReading.CurrentCount
+	'	Do
+	'		If MySemaphoreSlimWebStockReading.Wait(millisecondsTimeout:=1000) = True Then
+	'			Exit Do
+	'		Else
+	'			Trace.WriteLine(($"WebRefreshRecord: {Me.Symbol} still waiting with CurrentCount at {MySemaphoreSlimWebStockReading.CurrentCount}"))
+	'		End If
+	'	Loop
+	'	Dim ThisStockWatch As New Stopwatch
+	'	ThisStockWatch.Restart()
+	'	'ThisTaskOfWebRefreshRecord.RunSynchronously()
+	'	ThisTaskOfWebRefreshRecord.Start()
+	'	ThisTaskOfWebRefreshRecord.Wait()
+	'	ThisStockWatch.Stop()
+	'	MySemaphoreSlimWebStockReading.Release()
+	'	Debug.Print($"WebRefreshRecord: {Me.Symbol} executed in {ThisStockWatch.ElapsedMilliseconds} ms")
+	'	Dim ThisResult = ThisTaskOfWebRefreshRecord.Result
+	'	If ThisResult.IsSuccess = False Then
+	'		MsgBox(ThisResult.Message)
+	'	Else
+	'		If ThisResult.Message.Length() > 0 Then
+	'			Trace.WriteLine(ThisResult.Message)
+	'		End If
+	'	End If
+	'	Return ThisResult.Result
 	'End Function
 
+	Public Function WebRefreshRecord(ByVal RecordDateStop As Date) As Date
+		Dim ThisTask As Task(Of IResponseStatus(Of Date)) = Nothing
 
+		If Me.Report.WebDataSource Is Nothing Then Return Now
+		' Wait for the semaphore, with logging
+		Do
+			If MySemaphoreSlimWebStockReading.Wait(millisecondsTimeout:=1000) Then
+				Exit Do
+			Else
+				Trace.WriteLine($"WebRefreshRecord: {Me.Symbol} still waiting with CurrentCount at {MySemaphoreSlimWebStockReading.CurrentCount}")
+			End If
+		Loop
+		'Summary:
+		'•	Your pattern of running the async call inside a New Task (thread pool) And then waiting for it Is a safe way to bridge async to sync without risking a deadlock.
+		'•	The deadlock happens because .Result Or .GetAwaiter().GetResult() can block the main thread, preventing the async continuation from running if it needs the same thread (common in UI apps).
+		'•	Your original code Is a valid And practical solution for this situation.
+		Dim ThisStockWatch As New Stopwatch
+		ThisStockWatch.Restart()
+		Try
+			' Call the async method synchronously and propagate exceptions
+			'note this cause a deadlock if the code is called from the UI thread
+			'Dim resultTask = Me.WebRefreshRecordAsync(RecordDateStop)
+			'Dim ThisResult = resultTask.GetAwaiter().GetResult()
+			'so we use a task to run the async method
+			Dim ThisTaskOfWebRefreshRecord = New Task(Of IResponseStatus(Of Date))(
+				Function()
+					ThisTask = Me.WebRefreshRecordAsync(RecordDateStop)
+					Return ThisTask.Result
+				End Function)
+
+			ThisTaskOfWebRefreshRecord.Start()
+			ThisTaskOfWebRefreshRecord.Wait()
+			Dim ThisResult = ThisTaskOfWebRefreshRecord.Result
+			ThisStockWatch.Stop()
+			Debug.Print($"WebRefreshRecord: {Me.Symbol} executed in {ThisStockWatch.ElapsedMilliseconds} ms")
+
+			If Not ThisResult.IsSuccess Then
+				MsgBox(ThisResult.Message)
+			ElseIf ThisResult.Message.Length > 0 Then
+				Trace.WriteLine(ThisResult.Message)
+			End If
+
+			Return ThisResult.Result
+		Catch ex As Exception
+			' Log or handle the exception as needed
+			MsgBox($"WebRefreshRecord error for {Me.Symbol}: {ex.Message}")
+			Trace.WriteLine($"WebRefreshRecord error for {Me.Symbol}: {ex}")
+			Return Now
+		Finally
+			MySemaphoreSlimWebStockReading.Release()
+		End Try
+	End Function
 
 	''' <summary>
 	'''   Use to refresh the data record via the builds-in web interface
@@ -347,7 +382,7 @@ Partial Public Class Stock
 			If ThisWebDateStart.Date = RecordDateStop.Date Then
 				If IsLiveUpdateReady = False Then
 					'Debugger.Break()
-					Return New ResponseStatus(Of Date)(Me.DateStop, IsSuccess:=True, Message:="No new data available at this time...")
+					Return New ResponseStatus(Of Date)(Me.DateStop, IsSuccess:=True, Message:="")
 				End If
 			End If
 		End If
