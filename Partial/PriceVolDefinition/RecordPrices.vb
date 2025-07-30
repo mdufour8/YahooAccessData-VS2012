@@ -1526,11 +1526,11 @@ Public Class RecordPrices
 		Return ThisList
 	End Function
 
-	Public Function ToListOfStockPrice(Of T As {IStockPriceVol, IPriceVol, New})() As List(Of T)
-		Dim ThisList = New List(Of T)
+	Public Function ToListOfStockPrice() As List(Of IStockPriceVol)
+		Dim ThisList = New List(Of IStockPriceVol)
 		For I = 0 To Me.NumberPoint - 1
 			With MyPriceVols(I)
-				Dim ThisStockPrice As T = New T()
+				Dim ThisStockPrice As StockPriceVol = New StockPriceVol()
 				Dim ThisItem = DirectCast(ThisStockPrice, IStockPriceVol)
 				'load the data via the IStockPriceVol interface 
 				ThisItem.DateDay = .DateLastTrade

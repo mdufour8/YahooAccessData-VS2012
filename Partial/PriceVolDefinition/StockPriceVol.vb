@@ -1,4 +1,4 @@
-﻿Public Class StockPrice
+﻿Public Class StockPriceVol
 	Implements IStockPriceVol
 	Implements IPriceVol
 
