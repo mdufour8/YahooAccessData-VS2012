@@ -1526,7 +1526,7 @@ Public Class RecordPrices
 		Return ThisList
 	End Function
 
-	Public Function ToListOfStockPrice() As List(Of IStockPriceVol)
+	Public Function ToListOfStockPriceVol() As List(Of IStockPriceVol)
 		Dim ThisList = New List(Of IStockPriceVol)
 		For I = 0 To Me.NumberPoint - 1
 			With MyPriceVols(I)
