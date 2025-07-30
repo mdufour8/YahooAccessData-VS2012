@@ -284,6 +284,7 @@
     <Compile Include="Partial\PriceVolDefinition\PriceVolLargeAsClass.vb" />
     <Compile Include="Partial\PriceVolDefinition\PriceVolShort.vb" />
     <Compile Include="Partial\PriceVolDefinition\RecordPrices.vb" />
+    <Compile Include="Partial\PriceVolDefinition\StockPrice.vb" />
     <Compile Include="Partial\RecordQuoteValue.vb" />
     <Compile Include="Partial\ReportDateHoliday.vb" />
     <Compile Include="Partial\StockDividendSinglePayout.vb" />

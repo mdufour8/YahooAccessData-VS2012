@@ -1607,6 +1607,12 @@ Namespace ExtensionService
 			Return Extensions.ToDaily(Of YahooAccessData.RecordQuoteValue)(colData)
 		End Function
 
+		''' <summary>
+		''' Return the daily record prices from the collection of RecordQuoteValue
+		''' This is used to create a RecordPrices object that contains the daily prices layout has a complete set of daily prices
+		''' for the given date range. The missing data is extrapolated from the previous last day of trading.
+		''' If the collection is empty, an exception is thrown.
+		''' </summary>
 		<Extension()>
 		Public Function ToDailyRecordPrices(
 			colData As IEnumerable(Of YahooAccessData.RecordQuoteValue),

@@ -1,6 +1,7 @@
 ﻿Imports YahooAccessData.MathPlus.Measure
 Imports YahooAccessData.ExtensionService
 Imports System.IO
+Imports WebEODData
 
 Public Class RecordPrices
 #Const IS_SPLIT_LOCAL_ENABLED = False
@@ -234,8 +235,8 @@ Public Class RecordPrices
 					IsIntraDayLocalEnabled = True
 				End If
 				If .Vol > 0 Then
-					If .Vol <Me.VolMin Then
-						Me.VolMin= .Vol
+					If .Vol < Me.VolMin Then
+						Me.VolMin = .Vol
 					End If
 					If .Vol > Me.VolMax Then
 						Me.VolMax = .Vol
@@ -1505,6 +1506,48 @@ Public Class RecordPrices
 	End Function
 #End Region
 #Region "Data Properties and functions"
+	Public Function ToListOfStockQuote() As List(Of WebEODData.StockQuote)
+		Dim ThisList = New List(Of WebEODData.StockQuote)
+		For I = 0 To Me.NumberPoint - 1
+			With MyPriceVols(I)
+				Dim ThisStockQuote As StockQuote = New StockQuote(
+					Symbol:=Symbol,
+					DateTime:= .DateLastTrade,
+					Open:= .Open,
+					High:= .High,
+					Low:= .Low,
+					Close:= .Last,
+					Volume:= .Vol)
+				ThisStockQuote.AsIStockSentiment.Count = .AsISentimentIndicator.Count
+				ThisStockQuote.AsIStockSentiment.Value = .AsISentimentIndicator.Value
+				ThisList.Add(ThisStockQuote)
+			End With
+		Next
+		Return ThisList
+	End Function
+
+	Public Function ToListOfStockPrice(Of T As {IStockPrice, IPriceVol, New})() As List(Of T)
+		Dim ThisList = New List(Of T)
+		For I = 0 To Me.NumberPoint - 1
+			With MyPriceVols(I)
+				Dim ThisStockPrice As T = New T()
+				Dim ThisItem = DirectCast(ThisStockPrice, IStockPrice)
+				'load the data via the IStockPrice interface 
+				ThisItem.DateDay = .DateLastTrade
+				ThisItem.Open = .Open
+				ThisItem.High = .High
+				ThisItem.Low = .Low
+				ThisItem.Last = .Last
+				ThisItem.Vol = .Vol
+				ThisItem.OpenNext = .OpenNext
+				ThisItem.LastPrevious = .LastPrevious
+				ThisList.Add(ThisStockPrice)
+			End With
+		Next
+		Return ThisList
+	End Function
+
+
 	Public Function ToWeeklyIndex(ByVal DateValue As Date) As Integer
 		Dim ThisDateRefToPreviousMonday = ReportDate.DateToMondayPrevious(Me.DateStart)
 
