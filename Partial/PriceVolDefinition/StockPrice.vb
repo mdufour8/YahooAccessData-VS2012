@@ -1,5 +1,5 @@
 ﻿Public Class StockPrice
-	Implements IStockPrice
+	Implements IStockPriceVol
 	Implements IPriceVol
 
 	Public Sub New()
@@ -18,15 +18,15 @@
 	End Sub
 
 
-	Public Property DateDay As Date Implements IStockPrice.DateDay
-	Public Property Open As Double Implements IStockPrice.Open
-	Public Property OpenNext As Double Implements IStockPrice.OpenNext
-	Public Property Last As Double Implements IStockPrice.Last
-	Public Property LastPrevious As Double Implements IStockPrice.LastPrevious
-	Public Property High As Double Implements IStockPrice.High
-	Public Property Low As Double Implements IStockPrice.Low
-	Public Property Vol As Long Implements IStockPrice.Vol
-	Public ReadOnly Property AsIStockPrice As IStockPrice Implements IStockPrice.AsIStockPrice
+	Public Property DateDay As Date Implements IStockPriceVol.DateDay
+	Public Property Open As Double Implements IStockPriceVol.Open
+	Public Property OpenNext As Double Implements IStockPriceVol.OpenNext
+	Public Property Last As Double Implements IStockPriceVol.Last
+	Public Property LastPrevious As Double Implements IStockPriceVol.LastPrevious
+	Public Property High As Double Implements IStockPriceVol.High
+	Public Property Low As Double Implements IStockPriceVol.Low
+	Public Property Vol As Long Implements IStockPriceVol.Vol
+	Public ReadOnly Property AsIStockPrice As IStockPriceVol Implements IStockPriceVol.AsIStockPrice
 		Get
 			Return Me
 		End Get
@@ -210,8 +210,8 @@
 	End Property
 End Class
 
-Public Interface IStockPrice
-	ReadOnly Property AsIStockPrice As IStockPrice
+Public Interface IStockPriceVol
+	ReadOnly Property AsIStockPrice As IStockPriceVol
 	Property DateDay As Date
 	Property Open As Double
 	Property OpenNext As Double
