@@ -979,11 +979,9 @@ Partial Public Class Stock
 		'Dim ThisRecordsCountTotal As Integer = DirectCast(_Records, IRecordInfo).CountTotal
 		'Dim ThisRecordsDailyCountTotal As Integer = DirectCast(_RecordsDaily, IRecordInfo).CountTotal
 
-		Return String.Format("{0},ID:{1},Key:{2},Record:{3}",
+		Return String.Format("{0},ID:{1},Key:{2}",
 			TypeName(Me),
-			Me.KeyID,
-			Me.KeyValue.ToString,
-			Me.Records.Count)
+			Me.KeyID)
 	End Function
 #End Region
 #Region "IStockGain"
