@@ -28,11 +28,13 @@ Partial Public Class Stock
 	Implements IStockProcess
 	Implements IStockInfo
 	Implements IStockRank
-	Implements IWebYahooDescriptor
+	Implements ISymbolView
 
 
 #Region "Definition"
 #Const IsLogSavingAction = False
+
+	Private Const DISPLAY_TEXT_SEPARATOR As String = vbTab
 
 	Private MyException As Exception
 	Private Shared MyListHeaderInfo As List(Of HeaderInfo)
@@ -886,7 +888,7 @@ Partial Public Class Stock
 				End If
 				IsLoaded = True
 			End If
-    End SyncLock
+		End SyncLock
 		Return IsLoaded
 	End Function
 
@@ -2866,20 +2868,39 @@ Partial Public Class Stock
 			Throw New NotSupportedException
 		End Set
 	End Property
+#End Region
 
-	Private ReadOnly Property IWebYahooDescriptor_Symbol As String Implements IWebYahooDescriptor.Symbol
+#Region "ISymbolView"
+	''' <summary>
+	''' Returns the stock symbol code.
+	''' This property is used to identify the stock symbol in the system.
+	''' It is a unique identifier for the stock symbol and is used in various operations such as searching, filtering, and displaying stock information.
+	''' The code is typically a short string that represents the stock symbol, such as "AAPL" for Apple Inc. or "GOOGL" for Alphabet Inc.
+	''' </summary>"
+	Private ReadOnly Property ISymbolView_Code As String Implements ISymbolView.Code
 		Get
 			Return Me.Symbol
 		End Get
 	End Property
 
-	Private ReadOnly Property IWebYahooDescriptor_Exchange As String Implements IWebYahooDescriptor.Exchange
+	Private ReadOnly Property ISymbolView_DisplayText As String Implements ISymbolView.DisplayText
+		Get
+			Return $"{Me.Symbol} {DISPLAY_TEXT_SEPARATOR} {Me.Name}"
+		End Get
+	End Property
+
+	Private ReadOnly Property ISymbolView_Name As String Implements ISymbolView.Name
+		Get
+			Return Me.Name
+		End Get
+	End Property
+
+	Private ReadOnly Property ISymbolView_Exchange As String Implements ISymbolView.Exchange
 		Get
 			Return Me.Exchange
 		End Get
 	End Property
 #End Region
-
 End Class
 
 #Region "IStockRank"
