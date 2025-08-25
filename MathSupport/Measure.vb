@@ -223,23 +223,55 @@ Namespace MathPlus
         'Return New LagCorr With {.Corr = cor, .lag = lag}
       End Function
 
+			''' <summary>
+			''' Approximates the joint probability that two momentum-based signals are simultaneously positive,
+			''' under the assumption that they are derived from normally distributed processes.
+			''' 
+			''' Specifically, this function estimates P(X > 0 and Y > 0) where X and Y are standardized
+			''' momentum indicators (e.g., log-return filters, Brown filters, RSI-like indicators) derived
+			''' from a price process modeled as log-normal.
+			''' 
+			''' This approximation is valid because:
+			''' - Although the price is assumed to follow a log-normal distribution, the *log-returns* (or their
+			'''   filtered versions) are approximately normally distributed.
+			''' - The arcsin formula provides a closed-form solution for the probability that two correlated
+			'''   standard normal variables are simultaneously positive:
+			'''       P(X > 0, Y > 0) ≈ 0.25 + arcsin(rho) / (2π)
+			''' - This is appropriate for momentum indicators that are:
+			'''     - Detrended
+			'''     - Centered around zero
+			'''     - Bounded in variance (e.g., filtered signals over N samples)
+			''' 
+			''' Caution:
+			''' - This formula assumes that X and Y are jointly normal with correlation coefficient `rho`.
+			''' - The result is only valid for −1 ≤ rho ≤ 1.
+			''' - The output probability is between 0 and 1.
+			''' </summary>
+			''' <param name="rho">The Pearson correlation coefficient between the two signals (−1 to +1).</param>
+			''' <returns>Estimated joint probability P(X > 0 and Y > 0).</returns>
+			Public Shared Function JointProbabilityApproximate(rho As Double) As Double
+				If rho < -1 OrElse rho > 1 Then
+					Throw New ArgumentOutOfRangeException(NameOf(rho), "Correlation must be between -1 and +1.")
+				End If
+				Return 0.25 + Math.Asin(rho) / (2 * Math.PI)
+			End Function
 
 
 
 
-      ''' <summary>
-      ''' The Black and Scholes (1973) europeen Stock option formula from:
-      ''' http://www.espenhaug.com/black_scholes.html
-      ''' </summary>
-      ''' <param name="OptionType">call or put</param>
-      ''' <param name="StockPrice">actual stock price</param>
-      ''' <param name="OptionStrikePrice">Strike Price of the option</param>
-      ''' <param name="TimeToExpirationInYear">Number of days to expiration in years</param>
-      ''' <param name="RiskFreeRate">Rate of risk free investment</param>
-      ''' <param name="VolatilityPerYear">Standard deviation Volatility per year</param>
-      ''' <returns>The fair value of the option</returns>
-      ''' <remarks>See The Complete Guide to Option Pricing Formulas by Espen Gaarder Haug</remarks>
-      Public Shared Function BlackScholes(
+			''' <summary>
+			''' The Black and Scholes (1973) europeen Stock option formula from:
+			''' http://www.espenhaug.com/black_scholes.html
+			''' </summary>
+			''' <param name="OptionType">call or put</param>
+			''' <param name="StockPrice">actual stock price</param>
+			''' <param name="OptionStrikePrice">Strike Price of the option</param>
+			''' <param name="TimeToExpirationInYear">Number of days to expiration in years</param>
+			''' <param name="RiskFreeRate">Rate of risk free investment</param>
+			''' <param name="VolatilityPerYear">Standard deviation Volatility per year</param>
+			''' <returns>The fair value of the option</returns>
+			''' <remarks>See The Complete Guide to Option Pricing Formulas by Espen Gaarder Haug</remarks>
+			Public Shared Function BlackScholes(
         ByVal OptionType As enuOptionType,
         ByVal StockPrice As Double,
         ByVal OptionStrikePrice As Double,
