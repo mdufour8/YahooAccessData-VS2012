@@ -418,10 +418,11 @@ Partial Public Class Stock
 						MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
 					Next
 				End If
-				Return New ResponseStatus(Of Date)(Me.DateStop)
+				'If ThisWebDataSource.GetDictionaryOfStockSymbolBySymbol(ThisWebEOD.ExchangeCode).ContainsKey(ThisWebEOD.SymbolCode) Then
+				Return New ResponseStatus(Of Date)(Me.DateStop, IsSuccess:=False, Message:=$"Stock {ThisWebEOD.SymbolCode} not found in exchange {New ResponseStatus(Of Date)(Me.DateStop, IsSuccess:=False, Message:=$"Stock {ThisWebEOD.ExchangeCode}")}")
 			Else
 				Debug.Print($"Symbol {Me.Symbol} not found on web database...")
-				Return New ResponseStatus(Of Date)(Me.DateStop)
+				Return New ResponseStatus(Of Date)(Me.DateStop, IsSuccess:=False, Message:=$"Stock {ThisWebEOD.SymbolCode} Not found in exchange {New ResponseStatus(Of Date)(Me.DateStop, IsSuccess:=False, Message:=$"Stock {ThisWebEOD.ExchangeCode}")}")
 			End If
 			'otherwise here the data is valid. keep going with further download
 		End If

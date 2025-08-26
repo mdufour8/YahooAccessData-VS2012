@@ -161,6 +161,12 @@ Namespace MathPlus.Filter
 
 		Public Property Tag As String Implements IFilterDuplex.Tag
 
+		Public ReadOnly Property ToListOfCorrelation As List(Of Double)
+			Get
+				Return MyListOfCorrelation
+			End Get
+		End Property
+
 		Public ReadOnly Property ToList As IList(Of Double) Implements IFilterDuplex.ToList
 			Get
 				Return MyListOfCorrelation
