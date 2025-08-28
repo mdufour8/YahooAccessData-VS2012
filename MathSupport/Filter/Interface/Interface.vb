@@ -249,8 +249,8 @@ Namespace MathPlus
       Function ToArray(ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double()
       Function ToArray(ByVal MinValueInitial As Double, ByVal MaxValueInitial As Double, ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double()
       Property Tag As String
-    Function ToString() As String
-    End Interface
+			Function ToString() As String
+		End Interface
 
     Public Interface IFilter(Of T)
       Function Filter(ByVal Value As Double) As T
