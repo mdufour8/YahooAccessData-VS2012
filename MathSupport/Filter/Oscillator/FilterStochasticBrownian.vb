@@ -1,4 +1,8 @@
-﻿#Region "Imports"
+﻿Option Explicit On
+Option Strict On
+Option Infer On
+
+#Region "Imports"
 Imports MathNet.Numerics
 Imports MathNet.Numerics.RootFinding
 Imports YahooAccessData.MathPlus.Filter
@@ -10,42 +14,43 @@ Imports System.Runtime.CompilerServices
 
 #End Region
 
+
 Namespace MathPlus.Filter
-  Public Class FilterStochasticBrownian
-    Implements IStochastic
-    Implements IStochastic1
-    Implements IStochastic2
+	Public Class FilterStochasticBrownian
+		Implements IStochastic
+		Implements IStochastic1
+		Implements IStochastic2
 
-    Implements IFilterRunAsync
-    Implements IStochasticPriceGain
-    Public Enum enuStatisticDistribution
-      Volatility
-      VolatilitySimulated
-      VolatilityPositive
-      VolatilityNegative
-      VolatilityDistributionPositive
-      VolatilityDistributionNegative
-    End Enum
+		Implements IFilterRunAsync
+		Implements IStochasticPriceGain
+		Public Enum enuStatisticDistribution
+			Volatility
+			VolatilitySimulated
+			VolatilityPositive
+			VolatilityNegative
+			VolatilityDistributionPositive
+			VolatilityDistributionNegative
+		End Enum
 
-    Private Const STATISTIC_VOLATILITY_WINDOWS_SIZE As Integer = 1 * NUMBER_WORKDAY_PER_YEAR
-    'Private Const STATISTIC_VOLATILITY_WINDOWS_SIZE As Integer = 10
-    Private Const STATISTIC_DB_MINIMUM As Integer = -20
-    Private Const STATISTIC_DB_MAXIMUM As Integer = 0
-    Private Const STATISTIC_BUCKET_RANGE As Integer = STATISTIC_DB_MAXIMUM - STATISTIC_DB_MINIMUM
-    Private Const STATISTIC_BUCKET_NUMBER As Integer = STATISTIC_BUCKET_RANGE + 1
+		Private Const STATISTIC_VOLATILITY_WINDOWS_SIZE As Integer = 1 * NUMBER_WORKDAY_PER_YEAR
+		'Private Const STATISTIC_VOLATILITY_WINDOWS_SIZE As Integer = 10
+		Private Const STATISTIC_DB_MINIMUM As Integer = -20
+		Private Const STATISTIC_DB_MAXIMUM As Integer = 0
+		Private Const STATISTIC_BUCKET_RANGE As Integer = STATISTIC_DB_MAXIMUM - STATISTIC_DB_MINIMUM
+		Private Const STATISTIC_BUCKET_NUMBER As Integer = STATISTIC_BUCKET_RANGE + 1
 		Private Const STATISTIC_BUCKET_TO_ARRAY_MAP As Integer = 1 - STATISTIC_DB_MINIMUM
 		Private Const THRESHOLD_LEVEL As Double = 0.5
 
 		'https://en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule
 
 		Private Const FILTER_PLL_DETECTOR_COUNT_LIMIT As Integer = 20
-    Private Const FILTER_PLL_DETECTOR_ERROR_LIMIT As Double = 0.0001
-    Private Const FILTER_RATE_FOR_VOLATILITY As Integer = 30
+		Private Const FILTER_PLL_DETECTOR_ERROR_LIMIT As Double = 0.0001
+		Private Const FILTER_RATE_FOR_VOLATILITY As Integer = 30
 
-    Private MyRate As Integer
-    Private MyRateOutput As Double
-    Private MyRatePreFilter As Integer
-    Private MyLogNormalForVolatilityStatistic As MathNet.Numerics.Distributions.LogNormal
+		Private MyRate As Integer
+		Private MyRateOutput As Double
+		Private MyRatePreFilter As Integer
+		Private MyLogNormalForVolatilityStatistic As MathNet.Numerics.Distributions.LogNormal
 		Private MyFilterVolatilityYangZhangForStatistic As FilterVolatilityYangZhang
 		Private MyFilterVolatilityYangZhangForStatisticLastPointTrail As FilterVolatilityYangZhang
 		Private MyListOfValue As IList(Of IPriceVol)
@@ -467,13 +472,15 @@ Namespace MathPlus.Filter
 			'variation of probability of excess for a given probability threshold
 			'this is the object for 1 day prediction not taking into account the gain variation of the signal
 			Dim ThisVolatilityPredictionFromPreviousCloseToCloseNoGain = New StockPriceVolatilityPredictionBand(
-																																													NumberTradingDays:=1,
-																																													StockPrice:=Value,
-																																													StockPriceStartValue:=Value.Last,
-																																													Gain:=0.0,
-																																													GainDerivative:=0.0,
-																																													Volatility:=ThisFilterBasedVolatilityTotal,
-																																													ProbabilityOfInterval:=GAUSSIAN_PROBABILITY_SIGMA1) With {.VolatilityMaximum = ThisFilterBasedVolatilityFromLastPointTrailing, .IsVolatilityMaximumEnabled = True}
+				NumberTradingDays:=1,
+				StockPrice:=Value,
+				StockPriceStartValue:=Value.Last,
+				Gain:=0.0,
+				GainDerivative:=0.0,
+				Volatility:=ThisFilterBasedVolatilityTotal,
+				ProbabilityOfInterval:=GAUSSIAN_PROBABILITY_SIGMA1) With {
+					.VolatilityMaximum = ThisFilterBasedVolatilityFromLastPointTrailing,
+					.IsVolatilityMaximumEnabled = True}
 
 
 			If Me.Count = 500 Then
@@ -481,57 +488,65 @@ Namespace MathPlus.Filter
 			End If
 			'same but including the gain 
 			Dim ThisVolatilityPredictionFromPreviousCloseToCloseWithGain = New StockPriceVolatilityPredictionBand(
-																																													 NumberTradingDays:=1,
-																																													 StockPrice:=Value,
-																																													 StockPriceStartValue:=Value.Last,
-																																													 Gain:=ThisGainPerYear,
-																																													 GainDerivative:=ThisGainPerYearDerivative,
-																																													 Volatility:=ThisFilterBasedVolatilityTotal,
-																																													 ProbabilityOfInterval:=GAUSSIAN_PROBABILITY_SIGMA1) With {.VolatilityMaximum = ThisFilterBasedVolatilityFromLastPointTrailing, .IsVolatilityMaximumEnabled = True}
+				NumberTradingDays:=1,
+				StockPrice:=Value,
+				StockPriceStartValue:=Value.Last,
+				Gain:=ThisGainPerYear,
+				GainDerivative:=ThisGainPerYearDerivative,
+				Volatility:=ThisFilterBasedVolatilityTotal,
+				ProbabilityOfInterval:=GAUSSIAN_PROBABILITY_SIGMA1) With {
+					.VolatilityMaximum = ThisFilterBasedVolatilityFromLastPointTrailing,
+					.IsVolatilityMaximumEnabled = True}
 
-
+			ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.Refresh(0.0)
 
 			'this one is based on the previous close to open price volatility with no gain
 			Dim ThisVolatilityPredictionPreviousCloseToOpenNoGain = New StockPriceVolatilityPredictionBand(
-																																													 NumberTradingDays:=TIME_TO_MARKET_PREVIOUS_CLOSE_TO_OPEN_IN_DAY,
-																																													 StockPrice:=Value,
-																																													 StockPriceStartValue:=Value.Last,
-																																													 Gain:=0,
-																																													 GainDerivative:=0,
-																																													 Volatility:=ThisFilterBasedVolatilityFromPreviousCloseToOpen,
-																																													 ProbabilityOfInterval:=GAUSSIAN_PROBABILITY_SIGMA1,
-																																													 VolatilityPredictionBandType:=IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType.FromCloseToOpen) With {.VolatilityMaximum = ThisFilterBasedVolatilityFromLastPointTrailing, .IsVolatilityMaximumEnabled = True}
+				NumberTradingDays:=TIME_TO_MARKET_PREVIOUS_CLOSE_TO_OPEN_IN_DAY,
+				StockPrice:=Value,
+				StockPriceStartValue:=Value.Last,
+				Gain:=0,
+				GainDerivative:=0,
+				Volatility:=ThisFilterBasedVolatilityFromPreviousCloseToOpen,
+				ProbabilityOfInterval:=GAUSSIAN_PROBABILITY_SIGMA1,
+				VolatilityPredictionBandType:=IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType.FromCloseToOpen) With {
+					.VolatilityMaximum = ThisFilterBasedVolatilityFromLastPointTrailing,
+					.IsVolatilityMaximumEnabled = True}
 
+			ThisVolatilityPredictionPreviousCloseToOpenNoGain.Refresh(0.0)
 
 			'this one is based on the previous close to open price volatility but with gain
 			Dim ThisVolatilityPredictionPreviousCloseToOpenWithGain = New StockPriceVolatilityPredictionBand(
-																																													 NumberTradingDays:=TIME_TO_MARKET_PREVIOUS_CLOSE_TO_OPEN_IN_DAY,
-																																													 StockPrice:=Value,
-																																													 StockPriceStartValue:=Value.Last,
-																																													 Gain:=ThisGainPerYear,
-																																													 GainDerivative:=ThisGainPerYearDerivative,
-																																													 Volatility:=ThisFilterBasedVolatilityFromPreviousCloseToOpen,
-																																													 ProbabilityOfInterval:=GAUSSIAN_PROBABILITY_SIGMA1,
-																																													 VolatilityPredictionBandType:=IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType.FromCloseToOpen) With {.VolatilityMaximum = ThisFilterBasedVolatilityFromLastPointTrailing, .IsVolatilityMaximumEnabled = True}
+				NumberTradingDays:=TIME_TO_MARKET_PREVIOUS_CLOSE_TO_OPEN_IN_DAY,
+				StockPrice:=Value,
+				StockPriceStartValue:=Value.Last,
+				Gain:=ThisGainPerYear,
+				GainDerivative:=ThisGainPerYearDerivative,
+				Volatility:=ThisFilterBasedVolatilityFromPreviousCloseToOpen,
+				ProbabilityOfInterval:=GAUSSIAN_PROBABILITY_SIGMA1,
+				VolatilityPredictionBandType:=IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType.FromCloseToOpen) With {
+					.VolatilityMaximum = ThisFilterBasedVolatilityFromLastPointTrailing,
+					.IsVolatilityMaximumEnabled = True}
 
+			ThisVolatilityPredictionPreviousCloseToOpenWithGain.Refresh(0)
+
+			'~~~~~~~~~~~~~~Check this code before put back~~~~~~~~~~~~~~~~~~ 
 			'run the PLL error volatility correction method on all the StockPriceVolatilityPredictionBand object created above
 			'note: 
 			'MyPLLErrorDetectorForVolatilityPredictionFromPreviousCloseToCloseWithGain use the 
 			'StockPriceVolatilityPredictionBand input object and modify it with a new volatility
 			'to make that clear .Update on the object should return the input object when called (to do later)
 
-			'Previous Close to close volatility with gain
-			MyPLLErrorDetectorForVolatilityPredictionFromPreviousCloseToCloseWithGain.Update(ThisVolatilityPredictionFromPreviousCloseToCloseWithGain)
-			'ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.Refresh(0.0)
-			'save the result in a list
+			''Previous Close to close volatility with gain
+			'MyPLLErrorDetectorForVolatilityPredictionFromPreviousCloseToCloseWithGain.Update(ThisVolatilityPredictionFromPreviousCloseToCloseWithGain)
+			''ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.Refresh(0.0)
+			''save the result in a list
 			MyListOfVolatilityRegulatedFromPreviousCloseToCloseWithGain.Add(ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.VolatilityTotal)
-			'filter the result for prediction purpose
+			''filter the result for prediction purpose
 			MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain.Filter(ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.VolatilityTotal)
 
-
-
-			'previous close to open
-			MyPLLErrorDetectorForVolatilityPredictionFromPreviousCloseToOpenWithGain.Update(ThisVolatilityPredictionPreviousCloseToOpenWithGain)
+			''previous close to open
+			'MyPLLErrorDetectorForVolatilityPredictionFromPreviousCloseToOpenWithGain.Update(ThisVolatilityPredictionPreviousCloseToOpenWithGain)
 			'ThisVolatilityPredictionPreviousCloseToOpenWithGain.Refresh(0.0)
 			'save the result in a list
 			MyListForVolatilityRegulatedPreviousCloseToOpenWithGain.Add(ThisVolatilityPredictionPreviousCloseToOpenWithGain.VolatilityTotal)
@@ -631,7 +646,8 @@ Namespace MathPlus.Filter
 				MyListOfPriceVolatilityHigh.Add(ThisPriceVolatilityHigh)
 				MyListOfPriceVolatilityLow.Add(ThisPriceVolatilityLow)
 				MyListOfPriceProbabilityMedian.Add(ThisPriceMedian)
-				MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain.ToList.Add(MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain.ToList.Last)
+				MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain.ToList.Add(
+					MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain.ToList.Last)
 			End If
 			MyListOfPriceVolatilityHigh.Add(ThisPriceVolatilityHigh)
 			MyListOfPriceVolatilityLow.Add(ThisPriceVolatilityLow)
@@ -1730,22 +1746,39 @@ Namespace MathPlus.Filter
 			Return Me.FilterLocal(Value)
 		End Function
 
+		'Public Async Function FilterAsync(ReportPrices As RecordPrices, IsUseParallelBlock As Boolean) As Task(Of Boolean) Implements IFilterRunAsync.FilterAsync
+		'	Dim ThisTaskRun As Task(Of Boolean)
+
+		'	If IsUseParallelBlock Then
+		'		ThisTaskRun = New Task(Of Boolean)(
+		'			Function()
+		'				Return Me.FilterAsync1(ReportPrices).Result
+		'			End Function)
+
+		'		ThisTaskRun.Start()
+		'		Await ThisTaskRun
+		'		Return ThisTaskRun.Result
+		'	Else
+		'		ThisTaskRun = FilterAsync(ReportPrices)
+		'		Await ThisTaskRun
+		'		Return ThisTaskRun.Result
+		'	End If
+		'End Function
+
+		''' <summary>
+		''' simpler version re-written in a more efficient manner for async operation
+		''' </summary>
+		''' <param name="ReportPrices"></param>
+		''' <param name="IsUseParallelBlock"></param>
+		''' <returns></returns>
 		Public Async Function FilterAsync(ReportPrices As RecordPrices, IsUseParallelBlock As Boolean) As Task(Of Boolean) Implements IFilterRunAsync.FilterAsync
-			Dim ThisTaskRun As Task(Of Boolean)
 
 			If IsUseParallelBlock Then
-				ThisTaskRun = New Task(Of Boolean)(
-					Function()
-						Return Me.FilterAsync1(ReportPrices).Result
-					End Function)
-
-				ThisTaskRun.Start()
-				Await ThisTaskRun
-				Return ThisTaskRun.Result
+				' Offload to background thread
+				Return Await Task.Run(Function() FilterAsync1(ReportPrices))
 			Else
-				ThisTaskRun = FilterAsync(ReportPrices)
-				Await ThisTaskRun
-				Return ThisTaskRun.Result
+				' Run directly without blocking or parallelization
+				Return FilterSync(ReportPrices)
 			End If
 		End Function
 
@@ -1753,29 +1786,39 @@ Namespace MathPlus.Filter
 			Dim I As Integer
 
 			For I = 0 To ReportPrices.NumberPoint - 1
+				If I = 500 Then
+					I = I
+				End If
 				Me.FilterLocal(ReportPrices.GetPriceVolInterface(I))
 			Next
 
 			Return True
 		End Function
 
+		'Public Async Function FilterAsync(ReportPrices As RecordPrices) As Task(Of Boolean) Implements IFilterRunAsync.FilterAsync
+		'	Dim ThisTaskRun As Task(Of Boolean)
+
+		'	ThisTaskRun = New Task(Of Boolean)(
+		'		Function()
+		'			Dim I As Integer
+
+		'			For I = 0 To ReportPrices.NumberPoint - 1
+		'				Me.FilterLocal(ReportPrices.GetPriceVolInterface(I))
+		'			Next
+		'			Return True
+		'		End Function)
+
+		'	ThisTaskRun.Start()
+		'	Await ThisTaskRun
+		'	Return ThisTaskRun.Result
+		'End Function
+
 		Public Async Function FilterAsync(ReportPrices As RecordPrices) As Task(Of Boolean) Implements IFilterRunAsync.FilterAsync
-			Dim ThisTaskRun As Task(Of Boolean)
-
-			ThisTaskRun = New Task(Of Boolean)(
-				Function()
-					Dim I As Integer
-
-					For I = 0 To ReportPrices.NumberPoint - 1
-						Me.FilterLocal(ReportPrices.GetPriceVolInterface(I))
-					Next
-					Return True
-				End Function)
-
-			ThisTaskRun.Start()
-			Await ThisTaskRun
-			Return ThisTaskRun.Result
+			Return Await Task.Run(Function() FilterSync(ReportPrices))
 		End Function
+
+
+
 
 		Private Async Function FilterAsync1(ByVal ReportPrices As YahooAccessData.RecordPrices) As Task(Of Boolean)
 			Dim ThisListOfPLLErrorDetectorWithGain As List(Of FilterPLLDetectorForVolatilitySigmaAsync)
@@ -2368,62 +2411,62 @@ Namespace MathPlus.Filter
 				Case IStochastic.enuStochasticType.PriceVolatilityLastPointTrail
 					Return MyFilterVolatilityYangZhangForStatisticLastPointTrail.ToList
 				Case IStochastic.enuStochasticType.PriceVolatilityDetectorBalance
-          'Return MyPLLErrorDetectorForVolatilityPredictionFromPreviousCloseToCloseWithGain.ToListOfProbabilityOfExcessBalance
-          Return MyListForVolatilityDetectorBalance
-            'Return MyPLLErrorDetectorForVolatilityPredictionFromPreviousCloseToCloseWithGain.ToListOfConvergence
-        Case IStochastic.enuStochasticType.PriceStochasticMedianVolatility
-          Return MyPLLErrorDetectorForPriceStochacticMedianWithGain.ToListOfVolatility
-        Case IStochastic.enuStochasticType.FastSlow
-          Return MyListOfStochasticFastSlow
-        Case IStochastic.enuStochasticType.Fast
-          Return MyListOfStochasticFast
-        Case IStochastic.enuStochasticType.Slow
-          Return MyFilterLPOfStochasticSlow.ToList
-        Case IStochastic.enuStochasticType.PriceBandHigh
-          Return MyListOfPriceBandHigh
-        Case IStochastic.enuStochasticType.PriceBandLow
-          Return MyListOfPriceBandLow
-        Case IStochastic.enuStochasticType.PriceBandHighPrediction
-          Return MyListOfPriceBandHighPrediction
-        Case IStochastic.enuStochasticType.PriceBandLowPrediction
-          Return MyListOfPriceBandLowPrediction
-        Case IStochastic.enuStochasticType.RangeVolatility
-          Return MyListOfPriceRangeVolatility
-        Case IStochastic.enuStochasticType.PriceGainPerYear
-          Return MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYear
-        Case IStochastic.enuStochasticType.PriceGainPerYearDerivative
-          Return MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYearDerivative
-        Case IStochastic.enuStochasticType.ProbabilityHigh, IStochastic.enuStochasticType.ProbabilityLow
-          Throw New NotSupportedException
-        Case Else
-          Return MyListOfStochasticFastSlow
-      End Select
-    End Function
+					'Return MyPLLErrorDetectorForVolatilityPredictionFromPreviousCloseToCloseWithGain.ToListOfProbabilityOfExcessBalance
+					Return MyListForVolatilityDetectorBalance
+						'Return MyPLLErrorDetectorForVolatilityPredictionFromPreviousCloseToCloseWithGain.ToListOfConvergence
+				Case IStochastic.enuStochasticType.PriceStochasticMedianVolatility
+					Return MyPLLErrorDetectorForPriceStochacticMedianWithGain.ToListOfVolatility
+				Case IStochastic.enuStochasticType.FastSlow
+					Return MyListOfStochasticFastSlow
+				Case IStochastic.enuStochasticType.Fast
+					Return MyListOfStochasticFast
+				Case IStochastic.enuStochasticType.Slow
+					Return MyFilterLPOfStochasticSlow.ToList
+				Case IStochastic.enuStochasticType.PriceBandHigh
+					Return MyListOfPriceBandHigh
+				Case IStochastic.enuStochasticType.PriceBandLow
+					Return MyListOfPriceBandLow
+				Case IStochastic.enuStochasticType.PriceBandHighPrediction
+					Return MyListOfPriceBandHighPrediction
+				Case IStochastic.enuStochasticType.PriceBandLowPrediction
+					Return MyListOfPriceBandLowPrediction
+				Case IStochastic.enuStochasticType.RangeVolatility
+					Return MyListOfPriceRangeVolatility
+				Case IStochastic.enuStochasticType.PriceGainPerYear
+					Return MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYear
+				Case IStochastic.enuStochasticType.PriceGainPerYearDerivative
+					Return MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYearDerivative
+				Case IStochastic.enuStochasticType.ProbabilityHigh, IStochastic.enuStochasticType.ProbabilityLow
+					Throw New NotSupportedException
+				Case Else
+					Return MyListOfStochasticFastSlow
+			End Select
+		End Function
 
 
-    Public Overrides Function ToString() As String Implements IStochastic.ToString
-      Return Me.FilterLast.ToString
-    End Function
+		Public Overrides Function ToString() As String Implements IStochastic.ToString
+			Return Me.FilterLast.ToString
+		End Function
 #End Region
 #Region "IStochasticPriceGain"
-    Private Sub Init(
-      FilterRate As Integer,
-      FilterRateForGainMeasurement As Integer,
-      IsGainFunctionWeightedMethod As Boolean,
-      IsPriceStopEnabled As Boolean,
-      IsInversePositionOnPriceStopEnabled As Boolean,
-      TransactionCostPerCent As Double,
-      GainLimiting As Double,
-      ListOfPriceVol As IList(Of IPriceVol),
-      ListOfPriceStopFromStochastic As IList(Of Double),
-      ListOfPriceStochasticMedianDailyBandHigh As IList(Of Double),
-      ListOfPriceStochasticMedianDailyBandLow As IList(Of Double)) Implements IStochasticPriceGain.Init
+		Private Sub Init(
+			FilterRate As Integer,
+			FilterRateForGainMeasurement As Integer,
+			IsGainFunctionWeightedMethod As Boolean,
+			IsPriceStopEnabled As Boolean,
+			IsInversePositionOnPriceStopEnabled As Boolean,
+			TransactionCostPerCent As Double,
+			GainLimiting As Double,
+			ListOfPriceVol As IList(Of IPriceVol),
+			ListOfPriceStopFromStochastic As IList(Of Double),
+			ListOfPriceStochasticMedianDailyBandHigh As IList(Of Double),
+			ListOfPriceStochasticMedianDailyBandLow As IList(Of Double)) Implements IStochasticPriceGain.Init
 
-      Throw New NotImplementedException()
-    End Sub
+			Throw New NotImplementedException()
+		End Sub
 
-    Private IsFilterGainPriceStopOneSigmaEnabledLocal As Boolean
-    Private IsSochasticPriceMedianIncludingGainLocal As Boolean
+		Private IsFilterGainPriceStopOneSigmaEnabledLocal As Boolean
+		Private IsSochasticPriceMedianIncludingGainLocal As Boolean
 		Private IsPriceStopBoundToDailyOneSigmaEnabledLocal As Boolean
 
 		Private Sub Init(
@@ -2474,252 +2517,252 @@ Namespace MathPlus.Filter
 		End Sub
 
 		Public Sub Init(
-      FilterRate As Integer,
-      FilterGainMeasurementPeriod As Integer,
-      IsGainFunctionWeightedMethod As Boolean,
-      IsPriceStopEnabled As Boolean,
-      IsInversePositionOnPriceStopEnabled As Boolean,
-      TransactionCostPerCent As Double,
-      GainLimiting As Double,
-      ListOfPriceVol As IList(Of IPriceVol),
-      ListOfStochasticProbability As IList(Of Double),
-      ThresholdLevel As Double) Implements IStochasticPriceGain.Init
+			FilterRate As Integer,
+			FilterGainMeasurementPeriod As Integer,
+			IsGainFunctionWeightedMethod As Boolean,
+			IsPriceStopEnabled As Boolean,
+			IsInversePositionOnPriceStopEnabled As Boolean,
+			TransactionCostPerCent As Double,
+			GainLimiting As Double,
+			ListOfPriceVol As IList(Of IPriceVol),
+			ListOfStochasticProbability As IList(Of Double),
+			ThresholdLevel As Double) Implements IStochasticPriceGain.Init
 
-      IsFilterGainPriceStopOneSigmaEnabledLocal = IsFilterGainPriceStopOneSigmaEnabledLocal
-      IsSochasticPriceMedianIncludingGainLocal = IsSochasticPriceMedianIncludingGain
-      IsPriceStopBoundToDailyOneSigmaEnabledLocal = IsPriceStopBoundToDailyOneSigmaEnabled
+			IsFilterGainPriceStopOneSigmaEnabledLocal = IsFilterGainPriceStopOneSigmaEnabledLocal
+			IsSochasticPriceMedianIncludingGainLocal = IsSochasticPriceMedianIncludingGain
+			IsPriceStopBoundToDailyOneSigmaEnabledLocal = IsPriceStopBoundToDailyOneSigmaEnabled
 
-      'Dim ThisListOfPriceStopFromStochastic = Me.CalculateStochasticPriceStop(
-      '  IsFilter GainPriceStopOneSigmaEnabled,
-      '  IsSochasticPriceMedianIncludingGain,
-      '  IsPriceStopBoundToDailyOneSigmaEnabled)
+			'Dim ThisListOfPriceStopFromStochastic = Me.CalculateStochasticPriceStop(
+			'  IsFilter GainPriceStopOneSigmaEnabled,
+			'  IsSochasticPriceMedianIncludingGain,
+			'  IsPriceStopBoundToDailyOneSigmaEnabled)
 
-      MyStochasticPriceGain = New StochasticPriceGain(
-        FilterRate:=Me.FilterRate,
-        FilterRateForGainMeasurement:=FilterGainMeasurementPeriod,
-        IsGainFunctionWeightedMethod:=IsGainFunctionWeightedMethod,
-        IsPriceStopEnabled:=IsPriceStopEnabled,
-        IsInversePositionOnPriceStopEnabled:=IsInversePositionOnPriceStopEnabled,
-        TransactionCostPerCent:=TransactionCostPerCent,
-        GainLimiting:=GainLimiting,
-        ListOfPriceVol:=MyListOfValue,
-        ListOfStochasticProbability:=ListOfStochasticProbability,
-        ThresholdLevel:=ThresholdLevel)
-    End Sub
+			MyStochasticPriceGain = New StochasticPriceGain(
+				FilterRate:=Me.FilterRate,
+				FilterRateForGainMeasurement:=FilterGainMeasurementPeriod,
+				IsGainFunctionWeightedMethod:=IsGainFunctionWeightedMethod,
+				IsPriceStopEnabled:=IsPriceStopEnabled,
+				IsInversePositionOnPriceStopEnabled:=IsInversePositionOnPriceStopEnabled,
+				TransactionCostPerCent:=TransactionCostPerCent,
+				GainLimiting:=GainLimiting,
+				ListOfPriceVol:=MyListOfValue,
+				ListOfStochasticProbability:=ListOfStochasticProbability,
+				ThresholdLevel:=ThresholdLevel)
+		End Sub
 
-    Public Sub Init(
-      FilterGainMeasurementPeriod As Integer,
-      IsGainFunctionWeightedMethod As Boolean,
-      IsPriceStopEnabled As Boolean,
-      IsInversePositionOnPriceStopEnabled As Boolean,
-      TransactionCostPerCent As Double,
-      GainLimiting As Double,
-      IsFilterGainPriceStopOneSigmaEnabled As Boolean,
-      IsStochasticPriceMedianIncludingGain As Boolean,
-      IsPriceStopBoundToDailyOneSigmaEnabled As Boolean,
-      ThresholdLevel As Double) Implements IStochasticPriceGain.Init
+		Public Sub Init(
+			FilterGainMeasurementPeriod As Integer,
+			IsGainFunctionWeightedMethod As Boolean,
+			IsPriceStopEnabled As Boolean,
+			IsInversePositionOnPriceStopEnabled As Boolean,
+			TransactionCostPerCent As Double,
+			GainLimiting As Double,
+			IsFilterGainPriceStopOneSigmaEnabled As Boolean,
+			IsStochasticPriceMedianIncludingGain As Boolean,
+			IsPriceStopBoundToDailyOneSigmaEnabled As Boolean,
+			ThresholdLevel As Double) Implements IStochasticPriceGain.Init
 
 
-      MyStochasticPriceGain = New StochasticPriceGain(
-        FilterRate:=Me.FilterRate,
-        FilterRateForGainMeasurement:=FilterGainMeasurementPeriod,
-        IsGainFunctionWeightedMethod:=IsGainFunctionWeightedMethod,
-        IsPriceStopEnabled:=IsPriceStopEnabled,
-        IsInversePositionOnPriceStopEnabled:=IsInversePositionOnPriceStopEnabled,
-        TransactionCostPerCent:=TransactionCostPerCent,
-        GainLimiting:=GainLimiting,
-        ListOfPriceVol:=MyListOfValue,
-        ListOfStochasticProbability:=Me.ToList,
-        ThresholdLevel:=ThresholdLevel)
+			MyStochasticPriceGain = New StochasticPriceGain(
+				FilterRate:=Me.FilterRate,
+				FilterRateForGainMeasurement:=FilterGainMeasurementPeriod,
+				IsGainFunctionWeightedMethod:=IsGainFunctionWeightedMethod,
+				IsPriceStopEnabled:=IsPriceStopEnabled,
+				IsInversePositionOnPriceStopEnabled:=IsInversePositionOnPriceStopEnabled,
+				TransactionCostPerCent:=TransactionCostPerCent,
+				GainLimiting:=GainLimiting,
+				ListOfPriceVol:=MyListOfValue,
+				ListOfStochasticProbability:=Me.ToList,
+				ThresholdLevel:=ThresholdLevel)
 
-      'MyStochasticPriceGain = New StochasticPriceGain(
-      '  FilterRate:=Me.FilterRate,
-      '  FilterRateForGainMeasurement:=FilterGainMeasurementPeriod,
-      '  IsGainFunctionWeightedMethod:=IsGainFunctionWeightedMethod,
-      '  IsPriceStopEnabled:=IsPriceStopEnabled,
-      '  IsInversePositionOnPriceStopEnabled:=IsInversePositionOnPriceStopEnabled,
-      '  TransactionCostPerCent:=TransactionCostPerCent,
-      '  GainLimiting:=GainLimiting,
-      '  ListOfPriceVol:=MyListOfValue,
-      '  ListOfStochasticProbability:=Me.ToList(Type:=IStochastic.enuStochasticType.PriceStochacticVolatilityPositiveToNegativeRatio),
-      '  ThresholdLevel:=ThresholdLevel)
+			'MyStochasticPriceGain = New StochasticPriceGain(
+			'  FilterRate:=Me.FilterRate,
+			'  FilterRateForGainMeasurement:=FilterGainMeasurementPeriod,
+			'  IsGainFunctionWeightedMethod:=IsGainFunctionWeightedMethod,
+			'  IsPriceStopEnabled:=IsPriceStopEnabled,
+			'  IsInversePositionOnPriceStopEnabled:=IsInversePositionOnPriceStopEnabled,
+			'  TransactionCostPerCent:=TransactionCostPerCent,
+			'  GainLimiting:=GainLimiting,
+			'  ListOfPriceVol:=MyListOfValue,
+			'  ListOfStochasticProbability:=Me.ToList(Type:=IStochastic.enuStochasticType.PriceStochacticVolatilityPositiveToNegativeRatio),
+			'  ThresholdLevel:=ThresholdLevel)
 
-    End Sub
+		End Sub
 
-    Public ReadOnly Property AsIStochasticPriceGain As IStochasticPriceGain Implements IStochasticPriceGain.AsIStochasticPriceGain
-      Get
-        Return Me
-      End Get
-    End Property
+		Public ReadOnly Property AsIStochasticPriceGain As IStochasticPriceGain Implements IStochasticPriceGain.AsIStochasticPriceGain
+			Get
+				Return Me
+			End Get
+		End Property
 
-    Private ReadOnly Property FilterRate As Integer Implements IStochasticPriceGain.FilterRate
-      Get
-        Return Me.Rate
-      End Get
-    End Property
-    Private ReadOnly Property FilterRateForGain As Integer Implements IStochasticPriceGain.FilterRateForGain
-      Get
-        If MyStochasticPriceGain IsNot Nothing Then
-          Return MyStochasticPriceGain.FilterRateForGain
-        Else
-          Return Me.Rate
-        End If
-      End Get
-    End Property
+		Private ReadOnly Property FilterRate As Integer Implements IStochasticPriceGain.FilterRate
+			Get
+				Return Me.Rate
+			End Get
+		End Property
+		Private ReadOnly Property FilterRateForGain As Integer Implements IStochasticPriceGain.FilterRateForGain
+			Get
+				If MyStochasticPriceGain IsNot Nothing Then
+					Return MyStochasticPriceGain.FilterRateForGain
+				Else
+					Return Me.Rate
+				End If
+			End Get
+		End Property
 
-    Private ReadOnly Property IsGainFunctionWeightedMethod As Boolean Implements IStochasticPriceGain.IsGainFunctionWeightedMethod
-      Get
-        If MyStochasticPriceGain IsNot Nothing Then
-          Return MyStochasticPriceGain.IsGainFunctionWeightedMethod
-        Else
-          Return False
-        End If
-      End Get
-    End Property
+		Private ReadOnly Property IsGainFunctionWeightedMethod As Boolean Implements IStochasticPriceGain.IsGainFunctionWeightedMethod
+			Get
+				If MyStochasticPriceGain IsNot Nothing Then
+					Return MyStochasticPriceGain.IsGainFunctionWeightedMethod
+				Else
+					Return False
+				End If
+			End Get
+		End Property
 
-    Private ReadOnly Property IsPriceStopEnabled As Boolean Implements IStochasticPriceGain.IsPriceStopEnabled
-      Get
-        If MyStochasticPriceGain IsNot Nothing Then
-          Return MyStochasticPriceGain.IsPriceStopEnabled
-        Else
-          Return False
-        End If
-      End Get
-    End Property
+		Private ReadOnly Property IsPriceStopEnabled As Boolean Implements IStochasticPriceGain.IsPriceStopEnabled
+			Get
+				If MyStochasticPriceGain IsNot Nothing Then
+					Return MyStochasticPriceGain.IsPriceStopEnabled
+				Else
+					Return False
+				End If
+			End Get
+		End Property
 
-    Private ReadOnly Property IsInversePositionOnPriceStopEnabled As Boolean Implements IStochasticPriceGain.IsInversePositionOnPriceStopEnabled
-      Get
-        If MyStochasticPriceGain IsNot Nothing Then
-          Return MyStochasticPriceGain.IsInversePositionOnPriceStopEnabled
-        Else
-          Return False
-        End If
-      End Get
-    End Property
+		Private ReadOnly Property IsInversePositionOnPriceStopEnabled As Boolean Implements IStochasticPriceGain.IsInversePositionOnPriceStopEnabled
+			Get
+				If MyStochasticPriceGain IsNot Nothing Then
+					Return MyStochasticPriceGain.IsInversePositionOnPriceStopEnabled
+				Else
+					Return False
+				End If
+			End Get
+		End Property
 
-    Private ReadOnly Property TransactionCostPerCent As Double Implements IStochasticPriceGain.TransactionCostPerCent
-      Get
-        If MyStochasticPriceGain IsNot Nothing Then
-          Return MyStochasticPriceGain.TransactionCostPerCent
-        Else
-          Return 0.0
-        End If
-      End Get
-    End Property
+		Private ReadOnly Property TransactionCostPerCent As Double Implements IStochasticPriceGain.TransactionCostPerCent
+			Get
+				If MyStochasticPriceGain IsNot Nothing Then
+					Return MyStochasticPriceGain.TransactionCostPerCent
+				Else
+					Return 0.0
+				End If
+			End Get
+		End Property
 
-    Private ReadOnly Property GainLimiting As Double Implements IStochasticPriceGain.GainLimiting
-      Get
-        If MyStochasticPriceGain IsNot Nothing Then
-          Return MyStochasticPriceGain.GainLimiting
-        Else
-          Return 1.0
-        End If
-      End Get
-    End Property
+		Private ReadOnly Property GainLimiting As Double Implements IStochasticPriceGain.GainLimiting
+			Get
+				If MyStochasticPriceGain IsNot Nothing Then
+					Return MyStochasticPriceGain.GainLimiting
+				Else
+					Return 1.0
+				End If
+			End Get
+		End Property
 
-    Private ReadOnly Property FilterTransactionGainLog As FilterTransactionGainLog Implements IStochasticPriceGain.FilterTransactionGainLog
-      Get
-        If MyStochasticPriceGain IsNot Nothing Then
-          Return MyStochasticPriceGain.FilterTransactionGainLog
-        Else
-          Return Nothing
-        End If
-      End Get
-    End Property
+		Private ReadOnly Property FilterTransactionGainLog As FilterTransactionGainLog Implements IStochasticPriceGain.FilterTransactionGainLog
+			Get
+				If MyStochasticPriceGain IsNot Nothing Then
+					Return MyStochasticPriceGain.FilterTransactionGainLog
+				Else
+					Return Nothing
+				End If
+			End Get
+		End Property
 
-    Private ReadOnly Property FilterTransactionGainLogFast As FilterTransactionGainLog Implements IStochasticPriceGain.FilterTransactionGainLogFast
-      Get
-        If MyStochasticPriceGain IsNot Nothing Then
-          Return MyStochasticPriceGain.FilterTransactionGainLogFast
-        Else
-          Return Nothing
-        End If
-      End Get
-    End Property
+		Private ReadOnly Property FilterTransactionGainLogFast As FilterTransactionGainLog Implements IStochasticPriceGain.FilterTransactionGainLogFast
+			Get
+				If MyStochasticPriceGain IsNot Nothing Then
+					Return MyStochasticPriceGain.FilterTransactionGainLogFast
+				Else
+					Return Nothing
+				End If
+			End Get
+		End Property
 
-    Private ReadOnly Property IsFilterGainPriceStopOneSigmaEnabled As Boolean Implements IStochasticPriceGain.IsFilterGainPriceStopOneSigmaEnabled
-      Get
-        Return IsFilterGainPriceStopOneSigmaEnabledLocal
-      End Get
-    End Property
+		Private ReadOnly Property IsFilterGainPriceStopOneSigmaEnabled As Boolean Implements IStochasticPriceGain.IsFilterGainPriceStopOneSigmaEnabled
+			Get
+				Return IsFilterGainPriceStopOneSigmaEnabledLocal
+			End Get
+		End Property
 
-    Private ReadOnly Property IsSochasticPriceMedianIncludingGain As Boolean Implements IStochasticPriceGain.IsStochasticPriceMedianIncludingGain
-      Get
-        Return IsSochasticPriceMedianIncludingGainLocal
-      End Get
-    End Property
+		Private ReadOnly Property IsSochasticPriceMedianIncludingGain As Boolean Implements IStochasticPriceGain.IsStochasticPriceMedianIncludingGain
+			Get
+				Return IsSochasticPriceMedianIncludingGainLocal
+			End Get
+		End Property
 
-    Private ReadOnly Property IsPriceStopBoundToDailyOneSigmaEnabled As Boolean Implements IStochasticPriceGain.IsPriceStopBoundToDailyOneSigmaEnabled
-      Get
-        Return IsPriceStopBoundToDailyOneSigmaEnabledLocal
-      End Get
-    End Property
+		Private ReadOnly Property IsPriceStopBoundToDailyOneSigmaEnabled As Boolean Implements IStochasticPriceGain.IsPriceStopBoundToDailyOneSigmaEnabled
+			Get
+				Return IsPriceStopBoundToDailyOneSigmaEnabledLocal
+			End Get
+		End Property
 
-    Private ReadOnly Property IStochasticPriceGain_AsIStochastic1 As IStochastic1 Implements IStochasticPriceGain.AsIStochastic1
-      Get
-        Return Me
-      End Get
-    End Property
+		Private ReadOnly Property IStochasticPriceGain_AsIStochastic1 As IStochastic1 Implements IStochasticPriceGain.AsIStochastic1
+			Get
+				Return Me
+			End Get
+		End Property
 
-    Public ReadOnly Property AsIStochastic2 As IStochastic2 Implements IStochastic1.AsIStochastic2
-      Get
-        Return Me
-      End Get
-    End Property
-    Private ReadOnly Property IStochasticPriceGain_AsIStochastic As IStochastic Implements IStochasticPriceGain.AsIStochastic
-      Get
-        Return Me
-      End Get
-    End Property
+		Public ReadOnly Property AsIStochastic2 As IStochastic2 Implements IStochastic1.AsIStochastic2
+			Get
+				Return Me
+			End Get
+		End Property
+		Private ReadOnly Property IStochasticPriceGain_AsIStochastic As IStochastic Implements IStochasticPriceGain.AsIStochastic
+			Get
+				Return Me
+			End Get
+		End Property
 
-    Private ReadOnly Property IStochastic1_AsIStochasticPriceGain As IStochasticPriceGain Implements IStochastic1.AsIStochasticPriceGain
-      Get
-        Return Me
-      End Get
-    End Property
+		Private ReadOnly Property IStochastic1_AsIStochasticPriceGain As IStochasticPriceGain Implements IStochastic1.AsIStochasticPriceGain
+			Get
+				Return Me
+			End Get
+		End Property
 
-    Public ReadOnly Property AsIStochastic1 As IStochastic1 Implements IStochastic1.AsIStochastic1
-      Get
-        Return Me
-      End Get
-    End Property
+		Public ReadOnly Property AsIStochastic1 As IStochastic1 Implements IStochastic1.AsIStochastic1
+			Get
+				Return Me
+			End Get
+		End Property
 
-    Public ReadOnly Property AsIStochastic As IStochastic Implements IStochastic1.AsIStochastic
-      Get
-        Return Me
-      End Get
-    End Property
+		Public ReadOnly Property AsIStochastic As IStochastic Implements IStochastic1.AsIStochastic
+			Get
+				Return Me
+			End Get
+		End Property
 
-    Private Property IStochastic2_Symbol As String Implements IStochastic2.Symbol
-      Get
-        Return Me.Symbol
-      End Get
-      Set(value As String)
-        Me.Symbol = value
-      End Set
-    End Property
+		Private Property IStochastic2_Symbol As String Implements IStochastic2.Symbol
+			Get
+				Return Me.Symbol
+			End Get
+			Set(value As String)
+				Me.Symbol = value
+			End Set
+		End Property
 
-    Private ReadOnly Property IsInit As Boolean Implements IStochasticPriceGain.IsInit
-      Get
-        If MyStochasticPriceGain IsNot Nothing Then
-          Return True
-        Else
-          Return False
-        End If
-      End Get
-    End Property
+		Private ReadOnly Property IsInit As Boolean Implements IStochasticPriceGain.IsInit
+			Get
+				If MyStochasticPriceGain IsNot Nothing Then
+					Return True
+				Else
+					Return False
+				End If
+			End Get
+		End Property
 
-    Private ReadOnly Property IStochasticPriceGain_ToList(GainType As IStochasticPriceGain.EnuGainType) As IList(Of Double) Implements IStochasticPriceGain.ToList
-      Get
-        Return MyStochasticPriceGain.ToList(GainType:=GainType)
-      End Get
-    End Property
+		Private ReadOnly Property IStochasticPriceGain_ToList(GainType As IStochasticPriceGain.EnuGainType) As IList(Of Double) Implements IStochasticPriceGain.ToList
+			Get
+				Return MyStochasticPriceGain.ToList(GainType:=GainType)
+			End Get
+		End Property
 
-    Private ReadOnly Property IStochasticPriceGain_ToList(GainType As IStochasticPriceGain.EnuGainType, IsFromFastFilter As Boolean) As IList(Of Double) Implements IStochasticPriceGain.ToList
-      Get
-        Return MyStochasticPriceGain.ToList(GainType:=GainType, IsFromFastFilter:=IsFromFastFilter)
-      End Get
-    End Property
+		Private ReadOnly Property IStochasticPriceGain_ToList(GainType As IStochasticPriceGain.EnuGainType, IsFromFastFilter As Boolean) As IList(Of Double) Implements IStochasticPriceGain.ToList
+			Get
+				Return MyStochasticPriceGain.ToList(GainType:=GainType, IsFromFastFilter:=IsFromFastFilter)
+			End Get
+		End Property
 #End Region
-  End Class
+	End Class
 End Namespace

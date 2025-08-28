@@ -1584,7 +1584,8 @@ Public Class RecordPrices
 	End Function
 
 	''' <summary>
-	''' This function allow a direct access to the IpriceVol interface
+	''' This function allow a direct access to the IPriceVol interface which return a function pointer. It is more efficient 
+	''' that the PriceVols(I) that effectively make a copy of PriceVol which is defined as a structure not a classes.
 	''' </summary>
 	''' <param name="Index"></param>
 	''' <returns></returns>

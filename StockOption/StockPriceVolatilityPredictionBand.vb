@@ -13,8 +13,9 @@ Namespace OptionValuation
     Private MyStockPrice As IPriceVol
     Private MyStockPriceFutur As IPriceVol
     Private MyStockPriceLowValue As Double
-    Private MyStockPriceHighValue As Double
-    Private MyStockPriceLowValueStandard As Double
+		Private MyStockPriceHighValue As Double
+		Private IsStockPriceHighLowValueValid As Boolean
+		Private MyStockPriceLowValueStandard As Double
     Private MyStockPriceHighValueStandard As Double
     Private MyStockPriceLowValueReal As Double
     Private MyStockPriceHighValueReal As Double
@@ -66,8 +67,9 @@ Namespace OptionValuation
                   ByVal VolatilityPredictionBandType As IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType)
 
 
-      MyNumberTradingDays = NumberTradingDays
-      MyStockPrice = StockPrice
+			IsStockPriceHighLowValueValid = False
+			MyNumberTradingDays = NumberTradingDays
+			MyStockPrice = StockPrice
 			MyStockPriceStartValue = StockPriceStartValue
 			MyStockPriceHighValue = Double.MaxValue
 			MyStockPriceLowValue = 0.0
@@ -219,7 +221,8 @@ Namespace OptionValuation
       End If
       ThisStockPriceSample = MyStockPriceStartValue
 
-			If MyVolatilityTotal > VOLATILITY_TOTAL_MINIMUM Then
+			If MyVolatilityTotal > VOLATILITY_TOTAL_MINIMUM Or IsStockPriceHighLowValueValid = False Then
+				IsStockPriceHighLowValueValid = True
 				MyStockPriceHighValue = StockOption.StockPricePrediction(
 					MyNumberTradingDays,
 					ThisStockPriceSample,
@@ -235,7 +238,7 @@ Namespace OptionValuation
 					MyVolatilityTotal,
 					MyProbabilityLow)
 			Else
-				'Keep the last value
+				'Keep the last value if the calculation for the last value but only if the last value wass previosuly calculated
 			End If
 			'calculate the standard high and low
 			If MyVolatility = MyVolatilityTotal Then
