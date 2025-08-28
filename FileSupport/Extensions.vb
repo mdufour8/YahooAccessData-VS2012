@@ -1627,7 +1627,7 @@ Namespace ExtensionService
 			colData As IEnumerable(Of YahooAccessData.RecordQuoteValue),
 			ByVal DateStop As Date) As RecordPrices
 
-			Return New RecordPrices(colData, Nothing, DateStop)
+			Return New RecordPrices(colData, DateStop)
 		End Function
 
 		<Extension()>
