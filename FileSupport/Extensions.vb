@@ -1623,6 +1623,14 @@ Namespace ExtensionService
 		End Function
 
 		<Extension()>
+		Public Function ToDailyRecordPrices(
+			colData As IEnumerable(Of YahooAccessData.RecordQuoteValue),
+			ByVal DateStop As Date) As RecordPrices
+
+			Return New RecordPrices(colData, Nothing, DateStop)
+		End Function
+
+		<Extension()>
 		Public Function ToDailyIntradayRecordPrices(
 			colData As IEnumerable(Of YahooAccessData.RecordQuoteValue),
 			ByVal DateStart As Date,

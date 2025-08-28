@@ -39,6 +39,15 @@ Public Class RecordPrices
 
 #End Region
 #Region "New"
+
+	''' <summary>
+	''' the stock data is extracted from the record quote value
+	''' The date start is set to the first date in the record quote value
+	''' The date stop is set to the user DateStopValue
+	''' </summary>
+	''' <param name="colData"></param>
+	''' <param name="DateStartValue"></param>
+	''' <param name="DateStopValue"></param>
 	Public Sub New(
 		ByRef colData As IEnumerable(Of YahooAccessData.RecordQuoteValue),
 		ByVal DateStartValue As Date,
@@ -54,9 +63,21 @@ Public Class RecordPrices
 		MyDictionaryOfStockDividendSinglePayout = New Dictionary(Of String, List(Of StockDividendSinglePayout))
 		MyDictionaryOfStockPriceDataError = New Dictionary(Of String, IList(Of IPriceVol))
 
-		If colData.Count > 0 Then
-			Me.Stock = colData.Last.Record.Stock
+		If colData.Count = 0 Then
+			Throw New InvalidDataException("The record collection is empty.")
 		End If
+		Me.Stock = colData.Last.Record.Stock
+		If Me.Stock Is Nothing Then
+			Throw New InvalidDataException("The stock information is missing in the record collection.")
+		End If
+		Me.Symbol = Me.Stock.Symbol
+		If IsNothing(DateStartValue) Then
+			DateStartValue = Me.Stock.DateStart
+		End If
+		If DateStartValue > DateStopValue Then
+			DateStartValue = DateStopValue
+		End If
+
 		'add special split factor here
 		'eventually need to be in a file
 		Dim ThisSpecialSplit As SplitFactor
@@ -202,69 +223,88 @@ Public Class RecordPrices
 		Call ProcessDataDailyIntraDay(colData, DateStartValue, DateStopValue)
 	End Sub
 
-	Public Sub New(ByVal Symbol As String, ByRef colData As IEnumerable(Of YahooAccessData.IPriceVol))
-		Dim I As Integer = 0
+	''' <summary>
+	''' the stock data is extracted from the record quote value
+	''' The date start is set to the first date in the record quote value
+	''' The date stop is set to the user DateStopValue
+	''' </summary>
+	''' <param name="colData"></param>
+	''' <param name="DateStopValue"></param>
+	Public Sub New(
+		ByRef colData As IEnumerable(Of YahooAccessData.RecordQuoteValue),
+		ByVal DateStopValue As Date)
 
-		Dim ThisPriceVolLast = colData.Last
-		If ThisPriceVolLast Is Stock Then
-			Me.Stock = DirectCast(ThisPriceVolLast, Stock)
-		End If
-		Me.Symbol = Symbol
-		If colData.Count = 0 Then
-			Me.IsError = True
-			Me.ErrorDescription = "Index Out Of Range Exception."
-			Throw New IndexOutOfRangeException
-		End If
-
-		ReDim MyPriceVols(0 To colData.Count - 1)
-		Me.PriceMin = Single.MaxValue
-		Me.PriceMin = Single.MinValue
-		Me.IsPriceTarget = False
-		Me.IsVol = False
-		Me.VolMin = 0
-		Me.VolMax = 0
-		Me.NumberNullPoint = 0
-		Me.NumberNullPointToEnd = 0
-		Me.IsError = False
-		Me.ErrorDescription = ""
-		IsIntraDayLocalEnabled = False
-		For Each ThisPriceVol As PriceVol In colData
-			MyPriceVols(I) = ThisPriceVol
-			With ThisPriceVol
-				If .IsIntraDay Then
-					IsIntraDayLocalEnabled = True
-				End If
-				If .Vol > 0 Then
-					If .Vol < Me.VolMin Then
-						Me.VolMin = .Vol
-					End If
-					If .Vol > Me.VolMax Then
-						Me.VolMax = .Vol
-					End If
-				End If
-				If .High > Me.PriceMax Then
-					Me.PriceMax = .High
-				End If
-				If .Low > Me.PriceMin Then
-					Me.PriceMin = .Low
-				End If
-				If .IsNull Then
-					Me.NumberNullPoint += 1
-				End If
-			End With
-			I += 1
-		Next
-		If Me.VolMin > 0 Then
-			Me.IsVol = True
-		End If
-		Me.IsSplit = False
-		Me.DateStart = MyPriceVols(0).DateLastTrade
-		Me.DateStop = MyPriceVols(MyPriceVols.Count - 1).DateLastTrade
-		Me.NumberPoint = MyPriceVols.Count
-		Me.StartPoint = 0
-		Me.StopPoint = MyPriceVols.Count - 1
-		Me.PriceVolLast = MyPriceVols(MyPriceVols.Count - 1)
+		Me.New(colData, Nothing, DateStopValue)
 	End Sub
+
+	'''' <summary>
+	'''' 
+	'''' </summary>
+	'''' <param name="Symbol"></param>
+	'''' <param name="colData"></param>
+	'Public Sub New(ByVal Symbol As String, ByRef colData As IEnumerable(Of YahooAccessData.IPriceVol))
+	'	Dim I As Integer = 0
+
+	'	Dim ThisPriceVolLast = colData.Last
+	'	If ThisPriceVolLast Is Stock Then
+	'		Me.Stock = DirectCast(ThisPriceVolLast, Stock)
+	'	End If
+	'	Me.Symbol = Symbol
+	'	If colData.Count = 0 Then
+	'		Me.IsError = True
+	'		Me.ErrorDescription = "Index Out Of Range Exception."
+	'		Throw New IndexOutOfRangeException
+	'	End If
+
+	'	ReDim MyPriceVols(0 To colData.Count - 1)
+	'	Me.PriceMin = Single.MaxValue
+	'	Me.PriceMin = Single.MinValue
+	'	Me.IsPriceTarget = False
+	'	Me.IsVol = False
+	'	Me.VolMin = 0
+	'	Me.VolMax = 0
+	'	Me.NumberNullPoint = 0
+	'	Me.NumberNullPointToEnd = 0
+	'	Me.IsError = False
+	'	Me.ErrorDescription = ""
+	'	IsIntraDayLocalEnabled = False
+	'	For Each ThisPriceVol As PriceVol In colData
+	'		MyPriceVols(I) = ThisPriceVol
+	'		With ThisPriceVol
+	'			If .IsIntraDay Then
+	'				IsIntraDayLocalEnabled = True
+	'			End If
+	'			If .Vol > 0 Then
+	'				If .Vol < Me.VolMin Then
+	'					Me.VolMin = .Vol
+	'				End If
+	'				If .Vol > Me.VolMax Then
+	'					Me.VolMax = .Vol
+	'				End If
+	'			End If
+	'			If .High > Me.PriceMax Then
+	'				Me.PriceMax = .High
+	'			End If
+	'			If .Low > Me.PriceMin Then
+	'				Me.PriceMin = .Low
+	'			End If
+	'			If .IsNull Then
+	'				Me.NumberNullPoint += 1
+	'			End If
+	'		End With
+	'		I += 1
+	'	Next
+	'	If Me.VolMin > 0 Then
+	'		Me.IsVol = True
+	'	End If
+	'	Me.IsSplit = False
+	'	Me.DateStart = MyPriceVols(0).DateLastTrade
+	'	Me.DateStop = MyPriceVols(MyPriceVols.Count - 1).DateLastTrade
+	'	Me.NumberPoint = MyPriceVols.Count
+	'	Me.StartPoint = 0
+	'	Me.StopPoint = MyPriceVols.Count - 1
+	'	Me.PriceVolLast = MyPriceVols(MyPriceVols.Count - 1)
+	'End Sub
 #End Region
 #Region "Public Shared Function"
 	''' <summary>
