@@ -1633,6 +1633,26 @@ Public Class RecordPrices
 		Return MyPriceVols(Index)
 	End Function
 
+	''' <summary>
+	''' Iteration on IPriceVol
+	''' </summary>
+	''' <returns></returns>
+	Public Iterator Function GetPriceVolItems() As IEnumerable(Of IPriceVol)
+		For i As Integer = 0 To MyPriceVols.Length - 1
+			Yield GetPriceVolInterface(i)
+		Next
+	End Function
+
+	''' <summary>
+	''' iteration on IPriceVol with an index
+	''' </summary>
+	''' <returns></returns>
+	Public Iterator Function GetPriceVolItemsWithIndex() As IEnumerable(Of (Index As Integer, Item As IPriceVol))
+		For i As Integer = 0 To MyPriceVols.Length - 1
+			Yield (i, GetPriceVolInterface(i))
+		Next
+	End Function
+
 	Public Sub PriceVolsMultiPly(ByVal Ratio As Single)
 		Me.PriceMin = Single.MaxValue
 		Me.PriceMax = Single.MinValue
