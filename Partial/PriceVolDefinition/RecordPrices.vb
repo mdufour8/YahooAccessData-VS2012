@@ -71,7 +71,9 @@ Public Class RecordPrices
 			Throw New InvalidDataException("The stock information is missing in the record collection.")
 		End If
 		Me.Symbol = Me.Stock.Symbol
-		If IsNothing(DateStartValue) Then
+		'check the limit on the data
+		If DateStartValue < Me.Stock.DateStart Then
+			'assign the stock StartDate if not specified
 			DateStartValue = Me.Stock.DateStart
 		End If
 		If DateStartValue > DateStopValue Then
@@ -234,7 +236,7 @@ Public Class RecordPrices
 		ByRef colData As IEnumerable(Of YahooAccessData.RecordQuoteValue),
 		ByVal DateStopValue As Date)
 
-		Me.New(colData, Nothing, DateStopValue)
+		Me.New(colData, Date.MinValue, DateStopValue)
 	End Sub
 
 	'''' <summary>

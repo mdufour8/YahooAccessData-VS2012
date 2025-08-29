@@ -2,7 +2,7 @@
 Imports System.Collections.Generic
 
 Namespace ExtensionService
-	Public Module Enumerable
+	Public Module EnumerableExtension
 		''' <summary>
 		''' Enumerates a sequence, yielding each item along with its zero-based index.
 		''' Equivalent to Python's enumerate().

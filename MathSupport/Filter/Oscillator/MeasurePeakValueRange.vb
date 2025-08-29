@@ -22,12 +22,12 @@ Public Class MeasurePeakValueRange
     MyListOfWindowFrameHighMinusOne = New ListWindowFrame(FilterRate - 1)
     MyListOfWindowFrameLowMinusOne = New ListWindowFrame(FilterRate - 1)
     IsFilterEnabledLocal = IsFilterPeakEnabled
-    'go back to exponential filter
-    MyFilterHigh = New FilterLowPassPLL(FilterRate:=FILTER_RATE_BAND, DampingFactor:=1.5, NumberOfPredictionOutput:=0)
-    MyFilterLow = New FilterLowPassPLL(FilterRate:=FILTER_RATE_BAND, DampingFactor:=1.5, NumberOfPredictionOutput:=0)
-    'MyFilterHigh = New FilterLowPassExp(FilterRate:=FILTER_RATE_BAND)
-    'MyFilterLow = New FilterLowPassExp(FilterRate:=FILTER_RATE_BAND)
-    MyListOfPeak = New List(Of IPeakValueRange)
+		'go back to exponential filter because FilterPrediction next does not work and have a bug
+		'MyFilterHigh = New FilterLowPassPLL(FilterRate:=FILTER_RATE_BAND, DampingFactor:=1.5, NumberOfPredictionOutput:=0)
+		'MyFilterLow = New FilterLowPassPLL(FilterRate:=FILTER_RATE_BAND, DampingFactor:=1.5, NumberOfPredictionOutput:=0)
+		MyFilterHigh = New FilterLowPassExp(FilterRate:=FILTER_RATE_BAND)
+		MyFilterLow = New FilterLowPassExp(FilterRate:=FILTER_RATE_BAND)
+		MyListOfPeak = New List(Of IPeakValueRange)
   End Sub
 
   Public Function Filter(ByVal ValueLow As Double, ByVal ValueHigh As Double) As IPeakValueRange
@@ -42,8 +42,8 @@ Public Class MeasurePeakValueRange
 
 
     If IsFilterEnabledLocal Then
-      ThisValuePeakHigh = MyFilterHigh.Filter(MyListOfWindowFrameHigh.ItemHigh.Value)
-      ThisValuePeakLow = MyFilterLow.Filter(MyListOfWindowFrameLow.ItemLow.Value)
+			ThisValuePeakHigh = MyFilterHigh.Filter(MyListOfWindowFrameHigh.ItemHigh.Value)
+			ThisValuePeakLow = MyFilterLow.Filter(MyListOfWindowFrameLow.ItemLow.Value)
       'Only for positive price value do not let the price go below zero
       If ThisValuePeakHigh < 0 Then ThisValuePeakHigh = 0.0
       If ThisValuePeakLow < 0 Then ThisValuePeakLow = 0.0
@@ -55,14 +55,14 @@ Public Class MeasurePeakValueRange
     Return ThisPeakValueRange
   End Function
 
-  ''' <summary>
-  ''' Calculate a new Peak estimate based on a new range without changing the actual class memory
-  ''' </summary>
-  ''' <param name="ValueLow"></param>
-  ''' <param name="ValueHigh"></param>
-  ''' <returns></returns>
-  ''' <remarks>does not affect any internal memeory of the class</remarks>
-  Public Function FilterPredictionEstimate(ByVal ValueLow As Double, ByVal ValueHigh As Double) As IPeakValueRange
+	''' <summary>
+	''' Calculate a new Peak estimate based on a new range without changing the actual class memory
+	''' </summary>
+	''' <param name="ValueLow"></param>
+	''' <param name="ValueHigh"></param>
+	''' <returns></returns>
+	''' <remarks>does not affect any internal memory of the class</remarks>
+	Public Function FilterPredictionEstimate(ByVal ValueLow As Double, ByVal ValueHigh As Double) As IPeakValueRange
     Dim ThisPeakPredictionHigh As Double = MyListOfWindowFrameHigh.ItemHigh.Value
     Dim ThisPeakPredictionLow As Double = MyListOfWindowFrameLow.ItemLow.Value
     Dim ThisPeakPredictionHighMinusOne As Double = MyListOfWindowFrameHighMinusOne.ItemHigh.Value

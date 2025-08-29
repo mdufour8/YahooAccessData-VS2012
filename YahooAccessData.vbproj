@@ -195,7 +195,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FileSupport\CircularBuffer.vb" />
-    <Compile Include="FileSupport\Enumerable.vb" />
+    <Compile Include="FileSupport\EnumerableExtension.vb" />
     <Compile Include="FileSupport\FileMutex.vb" />
     <Compile Include="GlobalSuppressions.vb" />
     <Compile Include="Interface\IStockDividendSinglePayout.vb" />
