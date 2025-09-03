@@ -392,7 +392,7 @@ Partial Public Class Stock
 		Dim ThisResponseLiveQuery As IResponseStatus(Of IStockQuote) = Nothing
 		'check if the symbol exit
 		If ThisWebDataSource.GetDictionaryOfStockSymbolBySymbol(ThisWebEOD.ExchangeCode).ContainsKey(ThisWebEOD.SymbolCode) Then
-			'ToDo: A timeout is needed here in case the server is not availaible anymore.
+			'ToDo: A timeout is needed here in case the server is not available anymore.
 			ThisResponseQuery = Await ThisWebDataSource.LoadStockQuoteAsync(
 				ExchangeCode:=ThisWebEOD.ExchangeCode,
 				Symbol:=ThisWebEOD.SymbolCode,

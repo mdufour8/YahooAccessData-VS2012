@@ -280,7 +280,7 @@ Namespace OptionValuation
 					MyProbabilityOfThresholdExcessLow = .MyProbabilityOfThresholdExcessLow
 				End With
 				MyVolatilityEstimate = (MathPlus.General.STATISTICAL_SIGMA_DAILY_TO_YEARLY_RATIO * MyStatisticalOfStockPriceGain.FilterLast.StandardDeviation) + MyVolatilitySumOfError
-				'Console.WriteLine($"MyProbabilityOfThresholdExcess: {MyProbabilityOfThresholdExcess}, VolatilityDeltaLow: {MyVolatilityDeltaLow},VolatilityDeltaHigh: {MyVolatilityDeltaHigh}")
+				'Trace.WriteLine($"MyProbabilityOfThresholdExcess: {MyProbabilityOfThresholdExcess}, VolatilityDeltaLow: {MyVolatilityDeltaLow},VolatilityDeltaHigh: {MyVolatilityDeltaHigh}")
 				'Test code for speed evaluation
 				'Dim ThisStopWatch As New Stopwatch
 				'ThisStopWatch.Start()
@@ -288,7 +288,7 @@ Namespace OptionValuation
 				'	CalculateThresholdExcess(0.0)
 				'Next
 				'ThisStopWatch.Stop()
-				'Console.WriteLine($"Time to calculate the threshold excess: {ThisStopWatch.ElapsedMilliseconds} ms")
+				'Trace.WriteLine($"Time to calculate the threshold excess: {ThisStopWatch.ElapsedMilliseconds} ms")
 				'Note MyProbabilityOfThresholdExcessHigh and MyProbabilityOfThresholdExcessLow are always >=1 and never zero
 				ThisEstimateOfError = (MyProbabilityOfThresholdExcessHigh - MyProbabilityOfThresholdExcessLow) / (MyProbabilityOfThresholdExcessHigh + MyProbabilityOfThresholdExcessLow)
 				MyStatisticalOfProbOfExcesDeltaHighLow.Filter(ThisEstimateOfError)

@@ -1574,7 +1574,7 @@ Partial Public Class Report
       Using ThisZip As ZipFile = New ZipFile(FileZipName)
 
         For Each ThisZipEntry In ThisZip.Entries
-          'Console.WriteLine(ThisZipEntry.FileName)
+          'Trace.WriteLine(ThisZipEntry.FileName)
           'process only the file with an *.rep extension name
           If UCase(System.IO.Path.GetExtension(ThisZipEntry.FileName)) = ".REP" Then
             I = I + 1
@@ -2792,7 +2792,7 @@ Partial Public Class Report
 
           For Each ThisStock As Stock In Me.Stocks
             'ThisStock.SerializeSaveTo(ThisStream, FileType)
-            'Console.WriteLine(String.Format("Processing {0}", I))
+            'Trace.WriteLine(String.Format("Processing {0}", I))
             Dim ThisTask As Task(Of MemoryStreamWatch)
             ThisTask = ThisStock.FileSaveWatchAsync(ThisStreamFileName, IsSingleThread)
             ThisQueue.Enqueue(ThisTask)
@@ -2811,10 +2811,10 @@ Partial Public Class Report
               I = I + 1
             End If
           Next
-          'Console.WriteLine(String.Format("Processing final stage"))
+          'Trace.WriteLine(String.Format("Processing final stage"))
           'finish with the last set of task
           For Each ThisTaskEnd In ThisQueue
-            'Console.WriteLine(String.Format("Processing {0}", I))
+            'Trace.WriteLine(String.Format("Processing {0}", I))
             ThisTaskEnd.Wait()
             ThisStopWatch.Restart()
             ThisTaskEnd.Result.WriteTo(ThisStream)

@@ -441,7 +441,7 @@ Module StepResponseAnalyzer
 	''' <param name="samplingInterval"></param>
 	Public Sub AnalyzeStepResponse(signal As List(Of Double), samplingInterval As Double)
 		If signal Is Nothing OrElse signal.Count < 5 Then
-			Console.WriteLine("Signal too short for analysis.")
+			Trace.WriteLine("Signal too short for analysis.")
 			Return
 		End If
 
@@ -466,13 +466,13 @@ Module StepResponseAnalyzer
 		End If
 
 		' Print results
-		Console.WriteLine($"Estimated Final Value: {finalValue:F4}")
-		Console.WriteLine($"Peak Value: {peakValue:F4}")
-		Console.WriteLine($"Time to Peak: {timeToPeak:F4} s")
-		Console.WriteLine($"Overshoot: {overshoot:P2}")
-		Console.WriteLine($"Estimated ζ (Damping): {zeta:F4}")
-		Console.WriteLine($"Estimated ωₙ (rad/s): {omega_n:F4}")
-		Console.WriteLine($"Estimated fₙ (Hz): {omega_n / (2 * PI):F4}")
+		Trace.WriteLine($"Estimated Final Value: {finalValue:F4}")
+		Trace.WriteLine($"Peak Value: {peakValue:F4}")
+		Trace.WriteLine($"Time to Peak: {timeToPeak:F4} s")
+		Trace.WriteLine($"Overshoot: {overshoot:P2}")
+		Trace.WriteLine($"Estimated ζ (Damping): {zeta:F4}")
+		Trace.WriteLine($"Estimated ωₙ (rad/s): {omega_n:F4}")
+		Trace.WriteLine($"Estimated fₙ (Hz): {omega_n / (2 * PI):F4}")
 	End Sub
 
 	''' <summary>
@@ -536,11 +536,11 @@ Module StepResponseAnalyzer
 			Dim phaseRadians As Double = 2 * PI * frequency * deltaT
 			Dim phaseDegrees As Double = phaseRadians * 180 / PI
 
-			Console.WriteLine($"Input zero at t = {inputPhaseZeroTime:F4} s")
-			Console.WriteLine($"Output zero at t = {outputPhaseZeroTime:F4} s")
-			Console.WriteLine($"Phase delay: {phaseDegrees:F2} degrees ({phaseRadians:F2} rad)")
+			Trace.WriteLine($"Input zero at t = {inputPhaseZeroTime:F4} s")
+			Trace.WriteLine($"Output zero at t = {outputPhaseZeroTime:F4} s")
+			Trace.WriteLine($"Phase delay: {phaseDegrees:F2} degrees ({phaseRadians:F2} rad)")
 		Else
-			Console.WriteLine("Could not detect both zero crossings.")
+			Trace.WriteLine("Could not detect both zero crossings.")
 		End If
 
 		Console.ReadKey()

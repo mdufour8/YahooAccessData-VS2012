@@ -170,7 +170,7 @@ Public Class FilterExpPredict
 		Dim ThisGainVolatilityCorrected As Double = MyFilterRateYearlyGainVolatilitySQRTScaling * MyStatisticalForGain.Filter(Value:=Bp).StandardDeviation
 
 		MyGainYearlyEstimate = Bp * (YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR) / (1 + ThisGainVolatilityCorrected)
-		'Console.WriteLine(ThisGainVolatilityCorrected)
+		'Trace.WriteLine(ThisGainVolatilityCorrected)
 
 		'note that the gain is not the same as the gainLog here. This estimate is valid for any range of signal positive or negative
 		ValueLastK1 = ValueLast
