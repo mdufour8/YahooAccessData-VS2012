@@ -195,34 +195,10 @@ Public Class RecordPrices
 				'This is done by adding 5 hours to the date
 				'This is not yet implemented 
 				'colData = colData.ToLocalTime()
-				Dim lastRecord = colData.LastOrDefault()
-				If lastRecord Is Nothing Then
-					'If the collection is empty, lastRecord will be Nothing.	
-					Throw New InvalidOperationException("The record collection is empty.")
-				End If
-				colData = colData.Where(
-					Function(record)
-						If record Is lastRecord Then
-							'special case for the last record
-							'in that case move the date to next monday
-							'this is to avoid the weekend but still want to kepp the data
-							'note that the DateDay is protectd and can be changed only by acceding the internal record
-							Select Case record.DateDay.DayOfWeek
-								Case DayOfWeek.Saturday
-									record.Record.DateDay = record.DateDay.AddDays(2)
-								Case DayOfWeek.Sunday
-									record.Record.DateDay = record.DateDay.AddDays(1)
-							End Select
-							Return True
-						End If
-						If record.DateDay.DayOfWeek <> DayOfWeek.Saturday AndAlso record.DateDay.DayOfWeek <> DayOfWeek.Sunday Then
-							Return True
-						End If
-						Return False
-					End Function)
+				colData = FilterAndAdjustWeekendData(colData)
 			End If
+			Call ProcessDataDailyIntraDay(colData, DateStartValue, DateStopValue)
 		End If
-		Call ProcessDataDailyIntraDay(colData, DateStartValue, DateStopValue)
 	End Sub
 
 	''' <summary>
@@ -523,6 +499,28 @@ Public Class RecordPrices
 	End Function
 #End Region
 #Region "Private Update Function"
+	Public Function FilterAndAdjustWeekendData(colData As IEnumerable(Of YahooAccessData.RecordQuoteValue)) As IEnumerable(Of YahooAccessData.RecordQuoteValue)
+		Dim lastRecord = colData.LastOrDefault()
+		If lastRecord Is Nothing Then
+			Throw New InvalidOperationException("The record collection is empty.")
+		End If
+
+		'keep week-end tradin data but move it to next monday
+		Select Case lastRecord.DateDay.DayOfWeek
+			Case DayOfWeek.Saturday
+				lastRecord.Record.DateDay = lastRecord.DateDay.AddDays(2)
+			Case DayOfWeek.Sunday
+				lastRecord.Record.DateDay = lastRecord.DateDay.AddDays(1)
+		End Select
+
+		Return colData.Where(
+			Function(record)
+				Return record Is lastRecord OrElse
+					(record.DateDay.DayOfWeek <> DayOfWeek.Saturday AndAlso
+					record.DateDay.DayOfWeek <> DayOfWeek.Sunday)
+			End Function)
+	End Function
+
 	Private Sub ProcessDataDailyIntraDay(
 		ByRef colData As IEnumerable(Of YahooAccessData.RecordQuoteValue),
 		ByVal DateStartValue As Date,
@@ -795,10 +793,16 @@ Public Class RecordPrices
 			'start the real update
 			'note ThisRecord as the last record in the day and include with it the full daily price variation
 			'so no need to scan all the price update record in the day to capture the full daily range
-			If I = 14 Then
-				I = I
-			End If
+			'If I = 719 Then
+			'	I = I
+			'End If
+			'Dim ThisDateFromIndex = ToDate(Me.DateStart, I)
+			'If ThisRecord.DateLastTrade.Date <> ThisDateFromIndex Then
+			'	I = I
+			'End If
+			'Me.ToIndex(ThisRecord.DateDay.Date) Then
 			MyPriceVols(I) = PriceVolUpdate(ThisRecord, ThisDateCurrent)
+
 			If ThisStartPointForTargetPrice < 0 Then
 				If MyPriceVols(I).OneyrTargetPrice <> 0 Then
 					ThisStartPointForTargetPrice = I
