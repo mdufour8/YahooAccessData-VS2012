@@ -433,87 +433,100 @@ Partial Public Class Stock
 				If ThisDictionaryOfStockQuote.Count > 0 Then
 					'only one stock at a time and it content is element 0 of the dictionary
 					Dim ThisListOfStockQuote As List(Of WebEODData.IStockQuote) = ThisDictionaryOfStockQuote.Values.First
+					'check if this is a bond exchange
+					If ThisWebEOD.ExchangeCode = "GBond" Then
+						'in that case change the list to reflect the bond price at maturity raher
+						'than the interest rate. Scale everything by 10 years. Here 100$ bond
+						'will give 200$ at maturity for an interst rate of 10% per year
+						Dim ThisListOfStockBondQuote As New List(Of WebEODData.IStockQuote)
+
+						For Each ThisStockQuote In ThisListOfStockQuote
+							ThisListOfStockBondQuote.Add(New WebEODData.StockBondQuote(ThisStockQuote, ScalePriceToMaturityInDays:=3650))
+						Next
+						'get rid of the other list to free memory
+						ThisListOfStockQuote = ThisListOfStockBondQuote
+					End If
 					'determine if the last record was a live record
 					If _Records.Count > 0 Then
-						If _Records.Last.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
-							IsLastRecordLive = True
+							If _Records.Last.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
+								IsLastRecordLive = True
+							Else
+								IsLastRecordLive = False
+							End If
 						Else
 							IsLastRecordLive = False
 						End If
-					Else
-						IsLastRecordLive = False
-					End If
-					If ThisListOfStockQuote.Count > 0 Then
-						'new data record available for this stock 
-						Dim ThisListOfRecord = ThisListOfStockQuote.ToListOfRecord
-						For Each ThisRecord In ThisListOfRecord
-							'set the record parameters
-							ThisRecord.Stock = Me
-							ThisRecord.StockID = ThisRecord.Stock.ID
-							If ThisRecord.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
-								IsNewRecordLive = True
-							Else
-								IsNewRecordLive = False
-							End If
-							If _Records.Count > 0 Then
-								'note that when the record is not live the time value for the date is always zero or midnight
-								'and is not appropriate for comparison. The last live update on the data always contain
-								'a valid time stamp, but this data condition happen when the final eod stock
-								'information become available. Hence it is still necessary to remove the live update and replace with
-								'the new data. The condition below ensure this condition is met.
-								'TODO: This condition for update should be checked again
-								If (ThisRecord.DateUpdate > Me.DateStop) Or (IsNewRecordLive = False And IsLastRecordLive = True) Then
-									'work directly with the collection
-									If IsLastRecordLive Then
-										'need to remove the last record
-										'it wil be replaced with this new one stamped with a more recent date
-										'or with the last eod historical daily data
-										'it can be done easily if we access the low level functionality
-										With DirectCast(_Records, LinkedHashSet(Of Record, Date))
-											'check if the key exist in the data list
-											'the key may be the same indicating that the data has not yet been updated
-											'to a new timeframe
-											'in that case we ignore the record
-											'the test does not appears to be necessary but just in case
-											'the record to remove is located in the last position
-											If .RemoveAt(_Records.Count - 1) = True Then
-												MyRecordQuoteValues.RemoveAt(MyRecordQuoteValues.Count - 1)
+						If ThisListOfStockQuote.Count > 0 Then
+							'new data record available for this stock 
+							Dim ThisListOfRecord = ThisListOfStockQuote.ToListOfRecord
+							For Each ThisRecord In ThisListOfRecord
+								'set the record parameters
+								ThisRecord.Stock = Me
+								ThisRecord.StockID = ThisRecord.Stock.ID
+								If ThisRecord.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
+									IsNewRecordLive = True
+								Else
+									IsNewRecordLive = False
+								End If
+								If _Records.Count > 0 Then
+									'note that when the record is not live the time value for the date is always zero or midnight
+									'and is not appropriate for comparison. The last live update on the data always contain
+									'a valid time stamp, but this data condition happen when the final eod stock
+									'information become available. Hence it is still necessary to remove the live update and replace with
+									'the new data. The condition below ensure this condition is met.
+									'TODO: This condition for update should be checked again
+									If (ThisRecord.DateUpdate > Me.DateStop) Or (IsNewRecordLive = False And IsLastRecordLive = True) Then
+										'work directly with the collection
+										If IsLastRecordLive Then
+											'need to remove the last record
+											'it wil be replaced with this new one stamped with a more recent date
+											'or with the last eod historical daily data
+											'it can be done easily if we access the low level functionality
+											With DirectCast(_Records, LinkedHashSet(Of Record, Date))
+												'check if the key exist in the data list
+												'the key may be the same indicating that the data has not yet been updated
+												'to a new timeframe
+												'in that case we ignore the record
+												'the test does not appears to be necessary but just in case
+												'the record to remove is located in the last position
+												If .RemoveAt(_Records.Count - 1) = True Then
+													MyRecordQuoteValues.RemoveAt(MyRecordQuoteValues.Count - 1)
+												Else
+													'Todo: This test could be removed in time
+													'should never happen but just in case
+													MsgBox($"Unable to remove a live record for stock {Me.Symbol} for date {ThisRecord.DateDay}")
+												End If
+											End With
+										End If
+										If (ThisRecord.DateUpdate > Me.DateStop) Then
+											If _Records.TryAdd(ThisRecord) = True Then
+												MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
+												Me.DateStop = ThisRecord.DateDay
 											Else
-												'Todo: This test could be removed in time
 												'should never happen but just in case
-												MsgBox($"Unable to remove a live record for stock {Me.Symbol} for date {ThisRecord.DateDay}")
+												'wrong  it can happen if you try adding another record with the same date
+												'TODO: This condition for update should be checked again
+												MsgBox($"Unable to add a record for stock {Me.Symbol} for date {ThisRecord.DateDay}")
 											End If
-										End With
-									End If
-									If (ThisRecord.DateUpdate > Me.DateStop) Then
-										If _Records.TryAdd(ThisRecord) = True Then
-											MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
-											Me.DateStop = ThisRecord.DateDay
-										Else
-											'should never happen but just in case
-											'wrong  it can happen if you try adding another record with the same date
-											'TODO: This condition for update should be checked again
-											MsgBox($"Unable to add a record for stock {Me.Symbol} for date {ThisRecord.DateDay}")
 										End If
 									End If
-								End If
-							Else
-								'special case for the first record
-								If _Records.TryAdd(ThisRecord) = True Then
-									MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
-									Me.DateStop = ThisRecord.DateDay
 								Else
-									'should never happen but just in case
-									MsgBox($"Unable to add a record for stock {Me.Symbol} for date {ThisRecord.DateDay}")
+									'special case for the first record
+									If _Records.TryAdd(ThisRecord) = True Then
+										MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
+										Me.DateStop = ThisRecord.DateDay
+									Else
+										'should never happen but just in case
+										MsgBox($"Unable to add a record for stock {Me.Symbol} for date {ThisRecord.DateDay}")
+									End If
 								End If
-							End If
-						Next
+							Next
+						End If
+						If Me.DateStop > Me.Report.DateStop Then
+							Me.Report.DateStop = Me.DateStop
+						End If
 					End If
-					If Me.DateStop > Me.Report.DateStop Then
-						Me.Report.DateStop = Me.DateStop
-					End If
-				End If
-			Else
+				Else
 				Trace.WriteLine($"Web query failure for {Me.Symbol}{vbCr}{ThisResponseQuery.Message}")
 				Return New ResponseStatus(Of Date)(Me.DateStop, IsSuccess:=False, Message:=$"Web query failure for {Me.Symbol}{vbCr}{ThisResponseQuery.Message}")
 			End If
