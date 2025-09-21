@@ -72,7 +72,9 @@ Partial Public Class Stock
 				.Report.Stocks.Add(Me)
 			End If
 		End With
+		_RecordPrices = Nothing
 	End Sub
+
 
 	Public Sub New(ByVal Symbol As String, ByVal Name As String, ByVal Exchange As String)
 		Me.New(Symbol, Name, Exchange, Nothing, False)
@@ -120,6 +122,7 @@ Partial Public Class Stock
 		Else
 			MyListHeaderInfo = ListOfHeader()
 		End If
+		_RecordPrices = Nothing
 		Me.IsSplitEnabled = True
 	End Sub
 
@@ -132,6 +135,7 @@ Partial Public Class Stock
 				.Report.Stocks.Add(Me)
 			End If
 		End With
+		_RecordPrices = Nothing
 	End Sub
 
 	Public Sub New(ByRef Parent As Report, ByRef Stream As Stream, Optional ByVal IsRecordVirtual As Boolean = False)
@@ -155,6 +159,7 @@ Partial Public Class Stock
 			End If
 			.Report.Stocks.Add(Me)
 		End With
+		_RecordPrices = Nothing
 	End Sub
 
 	Public Sub New(
@@ -181,6 +186,7 @@ Partial Public Class Stock
 				.Industry.Stocks.Add(Me)
 			End If
 		End With
+		_RecordPrices = Nothing
 	End Sub
 
 	Public Sub New(ByVal Symbol As String, ByVal Name As String)
@@ -3049,6 +3055,27 @@ Partial Public Class Stock
 	Public Property Exchange As String
 	Public Property ErrorDescription As String
 	Public Property IsInternational As Boolean
+
+	Private _RecordPrices As RecordPrices
+
+	''' <summary>
+	''' Returns the prices for various calculations. The user need to set it values 
+	''' otherwise it return nothing. Note that this is not persisted in the database
+	''' or via serialization. It is only a temporary holder of the prices for various 
+	''' calculations.
+	''' </summary>
+	''' <returns></returns>
+	Public Function GetRecordsPrices() As RecordPrices
+		Return _RecordPrices
+	End Function
+
+	''' <summary>
+	''' Can be use as a temporary holder of the prices for various calculations
+	''' </summary>
+	''' <param name="Value"></param>
+	Public Sub SetRecordsPrices(Value As RecordPrices)
+		_RecordPrices = Value
+	End Sub
 
 	Public ReadOnly Property SectorName As String
 		Get
