@@ -769,45 +769,44 @@ Partial Public Class Stock
 				'this command load the data in memory only one thread at the time
 
 				SyncLock MySyncLockForStockRecordLoadingAll
-					'SyncLock MySyncLockForRecordLoading
-					With DirectCast(_Records, IDataVirtual)
-						IsLoaded = .IsLoaded
-						'If MyLastTimeOfRecordQuoteValuesAsync = ThisTick Then
-						'  IsThisTheLastRecordReadingRequest = True
-						'Else
-						'  IsThisTheLastRecordReadingRequest = False
-						'End If
-						If IsLoaded = False Then
-							'always read one at the time to support FTP web reading
-							Try
-								.Load()
-								IsLoaded = .IsLoaded
-								ThisRecordQuoteValue = Me.RecordQuoteValues(TimeFormat)
+					ThisRecordQuoteValue = Me.RecordQuoteValues(TimeFormat)
+					'With DirectCast(_Records, IDataVirtual)
+					'	IsLoaded = .IsLoaded
+					'	'If MyLastTimeOfRecordQuoteValuesAsync = ThisTick Then
+					'	'  IsThisTheLastRecordReadingRequest = True
+					'	'Else
+					'	'  IsThisTheLastRecordReadingRequest = False
+					'	'End If
+					'	If IsLoaded = False Then
+					'		'always read one at the time to support FTP web reading
+					'		Try
+					'			.Load()
+					'			IsLoaded = .IsLoaded
+					'			ThisRecordQuoteValue = Me.RecordQuoteValues(TimeFormat)
 
-								'    ThisRecordQuoteValue = Me.RecordQuoteValues(TimeFormat)
-								'If IsThisTheLastRecordReadingRequest Then
-								'  'only load the most recent request
-								'  .Load()
-								'  IsLoaded = .IsLoaded
-								'  If IsLoaded Then
-								'    ThisRecordQuoteValue = Me.RecordQuoteValues(TimeFormat)
-								'  Else
-								'    'the loading have been cancelled
-								'    ThisRecordQuoteValue = Nothing
-								'  End If
-								'Else
-								'  ThisRecordQuoteValue = Nothing
-								'End If
-							Catch ex As Exception
-								'how to fix because this may be a problem on a thread:seem to work
-								Me.Report.Exception = ex
-								ThisRecordQuoteValue = Nothing
-							End Try
-						Else
-							ThisRecordQuoteValue = Me.RecordQuoteValues(TimeFormat)
-						End If
-					End With
-					'End SyncLock
+					'			'    ThisRecordQuoteValue = Me.RecordQuoteValues(TimeFormat)
+					'			'If IsThisTheLastRecordReadingRequest Then
+					'			'  'only load the most recent request
+					'			'  .Load()
+					'			'  IsLoaded = .IsLoaded
+					'			'  If IsLoaded Then
+					'			'    ThisRecordQuoteValue = Me.RecordQuoteValues(TimeFormat)
+					'			'  Else
+					'			'    'the loading have been cancelled
+					'			'    ThisRecordQuoteValue = Nothing
+					'			'  End If
+					'			'Else
+					'			'  ThisRecordQuoteValue = Nothing
+					'			'End If
+					'		Catch ex As Exception
+					'			'how to fix because this may be a problem on a thread:seem to work
+					'			Me.Report.Exception = ex
+					'			ThisRecordQuoteValue = Nothing
+					'		End Try
+					'	Else
+					'		ThisRecordQuoteValue = Me.RecordQuoteValues(TimeFormat)
+					'	End If
+					'End With
 				End SyncLock
 				Return ThisRecordQuoteValue
 			End Function)
@@ -854,13 +853,15 @@ Partial Public Class Stock
 	End Function
 
 	Public Function IsRecordLoaded() As Boolean
-		Dim IsLoaded As Boolean
-		SyncLock MySyncLockForStockRecordLoadingAll
-			With DirectCast(_Records, IDataVirtual)
-				IsLoaded = .IsLoaded
-			End With
-		End SyncLock
-		Return IsLoaded
+		Return True
+		'Do not trust the current code in record for that
+		'Dim IsLoaded As Boolean
+		'SyncLock MySyncLockForStockRecordLoadingAll
+		'	With DirectCast(_Records, IDataVirtual)
+		'		IsLoaded = .IsLoaded
+		'	End With
+		'End SyncLock
+		'Return IsLoaded
 	End Function
 
 	Public Function RecordRelease() As Boolean
