@@ -1768,6 +1768,8 @@ Public Class RecordPrices
 		Return MyPriceVols
 	End Function
 
+
+
 	''' <summary>
 	''' Produce a new PriceVol array with all the data reversed in time
 	''' </summary>

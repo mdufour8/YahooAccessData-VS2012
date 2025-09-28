@@ -1032,15 +1032,7 @@ Partial Public Class Stock
 #Region "Collection Definition"
 	Public Overridable Property Records As ICollection(Of Record)
 		Get
-			If Me.Report.WebDataSource Is Nothing Then
-				Me.RecordLoad()
-				Return _Records
-			Else
-				If Me.Report.WebDataSource.IsWebAccessEnable Then
-					Me.WebRefreshRecord(Now)
-				End If
-				Return _Records
-			End If
+			Return Records(IsLoadEnabled:=True)
 		End Get
 		Set(value As ICollection(Of Record))
 			_Records = value

@@ -52,26 +52,41 @@ Namespace MathPlus
       ReadOnly Property NumberBucket As Integer
     End Interface
 
-    Public Interface IListWindowsFrame(Of T As {Structure})
-      ReadOnly Property AsIListWindowsFrame As IListWindowsFrame(Of T)
-      ReadOnly Property ItemLowIndex() As Integer
-      ReadOnly Property ItemHighIndex() As Integer
-      Function ItemLow() As Nullable(Of T)
-      Function ItemHigh() As Nullable(Of T)
-      Function ItemFirst() As Nullable(Of T)
-      Function ItemLast() As Nullable(Of T)
-      Function ItemDecimate() As Nullable(Of T)
-      ReadOnly Property WindowSize As Integer
-      Function ItemRemoved() As Nullable(Of T)
-    End Interface
+		Public Interface IListWindowsFrame(Of T As {Structure})
+			ReadOnly Property AsIListWindowsFrame As IListWindowsFrame(Of T)
+			ReadOnly Property ItemLowIndex() As Integer
+			ReadOnly Property ItemHighIndex() As Integer
+			Function ItemLow() As Nullable(Of T)
+			Function ItemHigh() As Nullable(Of T)
+			Function ItemFirst() As Nullable(Of T)
+			Function ItemLast() As Nullable(Of T)
+			Function ItemDecimate() As Nullable(Of T)
+			ReadOnly Property WindowSize As Integer
+			Function ItemRemoved() As Nullable(Of T)
+		End Interface
 
-    Friend Interface IFilterData
-      Property FilterInput As Double
-      Property FilterLast As Double
-      Property Range As Double
-    End Interface
+		Public Interface IListWindowsFrame1(Of T)
+			ReadOnly Property AsIListWindowsFrame1 As IListWindowsFrame1(Of T)
+			ReadOnly Property ItemLowIndex() As Integer
+			ReadOnly Property ItemHighIndex() As Integer
+			Function ItemLow() As T
+			Function ItemHigh() As T
+			Function ItemFirst() As T
+			Function ItemLast() As T
+			Function ItemDecimate() As T
+			ReadOnly Property WindowSize As Integer
+			Function ItemRemoved() As T
+		End Interface
 
-    Public Interface IFilterRateInterpolated
+
+
+		Friend Interface IFilterData
+			Property FilterInput As Double
+			Property FilterLast As Double
+			Property Range As Double
+		End Interface
+
+		Public Interface IFilterRateInterpolated
       Enum enuOutputType
         Standard
         GainPerYear

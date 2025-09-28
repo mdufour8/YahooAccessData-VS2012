@@ -1,14 +1,11 @@
-﻿Public Class PriceVol
+﻿
+Public Class PriceVolHolder
 	Implements IPriceVol
 	Implements IPriceVolLarge
 	Implements IPricePivotPoint
 	Implements ISentimentIndicator
 
 #Region "New"
-	Public Sub New()
-		Me.New(PriceValue:=0.0)
-	End Sub
-
 	Public Sub New(ByVal PriceValue As Single, Optional Volume As Integer = 0)
 		Me.Open = PriceValue
 		Me.OpenNext = PriceValue
@@ -883,5 +880,3 @@
 	End Property
 #End Region
 End Class
-
-

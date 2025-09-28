@@ -2660,7 +2660,7 @@ Namespace MathPlus
 			Private MyListOfPriceGainDerivativeDifference As List(Of Double)
 			Private MyListOfPriceGainDifference As List(Of Double)
 
-			Private MyListOfWindowFramePivotPoint As ListWindowFrame(Of PriceVol)
+			Private MyListOfWindowFramePivotPoint As ListWindowFrameAsClass(Of PriceVol)
 			Private MyHighIndexForeCast As Nullable(Of Integer)
 			Private MyLowIndexForeCast As Nullable(Of Integer)
 			Private MyHighIndexForeCastDistanceToPivot As Integer
@@ -2688,7 +2688,7 @@ Namespace MathPlus
 				If FilterRate < 1 Then FilterRate = 1
 				MyRate = CInt(FilterRate)
 				MyRatePivotPoint = 2 * MyRate + 1
-				MyListOfWindowFramePivotPoint = New ListWindowFrame(Of PriceVol)(MyRatePivotPoint)
+				MyListOfWindowFramePivotPoint = New ListWindowFrameAsClass(Of PriceVol)(MyRatePivotPoint)
 				MyFilterLowPassPLL = New Filter.FilterLowPassPLL(MyRatePivotPoint, IsPredictionEnabled:=True)
 				MyFilterLowPassExp = New Filter.FilterLowPassExp(MyRatePivotPoint, IsPredictionEnabled:=True)
 

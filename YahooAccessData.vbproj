@@ -217,6 +217,9 @@
     <Compile Include="MathSupport\Filter\Exponential\FilterDoubleExp.vb" />
     <Compile Include="MathSupport\Filter\FilterGraph.vb" />
     <Compile Include="MathSupport\Filter\Interface\IFilterConnector.vb" />
+    <Compile Include="MathSupport\Filter\ListWindowsFrame\ListWindowFrameAsClass.vb" />
+    <Compile Include="MathSupport\Filter\ListWindowsFrame\ListWindowFrameAsStuct.vb" />
+    <Compile Include="MathSupport\Filter\ListWindowsFrame\WindowFrameDebug.vb" />
     <Compile Include="MathSupport\Filter\Statistic\StatisticalData.vb" />
     <Compile Include="MathSupport\Filter\Statistic\FilterStatistical.vb" />
     <Compile Include="MathSupport\FilterCorrelation.vb" />
@@ -283,9 +286,15 @@
     <Compile Include="Partial\BondRate.Partial.vb" />
     <Compile Include="Partial\BondRate1.vb" />
     <Compile Include="Partial\BondRateRecord.vb" />
+    <Compile Include="Partial\PriceVolDefinition\IPricePivotPoint.vb" />
+    <Compile Include="Partial\PriceVolDefinition\IPriceVol.vb" />
+    <Compile Include="Partial\PriceVolDefinition\IPriceVolLarge.vb" />
+    <Compile Include="Partial\PriceVolDefinition\IPriceVolShort.vb" />
     <Compile Include="Partial\PriceVolDefinition\PriceVol.vb" />
     <Compile Include="Partial\PriceVolDefinition\PriceVolAsClass.vb" />
     <Compile Include="Partial\PriceVolDefinition\PriceVolData.vb" />
+    <Compile Include="Partial\PriceVolDefinition\PriceVolHolder.vb" />
+    <Compile Include="Partial\PriceVolDefinition\PriceVolLarge.vb" />
     <Compile Include="Partial\PriceVolDefinition\PriceVolLargeAsClass.vb" />
     <Compile Include="Partial\PriceVolDefinition\PriceVolShort.vb" />
     <Compile Include="Partial\PriceVolDefinition\RecordPrices.vb" />
