@@ -285,6 +285,43 @@
 		Return New PriceVolAsClass(Me)
 	End Function
 #End Region
+
+#Region "Eguality Test"
+	Public Overrides Function Equals(obj As Object) As Boolean
+		If obj Is Nothing OrElse Not Me.GetType() Is obj.GetType() Then
+			Return False
+		End If
+		Dim other As PriceVol = DirectCast(obj, PriceVol)
+		Return Me.DateLastTrade = other.DateLastTrade AndAlso
+					 Me.Open = other.Open AndAlso
+					 Me.High = other.High AndAlso
+					 Me.Low = other.Low AndAlso
+					 Me.Last = other.Last AndAlso
+					 Me.OpenNext = other.OpenNext AndAlso
+					 Me.LastPrevious = other.LastPrevious AndAlso
+					 Me.Vol = other.Vol
+		' 👉 You can add more fields here if you need deeper checks
+	End Function
+
+	Public Overrides Function GetHashCode() As Integer
+		Dim hash As Integer = 17
+		hash = hash * 31 + DateLastTrade.GetHashCode()
+		hash = hash * 31 + Open.GetHashCode()
+		hash = hash * 31 + High.GetHashCode()
+		hash = hash * 31 + Low.GetHashCode()
+		hash = hash * 31 + Last.GetHashCode()
+		hash = hash * 31 + OpenNext.GetHashCode()
+		hash = hash * 31 + LastPrevious.GetHashCode()
+		hash = hash * 31 + Vol.GetHashCode()
+		Return hash
+	End Function
+
+
+	' Quick helper: check if two references point to the *same* object
+	Public Overloads Shared Function ReferenceEquals(pv1 As PriceVol, pv2 As PriceVol) As Boolean
+		Return Object.ReferenceEquals(pv1, pv2)
+	End Function
+#End Region
 #Region "Arithmetic Properties"
 	Public Sub MultiPly(ByVal Ratio As Single)
 		Dim ThisVolMultiply As Double

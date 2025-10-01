@@ -18,8 +18,12 @@ Friend Module WindowFrameDebug
 		Detailed   ' Add + State + Decimate
 	End Enum
 
-	' Default = Normal, change at runtime to control logging
-	Public Property Level As DebugLevel = DebugLevel.Normal
+	' To enable tracing for debugging:
+	'   WindowFrameDebug.Level = WindowFrameDebug.DebugLevel.Normal
+	'   WindowFrameDebug.Level = WindowFrameDebug.DebugLevel.Detailed
+	'   WindowFrameDebug.Level = WindowFrameDebug.DebugLevel.Summary
+	' Default is Off
+	Public Property Level As DebugLevel = DebugLevel.Off
 
 	<Conditional("DEBUG")>
 	Public Sub TraceAdd(Of T As {Class, IPriceVol, IPricePivotPoint})(item As T, index As Integer)

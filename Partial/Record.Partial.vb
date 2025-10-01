@@ -106,158 +106,185 @@ Partial Public Class Record
     Return ThisRecord
   End Function
 
-  ''' <summary>
-  ''' This function check that the transaction high low are consistent with the open and last
-  ''' </summary>
-  ''' <returns>Return True if the record is consistent</returns>
-  ''' <remarks>This function can also optionally fix the issues </remarks>
-  Public Shared Function CheckPrice(
-                                   ByRef ThisPriceVol As IPriceVol,
-                                   Optional ByVal IsApplyCorrection As Boolean = False,
-                                   Optional ByVal IsCorrectionOnVolume As Boolean = False) As Boolean
-    With ThisPriceVol
-      If IsCorrectionOnVolume Then
-        If .Vol = 0 Then
-          If .Low <> .Last Then
-            If IsApplyCorrection Then
-              .Low = .Last
-            Else
-              Return False
-            End If
-          End If
-          If .Open <> .Last Then
-            If IsApplyCorrection Then
-              .Open = .Last
-            Else
-              Return False
-            End If
-          End If
-          If .High <> .Last Then
-            If IsApplyCorrection Then
-              .High = .Last
-            Else
-              Return False
-            End If
-          End If
-          Return True
-        ElseIf .Last = 0 Then
-          'we know already that the volume is > 0
-          'we cannot have a volume > 0 with the last transaction value = 0
-          'make sure everything is zero including the volume
-          If IsApplyCorrection Then
-            .Vol = 0
-            .Open = 0
-            .High = 0
-            .Low = 0
-          Else
-            Return False
-          End If
-          Return True
-        ElseIf .Open = 0 Then
-          'we know already that last is not zero and that Volume is greater than zero
-          'this is an error but estimate that the open is the same than the last
-          If IsApplyCorrection Then
-            .Open = .Last
-            'we need to fix here the case where .Low=0
-            If .Low = 0 Then
-              If .Open < .Last Then
-                .Low = .Open
-              Else
-                .Low = .Last
-              End If
-            End If
-            'this will fix the case where .High is zero
-            CheckHighLow(ThisPriceVol, True)
-          Else
-            Return False
-          End If
-        ElseIf .Low = 0 Then
-          'we know already that last and open is not zero and that Volume is greater than zero
-          If IsApplyCorrection Then
-            If .Open < .Last Then
-              .Low = .Open
-            Else
-              .Low = .Last
-            End If
-            'this will fix the high=0 error condition
-            CheckHighLow(ThisPriceVol, True)
-          Else
-            Return False
-          End If
-        ElseIf .High = 0 Then
-          'we know already that last and open and low are not zero and that Volume is greater than zero
-          'this will fix the high=0 error condition
-          If IsApplyCorrection Then
-            CheckHighLow(ThisPriceVol, True)
-          Else
-            Return False
-          End If
-        End If
-      Else
-        If .Last = 0 Then
-          'we know already that the volume is > 0
-          'we cannot have a volume > 0 with the last transaction value = 0
-          'make sure everything is zero including the volume
-          If IsApplyCorrection Then
-            .Vol = 0
-            .Open = 0
-            .High = 0
-            .Low = 0
-          Else
-            Return False
-          End If
-          Return True
-        ElseIf .Open = 0 Then
-          'we know already that last is not zero and that Volume is greater than zero
-          'this is an error but estimate that the open is the same than the last
-          If IsApplyCorrection Then
-            .Open = .Last
-            'we need to fix here the case where .Low=0
-            If .Low = 0 Then
-              If .Open < .Last Then
-                .Low = .Open
-              Else
-                .Low = .Last
-              End If
-            End If
-            'this will fix the case where .High is zero
-            CheckHighLow(ThisPriceVol, True)
-          Else
-            Return False
-          End If
-        ElseIf .Low = 0 Then
-          'we know already that last and open is not zero and that Volume is greater than zero
-          If IsApplyCorrection Then
-            If .Open < .Last Then
-              .Low = .Open
-            Else
-              .Low = .Last
-            End If
-            'this will fix the high=0 error condition
-            CheckHighLow(ThisPriceVol, True)
-          Else
-            Return False
-          End If
-        ElseIf .High = 0 Then
-          'we know already that last and open and low are not zero and that Volume is greater than zero
-          'this will fix the high=0 error condition
-          If IsApplyCorrection Then
-            CheckHighLow(ThisPriceVol, True)
-          Else
-            Return False
-          End If
-        End If
-      End If
-    End With
-    Return True
-  End Function
+	''' <summary>
+	''' Validate OHLCV consistency for a given record before plotting or further processing.
+	''' 
+	''' This function was originally created to protect against unreliable data suppliers
+	''' (e.g. missing or malformed OHLC values). With EOD data this situation is rare, but
+	''' we still use it at the graphing layer as a safeguard:
+	'''   • Prevents a single bad record from blowing up the chart rendering.
+	'''   • Can optionally "heal" anomalies if IsApplyCorrection=True.
+	'''   • When IsApplyCorrection=False, it only validates and never mutates data.
+	'''
+	''' Checks performed include:
+	'''   • Volume > 0 with Last = 0 (impossible).
+	'''   • Open/High/Low missing (0) while other values are nonzero.
+	'''   • High/Low inconsistent with Open/Last.
+	''' 
+	''' Final sanity guard (always applied):
+	'''   • Low must be ≤ High.
+	'''   • Open and Last must lie within [Low, High].
+	'''
+	''' Returns:
+	'''   True  → data is consistent (or corrected if correction enabled).
+	'''   False → anomaly detected, caller should handle (e.g. fallback to LastPrevious).
+	''' </summary>
+	Public Shared Function CheckPrice(
+																	 ByRef ThisPriceVol As IPriceVol,
+																	 Optional ByVal IsApplyCorrection As Boolean = False,
+																	 Optional ByVal IsCorrectionOnVolume As Boolean = False) As Boolean
+		With ThisPriceVol
+			If IsCorrectionOnVolume Then
+				If .Vol = 0 Then
+					If .Low <> .Last Then
+						If IsApplyCorrection Then
+							.Low = .Last
+						Else
+							Return False
+						End If
+					End If
+					If .Open <> .Last Then
+						If IsApplyCorrection Then
+							.Open = .Last
+						Else
+							Return False
+						End If
+					End If
+					If .High <> .Last Then
+						If IsApplyCorrection Then
+							.High = .Last
+						Else
+							Return False
+						End If
+					End If
+					Return True
+				ElseIf .Last = 0 Then
+					'we know already that the volume is > 0
+					'we cannot have a volume > 0 with the last transaction value = 0
+					'make sure everything is zero including the volume
+					If IsApplyCorrection Then
+						.Vol = 0
+						.Open = 0
+						.High = 0
+						.Low = 0
+					Else
+						Return False
+					End If
+					Return True
+				ElseIf .Open = 0 Then
+					'we know already that last is not zero and that Volume is greater than zero
+					'this is an error but estimate that the open is the same than the last
+					If IsApplyCorrection Then
+						.Open = .Last
+						'we need to fix here the case where .Low=0
+						If .Low = 0 Then
+							If .Open < .Last Then
+								.Low = .Open
+							Else
+								.Low = .Last
+							End If
+						End If
+						'this will fix the case where .High is zero
+						CheckHighLow(ThisPriceVol, True)
+					Else
+						Return False
+					End If
+				ElseIf .Low = 0 Then
+					'we know already that last and open is not zero and that Volume is greater than zero
+					If IsApplyCorrection Then
+						If .Open < .Last Then
+							.Low = .Open
+						Else
+							.Low = .Last
+						End If
+						'this will fix the high=0 error condition
+						CheckHighLow(ThisPriceVol, True)
+					Else
+						Return False
+					End If
+				ElseIf .High = 0 Then
+					'we know already that last and open and low are not zero and that Volume is greater than zero
+					'this will fix the high=0 error condition
+					If IsApplyCorrection Then
+						CheckHighLow(ThisPriceVol, True)
+					Else
+						Return False
+					End If
+				End If
+			Else
+				If .Last = 0 Then
+					'we know already that the volume is > 0
+					'we cannot have a volume > 0 with the last transaction value = 0
+					'make sure everything is zero including the volume
+					If IsApplyCorrection Then
+						.Vol = 0
+						.Open = 0
+						.High = 0
+						.Low = 0
+					Else
+						Return False
+					End If
+					Return True
+				ElseIf .Open = 0 Then
+					'we know already that last is not zero and that Volume is greater than zero
+					'this is an error but estimate that the open is the same than the last
+					If IsApplyCorrection Then
+						.Open = .Last
+						'we need to fix here the case where .Low=0
+						If .Low = 0 Then
+							If .Open < .Last Then
+								.Low = .Open
+							Else
+								.Low = .Last
+							End If
+						End If
+						'this will fix the case where .High is zero
+						CheckHighLow(ThisPriceVol, True)
+					Else
+						Return False
+					End If
+				ElseIf .Low = 0 Then
+					'we know already that last and open is not zero and that Volume is greater than zero
+					If IsApplyCorrection Then
+						If .Open < .Last Then
+							.Low = .Open
+						Else
+							.Low = .Last
+						End If
+						'this will fix the high=0 error condition
+						CheckHighLow(ThisPriceVol, True)
+					Else
+						Return False
+					End If
+				ElseIf .High = 0 Then
+					'we know already that last and open and low are not zero and that Volume is greater than zero
+					'this will fix the high=0 error condition
+					If IsApplyCorrection Then
+						CheckHighLow(ThisPriceVol, True)
+					Else
+						Return False
+					End If
+				End If
+			End If
+			' Final sanity guard
+			If .Low > .High OrElse
+				.Open > .High OrElse
+				.Last > .High OrElse
+				.Open < .Low OrElse
+				.Last < .Low Then
 
-  ''' <summary>
-  ''' Function use locally just to correct the high low anomalies based on open and last
-  ''' </summary>
-  ''' <returns></returns>
-  ''' <remarks>The function does not check the validity of open and last</remarks>
-  Private Shared Function CheckHighLow(ByRef ThisPriceVol As IPriceVol, Optional ByVal IsApplyCorrection As Boolean = False) As Boolean
+				Return False
+			End If
+		End With
+		Return True
+	End Function
+
+	''' <summary>
+	''' Function use locally just to correct the high low anomalies based on open and last
+	''' </summary>
+	''' <returns></returns>
+	''' <remarks>The function does not check the validity of open and last</remarks>
+	Private Shared Function CheckHighLow(ByRef ThisPriceVol As IPriceVol, Optional ByVal IsApplyCorrection As Boolean = False) As Boolean
     With ThisPriceVol
       If .Open > .Last Then
         If .High < .Open Then

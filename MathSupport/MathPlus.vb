@@ -1214,22 +1214,30 @@ Namespace MathPlus
 #End Region
 #Region "FilterLowPassExp(Of T As {Structure, IPriceVolLarge})"
 		<Serializable()>
-		Friend Class FilterLowPassExp(Of T As {Structure, IPriceVolLarge})
+		Friend Class FilterLowPassExp(Of T As {New, IPriceVol, PriceVol})
 			Private MyRate As Integer
 			'Private A As Double
 			'Private B As Double
-			Private FilterValueLast As IPriceVolLarge
-			Private FilterValueLastK1 As IPriceVolLarge
-			Private ValueLast As IPriceVolLarge
+			Private FilterValueLast As IPriceVol
+			Private FilterValueLastK1 As IPriceVol
+			Private ValueLast As IPriceVol
 			Private IsValueInitial As Boolean
-			Private MyListOfValue As List(Of IPriceVolLarge)
-			Private MyFilter As FilterLowPassExp
+			Private MyListOfValue As List(Of IPriceVol)
+			Private MyFilterLast As IFilterRun
+			Private MyFilterOpen As IFilterRun
+			Private MyFilterHigh As IFilterRun
+			Private MyFilterLow As IFilterRun
+
 
 			Public Sub New(ByVal FilterRate As Integer)
-				MyFilter = New FilterLowPassExp(FilterRate)
-				MyListOfValue = New List(Of IPriceVolLarge)
+				MyListOfValue = New List(Of IPriceVol)
 				If FilterRate < 1 Then FilterRate = 1
 				MyRate = FilterRate
+				MyFilterLast = New FilterExp(FilterRate)
+				MyFilterOpen = New FilterExp(FilterRate)
+				MyFilterHigh = New FilterExp(FilterRate)
+				MyFilterLow = New FilterExp(FilterRate)
+
 				FilterValueLast = Nothing
 				ValueLast = FilterValueLast
 				'A = CSng(2 / (FilterRate + 1))
@@ -1237,219 +1245,45 @@ Namespace MathPlus
 				IsValueInitial = False
 			End Sub
 
-			Public Function Filter(ByVal Value As IPriceVolLarge) As IPriceVolLarge
-#If DebugPrediction Then
-        Static IsHere As Boolean
-        If IsHere = False Then
-          IsHere = True
-          Dim ThisResultPrediction As IPriceVol = Me.FilterPredictionNext(Value)
-          Dim ThisResultActual = Me.Filter(Value)
-          IsHere = False
-          If ThisResultActual.LastWeighted <> ThisResultPrediction.LastWeighted Then
-            Debugger.Break()
-          End If
-          Return ThisResultActual
-        End If
-#End If
-				MyFilter.Filter(Value.Last)
+			Public Function Filter(ByVal Value As IPriceVol) As IPriceVol
+				'this is safe if the ValueLast is not changed
 				ValueLast = Value
-				FilterValueLast = Value
+				MyFilterLast = New FilterExp(Value.Last)
+				MyFilterOpen = New FilterExp(Value.Open)
+				MyFilterHigh = New FilterExp(Value.High)
+				MyFilterLow = New FilterExp(Value.Low)
+				'copy from the input value and then update from teh filter result
+				If FilterValueLast IsNot Nothing Then
+					FilterValueLastK1 = DirectCast(FilterValueLast, PriceVol).CopyFrom
+				Else
+					FilterValueLastK1 = Nothing
+				End If
+				FilterValueLast = DirectCast(Value, PriceVol).CopyFrom
 				With FilterValueLast
-					.Last = MyFilter.FilterLast
-					.Open = .Last + (Value.Open - Value.Last)
-					.High = .Last + (Value.High - Value.Last)
-					.Low = .Last + (Value.Low - Value.Last)
-					.FilterLast = .Last
+					.Last = CSng(MyFilterLast.FilterLast)
+					.Open = CSng(MyFilterOpen.FilterLast)
+					.High = CSng(MyFilterHigh.FilterLast)
+					.Low = CSng(MyFilterLow.FilterLast)
+					.Vol = .Vol
 				End With
 				FilterValueLast.LastWeighted = RecordPrices.CalculateLastWeighted(FilterValueLast)
-				'old filtering 
-				'If MyListOfValue.Count = 0 Then
-				'  'initialization
-				'  If IsValueInitial = False Then
-				'    FilterValueLast = Value
-				'  End If
-				'End If
-				'ValueLast = Value
-				'With FilterValueLast
-				'  Value.Open = A * Value.Open + B * .Open
-				'  Value.High = A * Value.High + B * .High
-				'  Value.Low = A * Value.Low + B * .Low
-				'  Value.Last = A * Value.Last + B * .Last
-				'End With
-				'Value.FilterLast = Value.Last
-				'Value.Range = RecordPrices.CalculateTrueRange(Value)
-				'Value.LastWeighted = RecordPrices.CalculateLastWeighted(Value)
-				FilterValueLastK1 = FilterValueLast
 				MyListOfValue.Add(FilterValueLast)
 				Return FilterValueLast
 			End Function
 
-			Public Function Filter(ByRef Value() As IPriceVolLarge) As IPriceVolLarge()
-				Dim ThisValue As IPriceVolLarge
+			Public Function Filter(ByRef Value() As IPriceVol) As IPriceVol()
+				Dim ThisValue As IPriceVol
 				For Each ThisValue In Value
 					Me.Filter(ThisValue)
 				Next
 				Return Me.ToArray
 			End Function
 
-			Public Function Filter(ByRef Value() As T) As T()
-				Dim ThisValue As T
-				Dim ThisValues(0 To Value.Length - 1) As T
-				Dim I As Integer
-
-				For Each ThisValue In Value
-					ThisValues(I) = Me.Filter(ThisValue)
-					I = I + 1
-				Next
-				Return ThisValues
-			End Function
-
-
-			Public Function Filter(ByRef Value() As IPriceVolLarge, ByVal DelayRemovedToItem As Integer) As IPriceVolLarge()
-				Dim ThisValues(0 To Value.Length - 1) As IPriceVolLarge
-				Dim I As Integer
-				Dim J As Integer
-
-				Dim ThisFilterLeft As New FilterLowPassExp(Of T)(Me.Rate)
-				Dim ThisFilterRight As New FilterLowPassExp(Of T)(Me.Rate)
-				Dim ThisFilterRightList As New List(Of IPriceVolLarge)
-				Dim ThisFilterLeftItem As IPriceVolLarge
-				Dim ThisFilterRightItem As IPriceVolLarge
-				Dim ThisPriceVol As IPriceVolLarge
-
-				'filter from the left
-				ThisFilterLeft.Filter(Value)
-				'filter from the right the section with the reverse filtering
-				For I = DelayRemovedToItem To 0 Step -1
-					ThisFilterRightList.Add(ThisFilterRight.Filter(Value(I)))
-				Next
-				'the data in ThisFilterRightList is reversed
-				'need to look at it in reverse order using J
-				J = DelayRemovedToItem
-				For I = 0 To Value.Length - 1
-					ThisPriceVol = New T
-					ThisFilterLeftItem = ThisFilterLeft.ToList(I)
-					If I > DelayRemovedToItem Then
-						With ThisPriceVol
-							.Last = ThisFilterLeftItem.Last
-							.Open = ThisFilterLeftItem.Open
-							.High = ThisFilterLeftItem.High
-							.Low = ThisFilterLeftItem.Low
-							.FilterLast = .Last
-						End With
-					Else
-						ThisFilterRightItem = ThisFilterRightList(J)
-						With ThisPriceVol
-							.Last = (ThisFilterLeftItem.Last + ThisFilterRightItem.Last) / 2
-							.Open = (ThisFilterLeftItem.Open + ThisFilterRightItem.Open) / 2
-							.High = (ThisFilterLeftItem.High + ThisFilterRightItem.High) / 2
-							.Low = (ThisFilterLeftItem.Low + ThisFilterRightItem.Low) / 2
-							.FilterLast = .Last
-						End With
-					End If
-					ThisPriceVol.LastWeighted = RecordPrices.CalculateLastWeighted(ThisPriceVol)
-					MyListOfValue.Add(ThisPriceVol)
-					ThisValues(I) = ThisPriceVol
-					J = J - 1
-				Next
-				Return ThisValues
-			End Function
-
-			Public Function Filter(ByVal Value As T) As T
-				Return DirectCast(Me.Filter(DirectCast(Value, IPriceVolLarge)), T)
-			End Function
-
-			''' <summary>
-			''' Special filtering that can be used to remove the delay stopping at a specific point
-			''' </summary>
-			''' <param name="Value">The value to be filtered</param>
-			''' <param name="DelayRemovedToItem">The point where the delay stop to be removed</param>
-			''' <returns>The result</returns>
-			''' <remarks></remarks>
-			Public Function Filter(ByRef Value() As T, ByVal DelayRemovedToItem As Integer) As T()
-				Dim ThisValues(0 To Value.Length - 1) As T
-				Dim I As Integer
-				Dim J As Integer
-
-				Dim ThisFilterLeft As New FilterLowPassExp(Of T)(Me.Rate)
-				Dim ThisFilterRight As New FilterLowPassExp(Of T)(Me.Rate)
-				Dim ThisFilterRightList As New List(Of T)
-				Dim ThisFilterLeftItem As IPriceVolLarge
-				Dim ThisFilterRightItem As IPriceVolLarge
-				Dim ThisPriceVol As IPriceVolLarge
-
-				'filter from the left
-				ThisFilterLeft.Filter(Value)
-				'filter from the right the section with the reverse filtering
-				For I = DelayRemovedToItem To 0 Step -1
-					ThisFilterRightList.Add(ThisFilterRight.Filter(Value(I)))
-				Next
-				'the data in ThisFilterRightList is reversed
-				'need to look at it in reverse order using J
-				J = DelayRemovedToItem
-				For I = 0 To Value.Length - 1
-					ThisPriceVol = New T
-					ThisFilterLeftItem = ThisFilterLeft.ToList(I)
-					If I > DelayRemovedToItem Then
-						With ThisPriceVol
-							.Last = ThisFilterLeftItem.Last
-							.Open = ThisFilterLeftItem.Open
-							.High = ThisFilterLeftItem.High
-							.Low = ThisFilterLeftItem.Low
-							.FilterLast = .Last
-						End With
-					Else
-						ThisFilterRightItem = ThisFilterRightList(J)
-						With ThisPriceVol
-							.Last = (ThisFilterLeftItem.Last + ThisFilterRightItem.Last) / 2
-							.Open = (ThisFilterLeftItem.Open + ThisFilterRightItem.Open) / 2
-							.High = (ThisFilterLeftItem.High + ThisFilterRightItem.High) / 2
-							.Low = (ThisFilterLeftItem.Low + ThisFilterRightItem.Low) / 2
-							.FilterLast = .Last
-						End With
-					End If
-					ThisPriceVol.LastWeighted = RecordPrices.CalculateLastWeighted(ThisPriceVol)
-					MyListOfValue.Add(ThisPriceVol)
-					ThisValues(I) = DirectCast(ThisPriceVol, T)
-					J = J - 1
-				Next
-				Return ThisValues
-			End Function
-
-			Public Function FilterBackTo(ByRef Value As T) As IPriceVolLarge
-				Dim ThisValue As IPriceVolLarge = Me.ValueLast
-				With ThisValue
-					.Last = MyFilter.FilterBackTo(Value.Last)
-					.Open = .Last + (Value.Open - Value.Last)
-					.High = .Last + (Value.High - Value.Last)
-					.Low = .Last + (Value.Low - Value.Last)
-					.Range = RecordPrices.CalculateTrueRange(ThisValue)
-					.LastWeighted = RecordPrices.CalculateLastWeighted(ThisValue)
-				End With
-				Return ThisValue
-			End Function
-
-			Public Function FilterPredictionNext(ByVal Value As IPriceVolLarge) As IPriceVolLarge
-				Dim ThisFilterValueLast As IPriceVolLarge = FilterValueLast
-
-				ThisFilterValueLast = Value
-
-				With ThisFilterValueLast
-					.Last = MyFilter.FilterPredictionNext(Value.Last)
-					.Open = .Last + (Value.Open - Value.Last)
-					.High = .Last + (Value.High - Value.Last)
-					.Low = .Last + (Value.Low - Value.Last)
-					.Range = RecordPrices.CalculateTrueRange(ThisFilterValueLast)
-					.LastWeighted = RecordPrices.CalculateLastWeighted(ThisFilterValueLast)
-				End With
-				Return ThisFilterValueLast
-			End Function
-
-			Public Function FilterLast() As IPriceVolLarge
+			Public Function FilterLast() As IPriceVol
 				Return FilterValueLast
 			End Function
 
-			Public Function Last() As YahooAccessData.IPriceVolLarge
+			Public Function Last() As YahooAccessData.IPriceVol
 				Return ValueLast
 			End Function
 
@@ -1465,13 +1299,13 @@ Namespace MathPlus
 				End Get
 			End Property
 
-			Public ReadOnly Property ToList() As IList(Of IPriceVolLarge)
+			Public ReadOnly Property ToList() As IList(Of IPriceVol)
 				Get
 					Return MyListOfValue
 				End Get
 			End Property
 
-			Public Function ToArray() As IPriceVolLarge()
+			Public Function ToArray() As IPriceVol()
 				Return MyListOfValue.ToArray
 			End Function
 
@@ -6767,25 +6601,24 @@ Namespace MathPlus
 			Private MyTickPVUpDown As IPriceVolLarge
 
 			Private MyValueLast As Double
-			Private MyValuePriceVolLast As IPriceVolLarge
-			Private MyValuePriceVolFilteredLast As IPriceVolLarge
+			Private MyValuePriceVolFilteredLast As IPriceVol
 			Private MyValueFilteredLast As Double
 			Private MyValueMax As Double
 			Private MyValueMin As Double
 			Private RSILast As Double
-			Private MyFilter As FilterLowPassExp
-			Private MyFilterPV As FilterLowPassExp(Of PriceVolLarge)
+			Private MyFilterExp As FilterExp
+			Private MyFilterPV As FilterLowPassExp(Of PriceVol)
 			Private MyPostFilterHighPassExp As FilterHighPassExp
-			Private MyListOfRSI As ListScaled
-			Private MyListOfADX As ListScaled
-			Private MyListOfDIPlus As ListScaled
-			Private MyListOfDIMinus As ListScaled
+			Private MyListOfRSI As List(Of Double)
+			Private MyListOfADX As List(Of Double)
+			Private MyListOfDIPlus As List(Of Double)
+			Private MyListOfDIMinus As List(Of Double)
 
 			Public Sub New(ByVal FilterRate As Integer)
-				MyListOfRSI = New ListScaled
-				MyListOfADX = New ListScaled
-				MyListOfDIPlus = New ListScaled
-				MyListOfDIMinus = New ListScaled
+				MyListOfRSI = New List(Of Double)
+				MyListOfADX = New List(Of Double)
+				MyListOfDIPlus = New List(Of Double)
+				MyListOfDIMinus = New List(Of Double)
 				If FilterRate < 1 Then FilterRate = 1
 				MyRate = FilterRate
 				MyRatePreFilter = 1
@@ -6809,8 +6642,8 @@ Namespace MathPlus
 				If PreFilterRate < 1 Then PreFilterRate = 1
 				MyRatePreFilter = PreFilterRate
 				If MyRatePreFilter > 1 Then
-					MyFilter = New FilterLowPassExp(MyRatePreFilter)
-					MyFilterPV = New FilterLowPassExp(Of PriceVolLarge)(MyRatePreFilter)
+					MyFilterExp = New FilterExp(MyRatePreFilter)
+					MyFilterPV = New FilterLowPassExp(Of PriceVol)(MyRatePreFilter)
 				End If
 				If PostFilterHighPassRate > 2 Then
 					MyPostFilterHighPassExp = New FilterHighPassExp(PostFilterHighPassRate)
@@ -6828,7 +6661,7 @@ Namespace MathPlus
 				If MyFilterPV Is Nothing Then
 					ValueFiltered = Value
 				Else
-					ValueFiltered = MyFilter.Filter(Value)
+					ValueFiltered = MyFilterExp.FilterRun(Value)
 				End If
 				If MyListOfRSI.Count = 0 Then
 					MyValueFilteredLast = ValueFiltered
@@ -6878,8 +6711,8 @@ Namespace MathPlus
 			''' <param name="Value"></param>
 			''' <returns></returns>
 			''' <remarks></remarks>
-			Public Function Filter(ByVal Value As IPriceVolLarge) As Double
-				Dim ThisValuePVFiltered As IPriceVolLarge
+			Public Function Filter(ByVal Value As IPriceVol) As Double
+				Dim ThisValuePVFiltered As IPriceVol
 				Dim ThisDelta As Double
 				Dim ThisDeltaHigh As Double
 				Dim ThisDeltaLow As Double
@@ -6889,14 +6722,14 @@ Namespace MathPlus
 				Dim ThisDISum As Double
 
 
-				MyValuePriceVolLast = Value
-				If MyFilter Is Nothing Then
-					ThisValuePVFiltered = Value
+				If MyFilterPV Is Nothing Then
+					'no filtering
+					ThisValuePVFiltered = DirectCast(Value, PriceVol).CopyFrom
 				Else
 					ThisValuePVFiltered = MyFilterPV.Filter(Value)
 				End If
 				If MyListOfRSI.Count = 0 Then
-					MyValuePriceVolFilteredLast = ThisValuePVFiltered
+					MyValuePriceVolFilteredLast = DirectCast(ThisValuePVFiltered, PriceVol).CopyFrom
 					RSILast = 0.5
 					MyADXFiltered = 0
 					MyTickRSIUp = 0
@@ -6986,60 +6819,11 @@ Namespace MathPlus
 				For Each ThisValue In Value
 					Me.Filter(ThisValue)
 				Next
-				Return Me.ToArray
+				Return MyListOfRSI.ToArray
 			End Function
 
 			Public Function Filter(ByVal Value As Single) As Double
 				Return Me.Filter(CDbl(Value))
-			End Function
-
-			Public Function FilterPredictionNext(ByVal Value As Double) As Double
-				Dim ValueFiltered As Double
-				Dim InputDelta As Double
-
-				Dim ThisValueFilteredLast As Double = MyValueFilteredLast
-				Dim ThisRSILast As Double = RSILast
-				Dim ThisTickUp As Double = MyTickRSIUp
-				Dim ThisTickDown As Double = MyTickRSIDown
-				Dim ThisTickSum As Double = MyTickSum
-
-				If MyFilter Is Nothing Then
-					ValueFiltered = Value
-				Else
-					ValueFiltered = MyFilter.FilterPredictionNext(Value)
-				End If
-				If MyListOfRSI.Count = 0 Then
-					ThisValueFilteredLast = ValueFiltered
-					ThisRSILast = 0.5
-					ThisTickUp = 0
-					ThisTickDown = 0
-				End If
-				InputDelta = ValueFiltered - ThisValueFilteredLast
-				ThisValueFilteredLast = ValueFiltered
-				If InputDelta > 0 Then
-					'If Me.Tag = "Price" Then
-					'  Me.Tag = "Price"
-					'End If
-					ThisTickUp = B * ThisTickUp + A * InputDelta
-					ThisTickDown = B * ThisTickDown
-				ElseIf InputDelta < 0 Then
-					'If Me.Tag = "Price" Then
-					'  Me.Tag = "Price"
-					'End If
-					ThisTickDown = B * ThisTickDown - A * InputDelta
-					ThisTickUp = B * ThisTickUp
-				End If
-				ThisTickSum = ThisTickUp + ThisTickDown
-				If ThisTickSum = 0 Then
-					ThisRSILast = 0.5
-				Else
-					ThisRSILast = ThisTickUp / ThisTickSum
-				End If
-				Return ThisRSILast
-			End Function
-
-			Public Function FilterPredictionNext(ByVal Value As Single) As Double
-				Return Me.FilterPredictionNext(CDbl(Value))
 			End Function
 
 			Public Function FilterLast() As Double
@@ -7095,19 +6879,19 @@ Namespace MathPlus
 				End Get
 			End Property
 
-			Public Function ToArray() As Double()
-				Return MyListOfRSI.ToArray
-			End Function
+			'Public Function ToArray() As Double()
+			'	Return MyListOfRSI.ToArray
+			'End Function
 
 
-			Public Function ToArray(ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double()
-				Return MyListOfRSI.ToArray(ScaleToMinValue, ScaleToMaxValue)
-			End Function
+			'Public Function ToArray(ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double()
+			'	Return MyListOfRSI.ToArray(ScaleToMinValue, ScaleToMaxValue)
+			'End Function
 
-			Public Function ToArray(ByVal MinValueInitial As Double, ByVal MaxValueInitial As Double, ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double()
-				Return MyListOfRSI.ToArray(MinValueInitial, MaxValueInitial, ScaleToMinValue, ScaleToMaxValue)
+			'Public Function ToArray(ByVal MinValueInitial As Double, ByVal MaxValueInitial As Double, ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double()
+			'	Return MyListOfRSI.ToArray(MinValueInitial, MaxValueInitial, ScaleToMinValue, ScaleToMaxValue)
 
-			End Function
+			'End Function
 
 			Public Property Tag As String
 
