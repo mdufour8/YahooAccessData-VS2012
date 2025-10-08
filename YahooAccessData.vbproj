@@ -288,11 +288,13 @@
     <Compile Include="Partial\BondRateRecord.vb" />
     <Compile Include="Partial\PriceVolDefinition\IPricePivotPoint.vb" />
     <Compile Include="Partial\PriceVolDefinition\IPriceVol.vb" />
+    <Compile Include="Partial\PriceVolDefinition\IPriceVolGain.vb" />
     <Compile Include="Partial\PriceVolDefinition\IPriceVolLarge.vb" />
     <Compile Include="Partial\PriceVolDefinition\IPriceVolShort.vb" />
     <Compile Include="Partial\PriceVolDefinition\PriceVol.vb" />
     <Compile Include="Partial\PriceVolDefinition\PriceVolAsClass.vb" />
     <Compile Include="Partial\PriceVolDefinition\PriceVolData.vb" />
+    <Compile Include="Partial\PriceVolDefinition\PriceVolGain.vb" />
     <Compile Include="Partial\PriceVolDefinition\PriceVolHolder.vb" />
     <Compile Include="Partial\PriceVolDefinition\PriceVolIdentityTracker.vb" />
     <Compile Include="Partial\PriceVolDefinition\PriceVolLarge.vb" />

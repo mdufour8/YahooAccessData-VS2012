@@ -772,7 +772,7 @@ Public Class RecordPrices
 				End If
 				ThisListOfPriceVols.Clear()
 				ThisListOfPriceVols.Add(MyPriceVols(I).CopyFrom)
-				PriceVolsDataIntraDay(I) = ThisListOfPriceVols.ToArray
+				MyPriceVolsIntraDay(I) = ThisListOfPriceVols.ToArray
 				'If MyPriceVols(I).Last = 0 Then
 				'  Debugger.Break()
 				'End If
@@ -814,7 +814,7 @@ Public Class RecordPrices
 				ThisListOfPriceVols.Add(PriceVolUpdateIntraDay(ThisRecord, ThisDateCurrent))
 			Next
 			'here ThisRecord is the last sample at the end of day
-			PriceVolsDataIntraDay(I) = ThisListOfPriceVols.ToArray
+			MyPriceVolsIntraDay(I) = ThisListOfPriceVols.ToArray
 
 			'If IsIntraDayEnabled Then
 			'  Dim ThisPriceVols(0) As PriceVol
@@ -876,7 +876,7 @@ Public Class RecordPrices
 			ThisDateCurrent = ReportDate.DateToWeekEndRemoveNext(ThisDateCurrent.AddDays(1))
 			ThisListOfPriceVols.Clear()
 			ThisListOfPriceVols.Add(MyPriceVols(I).CopyFrom)
-			PriceVolsDataIntraDay(I) = ThisListOfPriceVols.ToArray
+			MyPriceVolsIntraDay(I) = ThisListOfPriceVols.ToArray
 			I = I + 1
 		Loop
 		MyPriceVols(I - 1).OpenNext = MyPriceVols(I - 1).Last
@@ -1015,7 +1015,7 @@ Public Class RecordPrices
 			Me.VolMin = Integer.MaxValue
 			For I = 0 To Me.NumberPoint - 1
 				'process the intraday data
-				Call ProcessSplitAdjustForIntraDay(PriceVolsDataIntraDay(I), MyPriceVols(I))
+				Call ProcessSplitAdjustForIntraDay(MyPriceVolsIntraDay(I), MyPriceVols(I))
 				With MyPriceVols(I)
 					If .High > Me.PriceMax Then
 						Me.PriceMax = .High
@@ -1047,8 +1047,8 @@ Public Class RecordPrices
 		Else
 			For I = 0 To Me.NumberPoint - 1
 				'process the intraday data
-				If PriceVolsDataIntraDay(I) IsNot Nothing Then
-					Call ProcessSplitAdjustForIntraDay(PriceVolsDataIntraDay(I), MyPriceVols(I))
+				If MyPriceVolsIntraDay(I) IsNot Nothing Then
+					Call ProcessSplitAdjustForIntraDay(MyPriceVolsIntraDay(I), MyPriceVols(I))
 					If Me.IsPriceTarget Then
 						With MyPriceVols(I)
 							If I < ThisStartPointForTargetPrice Then
@@ -1684,42 +1684,6 @@ Public Class RecordPrices
 		MyPriceVolLast = MyPriceVols(Me.StopPoint)
 	End Sub
 
-	Public Sub PriceVolsHold(ByVal StartDate As Date, ByVal StopDate As Date)
-		Dim ThisStartPoint As Integer
-		Dim ThisStopPoint As Integer
-
-		Throw New NotImplementedException
-		Me.PriceMin = Single.MaxValue
-		Me.PriceMax = Single.MinValue
-		Me.VolMax = Integer.MinValue
-		Me.VolMin = Integer.MaxValue
-
-		ThisStartPoint = Me.ToIndex(StartDate)
-		ThisStopPoint = Me.ToIndex(StopDate)
-
-		If StartDate > StopDate Then
-
-
-
-
-
-		End If
-
-		If ThisStartPoint < 0 Then
-			ThisStartPoint = 0
-		End If
-		If ThisStopPoint > Me.StopPoint Then
-			ThisStopPoint = Me.StopPoint
-		End If
-		For I = ThisStartPoint + 1 To ThisStopPoint
-			'MyPriceVols(I).PriceVolHold()
-		Next
-		If ThisStopPoint < Me.StopPoint Then
-			MyPriceVols(ThisStopPoint).OpenNext = MyPriceVols(ThisStopPoint + 1).Open
-			MyPriceVols(ThisStopPoint + 1).LastPrevious = MyPriceVols(ThisStopPoint).Last
-		End If
-	End Sub
-
 	Public Sub PriceVolsAdd(ByVal RecordPrices As YahooAccessData.RecordPrices)
 		Dim I As Integer
 
@@ -1752,15 +1716,15 @@ Public Class RecordPrices
 		MyPriceVolLast = MyPriceVols(Me.StopPoint)
 	End Sub
 
-	Public Sub PriceVolsMultiPly(ByVal Index As Integer, ByVal Ratio As Single)
+	Private Sub PriceVolsMultiPly(ByVal Index As Integer, ByVal Ratio As Single)
 		MyPriceVols(Index).MultiPly(Ratio)
 	End Sub
 
-	Public Sub PriceVolsAdd(ByVal Index As Integer, ByRef PriceVol As PriceVol)
+	Private Sub PriceVolsAdd(ByVal Index As Integer, ByRef PriceVol As PriceVol)
 		MyPriceVols(Index).Add(PriceVol)
 	End Sub
 
-	Public Function PriceVolsIntraDay(ByVal Index As Integer) As PriceVol()
+	Private Function PriceVolsIntraDay(ByVal Index As Integer) As PriceVol()
 		Return MyPriceVolsIntraDay(Index)
 	End Function
 
@@ -1768,74 +1732,11 @@ Public Class RecordPrices
 		Return MyPriceVols
 	End Function
 
-
-
-	''' <summary>
-	''' Produce a new PriceVol array with all the data reversed in time
-	''' </summary>
-	''' <returns></returns>
-	''' <remarks>Can be usuful for special analysis function</remarks>
-	Public Function PriceVolsDataReverse() As PriceVol()
-		Dim ThisPriceVols(0 To Me.NumberPoint - 1) As PriceVol
-		Dim I As Integer
-		Dim J As Integer
-		Dim ThisPriceVolLast As PriceVol
-
-		J = Me.StartPoint
-		For I = Me.StopPoint To Me.StartPoint Step -1
-			ThisPriceVols(J) = MyPriceVols(I)
-			With ThisPriceVols(J)
-				.Open = MyPriceVols(I).Last
-				.Last = MyPriceVols(I).Open
-				.OpenNext = MyPriceVols(I).LastPrevious
-				.LastPrevious = MyPriceVols(I).OpenNext
-				.LastWeighted = CalculateLastWeighted(ThisPriceVols(J).AsIPriceVol)
-				.Range = CalculateTrueRange(ThisPriceVols(J).AsIPriceVol)
-			End With
-			J = J + 1
-		Next
-		ThisPriceVolLast = ThisPriceVols(Me.StartPoint)
-		For I = I To 0 Step -1
-			ThisPriceVols(I) = New PriceVol(ThisPriceVolLast)
-			With ThisPriceVols(I)
-				'.DateLastTrade = ThisPriceVolLast.DateLastTrade.Date.AddDays(-1)
-				.Open = ThisPriceVolLast.Open
-				.OpenNext = .Open
-				.Last = .Open
-				.LastPrevious = .Open
-				.High = .Open
-				.Low = .Open
-				.Vol = 0
-				.Range = 0
-				.LastWeighted = .Open
-			End With
-			ThisPriceVolLast = ThisPriceVols(I)
-		Next
-		ThisPriceVolLast = ThisPriceVols(Me.StopPoint)
-		For I = Me.StopPoint + 1 To Me.NumberPoint - 1
-			ThisPriceVols(I) = New PriceVol(ThisPriceVolLast)
-			With ThisPriceVols(I)
-				.DateLastTrade = ThisPriceVolLast.DateLastTrade.Date.AddDays(1)
-				.Open = ThisPriceVolLast.Last
-				.OpenNext = .Open
-				.Last = .Open
-				.LastPrevious = .Open
-				.High = .Open
-				.Low = .Open
-				.Vol = 0
-				.Range = 0
-				.LastWeighted = .Open
-			End With
-			ThisPriceVolLast = ThisPriceVols(I)
-		Next
-		Return ThisPriceVols
-	End Function
-
-	Public Function PriceVolsDataIntraDay() As PriceVol()()
+	Private Function PriceVolsDataIntraDay() As PriceVol()()
 		Return MyPriceVolsIntraDay
 	End Function
 
-	Public ReadOnly Property IsIntraDayEnabled As Boolean
+	Private ReadOnly Property IsIntraDayEnabled As Boolean
 		Get
 			Return IsIntraDayLocalEnabled
 		End Get

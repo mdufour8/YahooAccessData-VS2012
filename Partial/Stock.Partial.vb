@@ -390,7 +390,7 @@ Partial Public Class Stock
 			If ThisWebDateStart.Date = RecordDateStop.Date Then
 				If IsLiveUpdateReady = False Then
 					'Debugger.Break()
-					Return New ResponseStatus(Of Date)(Me.DateStop, IsSuccess:=True, Message:="")
+					'Return New ResponseStatus(Of Date)(Me.DateStop, IsSuccess:=True, Message:="")
 				End If
 			End If
 		End If
@@ -439,19 +439,19 @@ Partial Public Class Stock
 				If ThisDictionaryOfStockQuote.Count > 0 Then
 					'only one stock at a time and it content is element 0 of the dictionary
 					Dim ThisListOfStockQuote As List(Of WebEODData.IStockQuote) = ThisDictionaryOfStockQuote.Values.First
-					'check if this is a bond exchange
-					If ThisWebEOD.ExchangeCode = "GBond" Then
-						'in that case change the list to reflect the bond price at maturity raher
-						'than the interest rate. Scale everything by 10 years. Here 100$ bond
-						'will give 200$ at maturity for an interst rate of 10% per year
-						Dim ThisListOfStockBondQuote As New List(Of WebEODData.IStockQuote)
+					''check if this is a bond exchange
+					'If ThisWebEOD.ExchangeCode = "GBond" Then
+					'	'in that case change the list to reflect the bond price at maturity raher
+					'	'than the interest rate. Scale everything by 10 years. Here 100$ bond
+					'	'will give 200$ at maturity for an interst rate of 10% per year
+					'	Dim ThisListOfStockBondQuote As New List(Of WebEODData.IStockQuote)
 
-						For Each ThisStockQuote In ThisListOfStockQuote
-							ThisListOfStockBondQuote.Add(New WebEODData.StockBondQuote(ThisStockQuote, ScalePriceToMaturityInDays:=3650))
-						Next
-						'get rid of the other list to free memory
-						ThisListOfStockQuote = ThisListOfStockBondQuote
-					End If
+					'	For Each ThisStockQuote In ThisListOfStockQuote
+					'		ThisListOfStockBondQuote.Add(New WebEODData.StockBondQuote(ThisStockQuote, ScalePriceToMaturityInDays:=3650))
+					'	Next
+					'	'get rid of the other list to free memory
+					'	ThisListOfStockQuote = ThisListOfStockBondQuote
+					'End If
 					'determine if the last record was a live record
 					If _Records.Count > 0 Then
 							If _Records.Last.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
