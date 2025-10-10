@@ -1573,26 +1573,15 @@ Public Class RecordPrices
 	End Function
 
 	Public Function ToListOfStockPriceVol() As List(Of IStockPriceVol)
-		Dim ThisList = New List(Of IStockPriceVol)
-		For I = 0 To Me.NumberPoint - 1
-			With MyPriceVols(I)
-				Dim ThisStockPrice As StockPriceVol = New StockPriceVol()
-				Dim ThisItem = DirectCast(ThisStockPrice, IStockPriceVol)
-				'load the data via the IStockPriceVol interface 
-				ThisItem.DateDay = .DateLastTrade
-				ThisItem.Open = .Open
-				ThisItem.High = .High
-				ThisItem.Low = .Low
-				ThisItem.Last = .Last
-				ThisItem.Vol = .Vol
-				ThisItem.OpenNext = .OpenNext
-				ThisItem.LastPrevious = .LastPrevious
-				ThisList.Add(ThisStockPrice)
-			End With
-		Next
+		Dim ThisList = New List(Of IStockPriceVol)(MyPriceVols)
 		Return ThisList
 	End Function
 
+	Public Function ToListOfStockPriceGain() As List(Of IStockPriceVol)
+		Dim ThisList = New List(Of IStockPriceVol)(MyPriceVols)
+
+		Return ThisList
+	End Function
 
 	Public Function ToWeeklyIndex(ByVal DateValue As Date) As Integer
 		Dim ThisDateRefToPreviousMonday = ReportDate.DateToMondayPrevious(Me.DateStart)
@@ -1735,6 +1724,7 @@ Public Class RecordPrices
 	Private Function PriceVolsDataIntraDay() As PriceVol()()
 		Return MyPriceVolsIntraDay
 	End Function
+
 
 	Private ReadOnly Property IsIntraDayEnabled As Boolean
 		Get

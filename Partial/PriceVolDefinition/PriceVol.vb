@@ -1,6 +1,6 @@
 ﻿Public Class PriceVol
 	Implements IPriceVol
-	Implements IPriceVolLarge
+	Implements IStockPriceVol
 	Implements IPricePivotPoint
 	Implements ISentimentIndicator
 
@@ -87,43 +87,6 @@
 		End With
 	End Sub
 
-	Public Sub New(ByVal PriceValue As PriceVolLarge)
-		With Me
-			.DateLastTrade = PriceValue.DateLastTrade
-			.Open = CSng(PriceValue.Open)
-			.OpenNext = CSng(PriceValue.OpenNext)
-			.Last = CSng(PriceValue.Last)
-			.LastPrevious = CSng(PriceValue.LastPrevious)
-			.High = CSng(PriceValue.High)
-			.Low = CSng(PriceValue.Low)
-			.LastWeighted = CSng(PriceValue.LastWeighted)
-			.Vol = PriceValue.Vol
-			.OneyrTargetPrice = CSng(PriceValue.OneyrTargetPrice)
-			.OneyrTargetEarning = CSng(PriceValue.OneyrTargetEarning)
-			.OneyrTargetEarningGrow = CSng(PriceValue.OneyrTargetEarningGrow)
-			.FiveyrTargetEarningGrow = CSng(PriceValue.FiveyrTargetEarningGrow)
-			.OneyrPEG = CSng(PriceValue.OneyrPEG)
-			.FiveyrPEG = CSng(PriceValue.FiveyrPEG)
-			.Range = CSng(PriceValue.Range)
-			.RecordQuoteValue = PriceValue.RecordQuoteValue
-			.IsNull = PriceValue.IsNull
-			.LastAdjusted = CSng(PriceValue.LastAdjusted)
-			.FilterLast = CSng(PriceValue.FilterLast)
-
-			.DividendShare = CSng(PriceValue.DividendShare)
-			.DividendYield = CSng(PriceValue.DividendYield)
-			.DividendPayDate = PriceValue.DividendPayDate
-			.ExDividendDate = PriceValue.ExDividendDate
-			.ExDividendDatePrevious = PriceValue.ExDividendDatePrevious
-			.ExDividendDateEstimated = PriceValue.ExDividendDatePrevious
-
-			.EarningsShare = CSng(PriceValue.EarningsShare)
-			.EPSEstimateCurrentYear = CSng(PriceValue.EPSEstimateCurrentYear)
-			.EPSEstimateNextQuarter = CSng(PriceValue.EPSEstimateNextQuarter)
-			.EPSEstimateNextYear = CSng(PriceValue.EPSEstimateNextYear)
-		End With
-	End Sub
-
 	Public Sub New(ByVal PriceValue As PriceVolAsClass)
 		With Me
 			.DateLastTrade = PriceValue.DateLastTrade
@@ -158,44 +121,6 @@
 			.EPSEstimateCurrentYear = PriceValue.EPSEstimateCurrentYear
 			.EPSEstimateNextQuarter = PriceValue.EPSEstimateNextQuarter
 			.EPSEstimateNextYear = PriceValue.EPSEstimateNextYear
-		End With
-		'IsPriceOnHoldLocal = False
-	End Sub
-
-	Public Sub New(ByVal PriceValue As PriceVolLargeAsClass)
-		With Me
-			.DateLastTrade = PriceValue.DateLastTrade
-			.Open = CSng(PriceValue.Open)
-			.OpenNext = CSng(PriceValue.OpenNext)
-			.Last = CSng(PriceValue.Last)
-			.LastPrevious = CSng(PriceValue.LastPrevious)
-			.High = CSng(PriceValue.High)
-			.Low = CSng(PriceValue.Low)
-			.LastWeighted = CSng(PriceValue.LastWeighted)
-			.Vol = PriceValue.Vol
-			.OneyrTargetPrice = CSng(PriceValue.OneyrTargetPrice)
-			.OneyrTargetEarning = CSng(PriceValue.OneyrTargetEarning)
-			.OneyrTargetEarningGrow = CSng(PriceValue.OneyrTargetEarningGrow)
-			.FiveyrTargetEarningGrow = CSng(PriceValue.FiveyrTargetEarningGrow)
-			.OneyrPEG = CSng(PriceValue.OneyrPEG)
-			.FiveyrPEG = CSng(PriceValue.FiveyrPEG)
-			.Range = CSng(PriceValue.Range)
-			.RecordQuoteValue = PriceValue.RecordQuoteValue
-			.IsNull = PriceValue.IsNull
-			.LastAdjusted = CSng(PriceValue.LastAdjusted)
-			.FilterLast = CSng(PriceValue.FilterLast)
-
-			.DividendShare = CSng(PriceValue.DividendShare)
-			.DividendYield = CSng(PriceValue.DividendYield)
-			.DividendPayDate = PriceValue.DividendPayDate
-			.ExDividendDate = PriceValue.ExDividendDate
-			.ExDividendDatePrevious = PriceValue.ExDividendDatePrevious
-			.ExDividendDateEstimated = PriceValue.ExDividendDatePrevious
-
-			.EarningsShare = CSng(PriceValue.EarningsShare)
-			.EPSEstimateCurrentYear = CSng(PriceValue.EPSEstimateCurrentYear)
-			.EPSEstimateNextQuarter = CSng(PriceValue.EPSEstimateNextQuarter)
-			.EPSEstimateNextYear = CSng(PriceValue.EPSEstimateNextYear)
 		End With
 		'IsPriceOnHoldLocal = False
 	End Sub
@@ -356,28 +281,6 @@
 			.EPSEstimateNextYear = Ratio * .EPSEstimateNextYear
 		End With
 	End Sub
-
-	''' <summary>
-	''' hold the value to the previous last price value
-	''' </summary>
-	Public Sub PriceVolHold(ByVal ValueLast As Single)
-		Me.PriceVolHold(ValueLast, ValueLast, ValueLast)
-	End Sub
-
-	Public Sub PriceVolHold(ByVal ValueLast As Single, ByVal ValueOfOpenNext As Single, ByVal ValueOfLastPrevious As Single)
-		With Me
-			.Open = ValueLast
-			.OpenNext = ValueOfOpenNext
-			.Last = ValueLast
-			.LastPrevious = ValueOfLastPrevious
-			.High = ValueLast
-			.Low = ValueLast
-			.Vol = 0
-			.Range = 0.0
-		End With
-	End Sub
-
-
 
 	''' <summary>
 	''' Mostly used for the purpose of transforming daily data to weekly price.
@@ -667,150 +570,6 @@
 		End Set
 	End Property
 #End Region
-#Region "IPriceVolLarge"
-	Public ReadOnly Property AsIPriceVolLarge As IPriceVolLarge Implements IPriceVolLarge.AsIPriceVolLarge
-		Get
-			Return Me
-		End Get
-	End Property
-
-	Private Property IPriceVolLarge_DateDay As Date Implements IPriceVolLarge.DateDay
-		Get
-			Return Me.DateLastTrade
-		End Get
-		Set(value As Date)
-			Me.DateLastTrade = value
-		End Set
-	End Property
-	Private Property IPriceVolLarge_DateUpdate As Date Implements IPriceVolLarge.DateUpdate
-		Get
-			Return Me.DateLastTrade
-		End Get
-		Set(value As Date)
-			Me.DateLastTrade = value
-		End Set
-	End Property
-	Private Property IPriceVolLarge_High As Double Implements IPriceVolLarge.High
-		Get
-			Return Me.High
-		End Get
-		Set(value As Double)
-			Me.High = CSng(value)
-		End Set
-	End Property
-	Private Property IPriceVolLarge_Last As Double Implements IPriceVolLarge.Last
-		Get
-			Return Me.Last
-		End Get
-		Set(value As Double)
-			Me.Last = CSng(value)
-		End Set
-	End Property
-	Private Property IPriceVolLarge_LastWeighted As Double Implements IPriceVolLarge.LastWeighted
-		Get
-			Return Me.LastWeighted
-		End Get
-		Set(value As Double)
-			Me.LastWeighted = CSng(value)
-		End Set
-	End Property
-
-	Private Property IPriceVolLarge_LastAdjusted As Double Implements IPriceVolLarge.LastAdjusted
-		Get
-			Return Me.LastAdjusted
-		End Get
-		Set(value As Double)
-			Me.LastAdjusted = CSng(value)
-		End Set
-	End Property
-	Private Property IPriceVolLarge_Low As Double Implements IPriceVolLarge.Low
-		Get
-			Return Me.Low
-		End Get
-		Set(value As Double)
-			Me.Low = CSng(value)
-		End Set
-	End Property
-	Private Property IPriceVolLarge_Open As Double Implements IPriceVolLarge.Open
-		Get
-			Return Me.Open
-		End Get
-		Set(value As Double)
-			Me.Open = CSng(value)
-		End Set
-	End Property
-
-	Private Property IPriceVolLarge_OpenNext As Double Implements IPriceVolLarge.OpenNext
-		Get
-			Return Me.OpenNext
-		End Get
-		Set(value As Double)
-			Me.OpenNext = CSng(value)
-		End Set
-	End Property
-
-	Private Property IPriceVolLarge_Vol As Integer Implements IPriceVolLarge.Vol
-		Get
-			Return Me.Vol
-		End Get
-		Set(value As Integer)
-			Me.Vol = value
-		End Set
-	End Property
-
-	Private Property IPriceVolLarge_Range As Double Implements IPriceVolLarge.Range
-		Get
-			Return Me.Range
-		End Get
-		Set(value As Double)
-			Me.Range = CSng(value)
-		End Set
-	End Property
-
-	Private Property IPriceVolLarge_LastPrevious As Double Implements IPriceVolLarge.LastPrevious
-		Get
-			Return Me.LastPrevious
-		End Get
-		Set(value As Double)
-			Me.LastPrevious = CSng(value)
-		End Set
-	End Property
-
-	Private Property IPriceVolLarge_FilterLast As Double Implements IPriceVolLarge.FilterLast
-		Get
-			Return Me.FilterLast
-		End Get
-		Set(value As Double)
-			Me.FilterLast = CSng(value)
-		End Set
-	End Property
-
-	Public Property IPriceVolLarge_IsIntraDay As Boolean Implements IPriceVolLarge.IsIntraDay
-		Get
-			Return Me.IsIntraDay
-		End Get
-		Set(value As Boolean)
-			Me.IsIntraDay = value
-		End Set
-	End Property
-
-	Public Property IPriceVolLarge_VolMinus As Integer Implements IPriceVolLarge.VolMinus
-		Get
-			Return Me.VolMinus
-		End Get
-		Set(value As Integer)
-			Me.VolMinus = value
-		End Set
-	End Property
-	Public Property IPriceVolLarge_VolPlus As Integer Implements IPriceVolLarge.VolPlus
-		Get
-			Return Me.VolPlus
-		End Get
-		Set(value As Integer)
-			Me.VolPlus = value
-		End Set
-	End Property
-#End Region
 #Region "IPricePivotPoint"
 	''' <summary>
 	''' see definition:https://www.fidelity.com/learning-center/trading-investing/technical-analysis/technical-indicator-guide/pivot-points-resistance-support
@@ -919,6 +678,88 @@
 		End Get
 	End Property
 #End Region
+#Region "IStockPriceVol"
+	Public ReadOnly Property AsIStockPrice As IStockPriceVol Implements IStockPriceVol.AsIStockPrice
+		Get
+			Return Me
+		End Get
+	End Property
+
+	Private Property IStockPriceVol_DateDay As Date Implements IStockPriceVol.DateDay
+		Get
+			Return Me.DateLastTrade
+		End Get
+		Set(value As Date)
+			Me.DateLastTrade = value
+		End Set
+	End Property
+
+	Private Property IStockPriceVol_Open As Double Implements IStockPriceVol.Open
+		Get
+			Return Me.Open
+		End Get
+		Set(value As Double)
+			Throw New NotImplementedException()
+		End Set
+	End Property
+
+	Private Property IStockPriceVol_OpenNext As Double Implements IStockPriceVol.OpenNext
+		Get
+			Return Me.OpenNext
+		End Get
+		Set(value As Double)
+			Throw New NotImplementedException()
+		End Set
+	End Property
+
+	Private Property IStockPriceVol_Last As Double Implements IStockPriceVol.Last
+		Get
+			Return Me.Last
+		End Get
+		Set(value As Double)
+			Throw New NotImplementedException()
+		End Set
+	End Property
+
+	Private Property IStockPriceVol_LastPrevious As Double Implements IStockPriceVol.LastPrevious
+		Get
+			Return Me.LastPrevious
+		End Get
+		Set(value As Double)
+			Throw New NotImplementedException()
+		End Set
+	End Property
+
+	Private Property IStockPriceVol_High As Double Implements IStockPriceVol.High
+		Get
+			Return Me.High
+		End Get
+		Set(value As Double)
+			Throw New NotImplementedException()
+		End Set
+	End Property
+
+	Private Property IStockPriceVol_Low As Double Implements IStockPriceVol.Low
+		Get
+			Return Me.Low
+		End Get
+		Set(value As Double)
+			Throw New NotImplementedException()
+		End Set
+	End Property
+
+	Private Property IStockPriceVol_Vol As Long Implements IStockPriceVol.Vol
+		Get
+			Return Me.Vol
+		End Get
+		Set(value As Long)
+			Throw New NotImplementedException()
+		End Set
+	End Property
+
+
+#End Region
+
 End Class
 
 

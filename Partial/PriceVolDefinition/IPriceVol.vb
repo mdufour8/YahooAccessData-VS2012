@@ -19,7 +19,7 @@
 	Property SpecialDividendPayoutValue As Single
 End Interface
 
-Public Interface IPriceVol(Of T)
+Friend Interface IPriceVol(Of T)
 	ReadOnly Property AsIPriceVol As IPriceVol(Of T)
 	Property DateDay As Date
 	Property DateUpdate As Date

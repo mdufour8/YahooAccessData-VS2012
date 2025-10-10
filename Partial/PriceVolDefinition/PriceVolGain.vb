@@ -2,11 +2,11 @@
 	Implements IPriceVolGain
 
 	Private _PriceVolGain As IPriceVolGain
-	Private _PriceVol As IPriceVol
+	Private _PriceVolData As IPriceVol
 
 	Public Sub New(PriceVolGain As IPriceVolGain)
 		_PriceVolGain = PriceVolGain
-		_PriceVol = _PriceVolGain.AsIPriceVol
+		_PriceVolData = _PriceVolGain.AsIPriceVol
 	End Sub
 
 	Public ReadOnly Property AsIPriceVol As IPriceVol Implements IPriceVol.AsIPriceVol

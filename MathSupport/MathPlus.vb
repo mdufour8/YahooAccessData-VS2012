@@ -13,11 +13,11 @@ Namespace MathPlus
 	Public Module VectorList
 
 		' In VB.NET, assigning `Nothing` to a value type (like Double or Integer) sets it to its default value (0.0 for Double).
-		' This allows us to use Enumerable.Repeat(Of T)(Nothing, Length) to efficiently create a List(Of T) filled with default values.
+		' This allows us to use Enumerable.Repeat(Of T)(Nothing, count) to efficiently create a List(Of T) filled with default values.
 		' For example, Enumerable.Repeat(Of Double)(Nothing, 10) creates a list of 10 zeroes.
 		' This pattern is safe and idiomatic in VB.NET, and works correctly with value types in generic functions.
-		Public Function Create(Of T)(ByVal Length As Integer, Optional defaultValue As T = Nothing) As List(Of T)
-			Return Enumerable.Repeat(defaultValue, Length).ToList()
+		Public Function Create(Of T)(ByVal Count As Integer, Optional defaultValue As T = Nothing) As List(Of T)
+			Return Enumerable.Repeat(defaultValue, count:=Count).ToList()
 		End Function
 
 
