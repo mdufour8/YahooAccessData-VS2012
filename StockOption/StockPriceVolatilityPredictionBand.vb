@@ -520,7 +520,7 @@ Namespace OptionValuation
     End Function
 
 		Public Function Refresh() As Boolean Implements IStockPriceVolatilityPredictionBand.Refresh
-			Me.Refresh(VolatilityDelta:=0.0)
+			Return Me.Refresh(VolatilityDelta:=0.0)
 		End Function
 
 		Public ReadOnly Property VolatilityPredictionBandType As IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType Implements IStockPriceVolatilityPredictionBand.VolatilityPredictionBandType

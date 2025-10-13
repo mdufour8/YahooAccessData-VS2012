@@ -649,9 +649,9 @@ Namespace MathPlus
         ByVal DividendRate As Double,
         ByVal VolatilityPerYear As Double) As IPriceVol
 
-        Dim ThisPriceVol As IPriceVol = New PriceVolAsClass
+				Dim ThisPriceVol As IPriceVol = New PriceVol
 
-        ThisPriceVol.Open = CSng(Measure.BSAmericanOption(
+				ThisPriceVol.Open = CSng(Measure.BSAmericanOption(
           OptionType:=OptionType,
           StockPrice:=StockPrice.Open,
           OptionStrikePrice:=OptionStrikePrice,

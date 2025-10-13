@@ -35,14 +35,23 @@ Public Class RecordQuoteValue
     End Get
   End Property
 
-  Public ReadOnly Property ToDataPosition As IDataPosition
-    Get
-      Return Me
-    End Get
-  End Property
+	Public ReadOnly Property ToDataPosition As IDataPosition
+		Get
+			Return Me
+		End Get
+	End Property
+
+	Public Property Volume As Long
+		Get
+			Return Record.Volume
+		End Get
+		Set(value As Long)
+			Record.Volume = value
+		End Set
+	End Property
 
 #Region "IRecordQuoteValue"
-  Private Sub IRecordQuoteValue_PriceChange(Open As Single, Low As Single, High As Single, Last As Single) Implements IRecordQuoteValue.PriceChange
+	Private Sub IRecordQuoteValue_PriceChange(Open As Single, Low As Single, High As Single, Last As Single) Implements IRecordQuoteValue.PriceChange
     MyRecordQuoteValue.PriceChange(Open, Low, High, Last)
   End Sub
 
@@ -341,10 +350,10 @@ Public Class RecordQuoteValue
   End Property
 
   Public ReadOnly Property Vol As Integer Implements IRecordQuoteValue.Vol
-    Get
-      Return MyRecordQuoteValue.Vol
-    End Get
-  End Property
+		Get
+			Return MyRecordQuoteValue.Vol
+		End Get
+	End Property
 
   Public Sub RemoveBookEarningGlitch(RecordQuoteValueLast As IRecordQuoteValue) Implements IRecordQuoteValue.RemoveBookEarningGlitch
     MyRecordQuoteValue.RemoveBookEarningGlitch(RecordQuoteValueLast)

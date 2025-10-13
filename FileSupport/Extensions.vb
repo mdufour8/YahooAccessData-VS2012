@@ -258,7 +258,7 @@ Namespace ExtensionService
 
 			If PriceVolDailyData.Count = 0 Then Return ThisListOfPriceVolDaily
 			For I = 0 To PriceVolDailyData.Length - 1
-				ThisListOfPriceVolDaily.Add(PriceVolDailyData(I).CopyFromAsClass)
+				ThisListOfPriceVolDaily.Add(PriceVolDailyData(I).CopyFrom)
 			Next
 			Return ThisListOfPriceVolDaily
 		End Function
@@ -295,7 +295,7 @@ Namespace ExtensionService
 			'it is easier and more efficient to work with a class here
 			'only the reference will be copied in the enumaration
 			ThisArraySize = PriceVolDailyData.Length - 1
-			ThisWekklyData = PriceVolDailyData(0).CopyFromAsClass
+			ThisWekklyData = PriceVolDailyData(0).CopyFrom
 			For I = 1 To ThisArraySize
 				If ReportDate.IsSameTradingWeek(PriceVolDailyData(I).DateLastTrade, PriceVolDailyData(I - 1).DateLastTrade) Then
 					'update weeklydata but do not save yet in the list
@@ -305,7 +305,7 @@ Namespace ExtensionService
 				Else
 					ThisListOfPriceVolWeekly.Add(ThisWekklyData)
 					're-initialize the new weekly data with this new week date and keep going
-					ThisWekklyData = PriceVolDailyData(I).CopyFromAsClass
+					ThisWekklyData = PriceVolDailyData(I).CopyFrom
 				End If
 			Next
 			ThisListOfPriceVolWeekly.Add(ThisWekklyData)
@@ -1224,6 +1224,7 @@ Namespace ExtensionService
 					.Low = ThisStockQuote.Low.ToSingleSafe(RoundingDigit:=3)
 					.Last = ThisStockQuote.Close.ToSingleSafe(RoundingDigit:=3)
 					.Vol = ThisStockQuote.Volume.ToIntegerSafe
+					.Volume = ThisStockQuote.Volume
 					If ThisStockQuote.IsLiveUpdate Then
 						.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate
 					Else
@@ -1247,6 +1248,7 @@ Namespace ExtensionService
 				.Low = StockQuote.Low.ToSingleSafe(RoundingDigit:=3)
 				.Last = StockQuote.Close.ToSingleSafe(RoundingDigit:=3)
 				.Vol = StockQuote.Volume.ToIntegerSafe
+				.Volume = StockQuote.Volume
 				If IsLiveUpdate Then
 					.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate
 				Else
@@ -1258,7 +1260,7 @@ Namespace ExtensionService
 #End Region
 #Region "Support Function"
 		<Extension>
-		Private Function ToSingleSafe(ByVal Value As Double) As Single
+		Public Function ToSingleSafe(ByVal Value As Double) As Single
 			If Value > Single.MaxValue Then
 				Return Single.MaxValue
 			ElseIf Value < Single.MinValue Then
@@ -1269,7 +1271,7 @@ Namespace ExtensionService
 		End Function
 
 		<Extension>
-		Private Function ToSingleSafe(ByVal Value As Double, ByVal RoundingDigit As Integer) As Single
+		Public Function ToSingleSafe(ByVal Value As Double, ByVal RoundingDigit As Integer) As Single
 			If Value > Single.MaxValue Then
 				Return Single.MaxValue
 			ElseIf Value < Single.MinValue Then
@@ -1280,7 +1282,7 @@ Namespace ExtensionService
 		End Function
 
 		<Extension>
-		Private Function ToIntegerSafe(ByVal Value As Long) As Integer
+		Public Function ToIntegerSafe(ByVal Value As Long) As Integer
 			If Value > Integer.MaxValue Then
 				Return Integer.MaxValue
 			ElseIf Value < Integer.MinValue Then

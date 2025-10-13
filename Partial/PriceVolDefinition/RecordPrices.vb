@@ -36,6 +36,7 @@ Public Class RecordPrices
 	Private MyDictionaryOfSpecialSplit As Dictionary(Of String, List(Of SplitFactor))
 	Private MyDictionaryOfStockDividendSinglePayout As Dictionary(Of String, List(Of StockDividendSinglePayout))
 	Private MyDictionaryOfStockPriceDataError As Dictionary(Of String, IList(Of IPriceVol))
+	Private MyListOfPriceVol As List(Of IPriceVol)
 
 #End Region
 #Region "New"
@@ -199,6 +200,7 @@ Public Class RecordPrices
 			End If
 			Call ProcessDataDailyIntraDay(colData, DateStartValue, DateStopValue)
 		End If
+		MyListOfPriceVol = New List(Of IPriceVol)(MyPriceVols)
 	End Sub
 
 	''' <summary>
@@ -382,14 +384,11 @@ Public Class RecordPrices
 		Return PriceVol
 	End Function
 
-	Public Shared Function ToArrayOfPriceVolLast(ByRef PriceVolData() As PriceVol) As Double()
-		Dim ThisArray(0 To PriceVolData.Length - 1) As Double
-		Dim I As Integer
-		For I = 0 To PriceVolData.Length - 1
-			ThisArray(I) = PriceVolData(I).Last
-		Next
-		Return ThisArray
+	Public Shared Function ToListOfPriceVolLast(ByRef PriceVolData() As PriceVol) As List(Of Double)
+		If PriceVolData Is Nothing Then Return New List(Of Double)
+		Return PriceVolData.Select(Function(pv) CDbl(pv.Last)).ToList()
 	End Function
+
 
 	''' <summary>
 	''' calculate a weighted price based on the open, high, low and last of the day
@@ -834,7 +833,7 @@ Public Class RecordPrices
 					MyPriceVols(I - 1).OpenNext = .Open
 				End If
 				'not necessary
-				If .Vol > 0 Then
+				If .Volume > 0 Then
 					Me.IsVol = True
 				End If
 				If .IsNull = False Then
@@ -920,7 +919,7 @@ Public Class RecordPrices
 					.Low = .Low / ThisStockSplitRatio
 					.Last = .Last / ThisStockSplitRatio
 					.LastWeighted = .LastWeighted / ThisStockSplitRatio
-					ThisTemp = .Vol
+					ThisTemp = .Volume
 					'code could be simplified
 					'it was coded like that for debugging
 					ThisTemp = ThisTemp * ThisStockSplitRatio
@@ -928,10 +927,8 @@ Public Class RecordPrices
 						ThisTemp = Long.MaxValue
 					End If
 					ThisVol = CLng(ThisTemp)
-					If ThisVol > Integer.MaxValue Then
-						ThisVol = Integer.MaxValue
-					End If
-					.Vol = CInt(ThisVol)
+					.Vol = ThisVol.ToIntegerSafe
+					.Volume = ThisVol
 					.DividendShare = .DividendShare / ThisStockSplitRatio
 					.EarningsShare = .EarningsShare / ThisStockSplitRatio
 					.EPSEstimateCurrentYear = .EPSEstimateCurrentYear / ThisStockSplitRatio
@@ -1036,11 +1033,11 @@ Public Class RecordPrices
 							Me.PriceMinTarget = .OneyrTargetPrice
 						End If
 					End If
-					If .Vol < Me.VolMin Then
-						Me.VolMin = .Vol
+					If .Volume < Me.VolMin Then
+						Me.VolMin = .Volume
 					End If
-					If .Vol > Me.VolMax Then
-						Me.VolMax = .Vol
+					If .Volume > Me.VolMax Then
+						Me.VolMax = .Volume
 					End If
 				End With
 			Next
@@ -1066,7 +1063,7 @@ Public Class RecordPrices
 		Dim ThisVol As Long
 		Dim ThisVolPlus As Long
 		Dim ThisVolMinus As Long
-		Dim ThisVolLast As Integer = 0
+		Dim ThisVolLast As Long = 0
 		Dim ThisLastPrevious As Single = PriceVol.Last
 
 		For Each ThisPriceVol In PriceVolIntraDay
@@ -1078,34 +1075,32 @@ Public Class RecordPrices
 					.Low = .Low / PriceVol.LastAdjusted
 					.Last = .Last / PriceVol.LastAdjusted
 					.LastWeighted = .LastWeighted / PriceVol.LastAdjusted
-					ThisVol = CLng(.Vol * PriceVol.LastAdjusted)
-					If ThisVol > Integer.MaxValue Then
-						ThisVol = Integer.MaxValue
-					End If
-					.Vol = CInt(ThisVol)
+					ThisVol = CLng(.Volume * PriceVol.LastAdjusted)
+					.Vol = ThisVol.ToIntegerSafe
+					.Volume = ThisVol
 					.LastAdjusted = PriceVol.LastAdjusted
 					.OneyrTargetPrice = PriceVol.OneyrTargetPrice
 					.LastPrevious = PriceVol.LastPrevious
 					.Range = CalculateTrueRange(ThisPriceVol.AsIPriceVol)
 				End If
 				If .Last >= ThisLastPrevious Then
-					ThisVolPlus = ThisVolPlus + (.Vol - ThisVolLast)
+					ThisVolPlus = ThisVolPlus + (.Volume - ThisVolLast)
 				Else
-					ThisVolMinus = ThisVolMinus + (.Vol - ThisVolLast)
+					ThisVolMinus = ThisVolMinus + (.Volume - ThisVolLast)
 				End If
 				ThisLastPrevious = .Last
-				ThisVolLast = .Vol
+				ThisVolLast = .Volume
 			End With
 		Next
-		If ThisVolPlus > Integer.MaxValue Then
-			PriceVol.VolPlus = Integer.MaxValue
+		If ThisVolPlus > Long.MaxValue Then
+			PriceVol.VolPlus = Long.MaxValue
 		Else
-			PriceVol.VolPlus = CInt(ThisVolPlus)
+			PriceVol.VolPlus = ThisVolPlus
 		End If
-		If ThisVolMinus > Integer.MaxValue Then
-			PriceVol.VolMinus = Integer.MaxValue
+		If ThisVolMinus > Long.MaxValue Then
+			PriceVol.VolMinus = Long.MaxValue
 		Else
-			PriceVol.VolMinus = CInt(ThisVolMinus)
+			PriceVol.VolMinus = ThisVolMinus
 		End If
 		PriceVol.IsIntraDay = IsIntraDayLocalEnabled
 	End Sub
@@ -1215,6 +1210,7 @@ Public Class RecordPrices
 			.OpenNext = .Last 'by default
 			.LastWeighted = .Open
 			.Vol = 0
+			.Volume = 0
 			.Range = 0
 			.IsNull = True
 			If DateValue < Record.DateDay Then
@@ -1392,10 +1388,11 @@ Public Class RecordPrices
 
 			.FiveyrPEG = RecordQuote.PEGRatio
 			.Vol = RecordQuote.Vol
+			.Volume = RecordQuote.Volume
 			If .DividendShare = 0 Then
 				.DividendShare = MyPriceVolLast.DividendShare
 			End If
-			If (.Vol = 0 And .Last = 0) Then
+			If (.Volume = 0 And .Last = 0) Then
 				.Open = MyPriceVolLast.Last
 				.High = .Open
 				.Low = .Open
@@ -1405,12 +1402,6 @@ Public Class RecordPrices
 			Else
 				.IsNull = False
 			End If
-			'not needed yet
-			'If .Last >= .LastPrevious Then
-			'  .VolPlus = .Vol
-			'Else
-			'  .VolMinus = .Vol
-			'End If
 			'check the range
 			If .High > Me.PriceMax Then
 				Me.PriceMax = .High
@@ -1429,11 +1420,11 @@ Public Class RecordPrices
 					Me.PriceMinTarget = .OneyrTargetPrice
 				End If
 			End If
-			If .Vol < Me.VolMin Then
-				Me.VolMin = .Vol
+			If .Volume < Me.VolMin Then
+				Me.VolMin = .Volume
 			End If
-			If .Vol > Me.VolMax Then
-				Me.VolMax = .Vol
+			If .Volume > Me.VolMax Then
+				Me.VolMax = .Volume
 			End If
 			.LastWeighted = RecordPrices.CalculateLastWeighted(DirectCast(ThisPriceVol, IPriceVol))
 			.Range = RecordPrices.CalculateTrueRange(DirectCast(ThisPriceVol, IPriceVol))
@@ -1535,7 +1526,8 @@ Public Class RecordPrices
 				End If
 			End If
 			.Vol = Record.Vol
-			If (.Vol = 0 And .Last = 0) Then
+			.Volume = Record.Volume
+			If (.Volume = 0 And .Last = 0) Then
 				.Open = MyPriceVolLast.Last
 				.High = .Open
 				.Low = .Open
@@ -1563,7 +1555,7 @@ Public Class RecordPrices
 					High:= .High,
 					Low:= .Low,
 					Close:= .Last,
-					Volume:= .Vol)
+					Volume:= .Volume)
 				ThisStockQuote.AsIStockSentiment.Count = .AsISentimentIndicator.Count
 				ThisStockQuote.AsIStockSentiment.Value = .AsISentimentIndicator.Value
 				ThisList.Add(ThisStockQuote)
@@ -1573,14 +1565,36 @@ Public Class RecordPrices
 	End Function
 
 	Public Function ToListOfStockPriceVol() As List(Of IStockPriceVol)
-		Dim ThisList = New List(Of IStockPriceVol)(MyPriceVols)
+		Dim ThisList = New List(Of IStockPriceVol)
+		For I = 0 To Me.NumberPoint - 1
+			ThisList.Add(New StockPriceVol(MyPriceVols(I)))
+		Next
 		Return ThisList
 	End Function
 
-	Public Function ToListOfStockPriceGain() As List(Of IStockPriceVol)
-		Dim ThisList = New List(Of IStockPriceVol)(MyPriceVols)
+	Public Function ToListOfStockPriceGain() As List(Of IPriceVol)
+		Dim ThisList = New List(Of IPriceVol)
 
+		'take the reference as the first price
+		Dim ThisPriceRef As Double = Me.PriceVols(0).Last
+		Dim ThisPriceRefOffset As Double = 100.0
+		'prevent the problem that will occur if the price is zero
+		'take a reference of 100.0. In a way this is a similar aproach to simulating a bond issued a a value of 100.0
+		'with the price that can vary mostly on the interest rate	or the incertainty and financial stability of the issuer.
+		'In this case since it is a stock the influence to the interest rate is not direct but the incertainty and financial
+		'stability and the revenue growth are a major concern
+
+		'Dim ThisPriceVolGain As IPriceVolGain
+		For I = 0 To Me.NumberPoint - 1
+			'ThisPriceVolGain = New PriceVolGain
+
+			ThisList.Add(New StockPriceVol(MyPriceVols(I)))
+		Next
 		Return ThisList
+	End Function
+
+	Public Function ToListOfPriceVol() As List(Of IPriceVol)
+		Return MyListOfPriceVol
 	End Function
 
 	Public Function ToWeeklyIndex(ByVal DateValue As Date) As Integer
@@ -1606,7 +1620,7 @@ Public Class RecordPrices
 
 	Public Property PriceVolLast As PriceVol
 		Get
-			Return MyPriceVolLast
+			Return DirectCast(MyListOfPriceVol.Last, PriceVol)
 		End Get
 		Set(value As PriceVol)
 			Throw New NotSupportedException
@@ -1662,11 +1676,11 @@ Public Class RecordPrices
 				If .High > Me.PriceMax Then
 					Me.PriceMax = .High
 				End If
-				If .Vol < Me.VolMin Then
-					Me.VolMin = .Vol
+				If .Volume < Me.VolMin Then
+					Me.VolMin = .Volume
 				End If
-				If .Vol > Me.VolMax Then
-					Me.VolMax = .Vol
+				If .Volume > Me.VolMax Then
+					Me.VolMax = .Volume
 				End If
 			End With
 		Next
@@ -1694,11 +1708,11 @@ Public Class RecordPrices
 				If .High > Me.PriceMax Then
 					Me.PriceMax = .High
 				End If
-				If .Vol < Me.VolMin Then
-					Me.VolMin = .Vol
+				If .Volume < Me.VolMin Then
+					Me.VolMin = .Volume
 				End If
-				If .Vol > Me.VolMax Then
-					Me.VolMax = .Vol
+				If .Volume > Me.VolMax Then
+					Me.VolMax = .Volume
 				End If
 			End With
 		Next
@@ -1743,8 +1757,30 @@ Public Class RecordPrices
 	Public IsPriceTarget As Boolean
 	Public PriceToEarningTarget As Double
 	Public IsVol As Boolean
-	Public VolMin As Integer
-	Public VolMax As Integer
+
+	Private _VolMin As Long
+	Public Property VolMin As Long
+		Get
+			Return _VolMin
+		End Get
+		Set(value As Long)
+			_VolMin = value
+		End Set
+	End Property
+
+	Private _VolMax As Long
+	Public Property VolMax As Long
+		Get
+			'note do not retrun a value egual to zero if not the graph may have a problem
+			'in some zooming scenario
+			If _VolMax = 0 Then Return 1
+			Return _VolMax
+		End Get
+		Set(value As Long)
+			_VolMax = value
+		End Set
+	End Property
+
 	Public DateStart As Date
 	Public DateStop As Date
 	Public NumberPoint As Integer

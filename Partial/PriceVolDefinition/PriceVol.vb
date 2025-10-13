@@ -1,4 +1,5 @@
-﻿Public Class PriceVol
+﻿Imports YahooAccessData.ExtensionService.Extensions
+Public Class PriceVol
 	Implements IPriceVol
 	Implements IStockPriceVol
 	Implements IPricePivotPoint
@@ -9,7 +10,7 @@
 		Me.New(PriceValue:=0.0)
 	End Sub
 
-	Public Sub New(ByVal PriceValue As Single, Optional Volume As Integer = 0)
+	Public Sub New(ByVal PriceValue As Single, Optional Volume As Long = 0)
 		Me.Open = PriceValue
 		Me.OpenNext = PriceValue
 		Me.Low = PriceValue
@@ -17,7 +18,8 @@
 		Me.Last = PriceValue
 		Me.LastPrevious = PriceValue
 		Me.LastWeighted = PriceValue
-		Me.Vol = Volume
+		Me.Vol = Volume.ToIntegerSafe()
+		Me.Volume = Volume
 	End Sub
 
 	Public Sub New(ByVal PriceValue As PriceVol)
@@ -31,6 +33,7 @@
 			.Low = PriceValue.Low
 			.LastWeighted = PriceValue.LastWeighted
 			.Vol = PriceValue.Vol
+			.Volume = PriceValue.Volume
 			.OneyrTargetPrice = PriceValue.OneyrTargetPrice
 			.OneyrTargetEarning = PriceValue.OneyrTargetEarning
 			.OneyrTargetEarningGrow = PriceValue.OneyrTargetEarningGrow
@@ -78,6 +81,7 @@
 			.Low = PriceValue.Low
 			.LastWeighted = PriceValue.LastWeighted
 			.Vol = PriceValue.Vol
+			.Volume = DirectCast(PriceValue, PriceVol).Volume
 			.Range = PriceValue.Range
 			.LastAdjusted = PriceValue.LastAdjusted
 			If TypeOf PriceValue Is ISentimentIndicator Then
@@ -85,44 +89,6 @@
 				.AsISentimentIndicator.Value = DirectCast(PriceValue, ISentimentIndicator).Value
 			End If
 		End With
-	End Sub
-
-	Public Sub New(ByVal PriceValue As PriceVolAsClass)
-		With Me
-			.DateLastTrade = PriceValue.DateLastTrade
-			.Open = PriceValue.Open
-			.OpenNext = PriceValue.OpenNext
-			.Last = PriceValue.Last
-			.LastPrevious = PriceValue.LastPrevious
-			.High = PriceValue.High
-			.Low = PriceValue.Low
-			.LastWeighted = PriceValue.LastWeighted
-			.Vol = PriceValue.Vol
-			.OneyrTargetPrice = PriceValue.OneyrTargetPrice
-			.OneyrTargetEarning = PriceValue.OneyrTargetEarning
-			.OneyrTargetEarningGrow = PriceValue.OneyrTargetEarningGrow
-			.FiveyrTargetEarningGrow = PriceValue.FiveyrTargetEarningGrow
-			.OneyrPEG = PriceValue.OneyrPEG
-			.FiveyrPEG = PriceValue.FiveyrPEG
-			.Range = PriceValue.Range
-			.RecordQuoteValue = PriceValue.RecordQuoteValue
-			.IsNull = PriceValue.IsNull
-			.LastAdjusted = PriceValue.LastAdjusted
-			.FilterLast = PriceValue.FilterLast
-
-			.DividendShare = PriceValue.DividendShare
-			.DividendYield = PriceValue.DividendYield
-			.DividendPayDate = PriceValue.DividendPayDate
-			.ExDividendDate = PriceValue.ExDividendDate
-			.ExDividendDatePrevious = PriceValue.ExDividendDatePrevious
-			.ExDividendDateEstimated = PriceValue.ExDividendDatePrevious
-
-			.EarningsShare = PriceValue.EarningsShare
-			.EPSEstimateCurrentYear = PriceValue.EPSEstimateCurrentYear
-			.EPSEstimateNextQuarter = PriceValue.EPSEstimateNextQuarter
-			.EPSEstimateNextYear = PriceValue.EPSEstimateNextYear
-		End With
-		'IsPriceOnHoldLocal = False
 	End Sub
 #End Region
 #Region "Main properties"
@@ -134,9 +100,39 @@
 	Public High As Single
 	Public Low As Single
 	Public LastWeighted As Single
-	Public Vol As Integer
-	Public VolPlus As Integer
-	Public VolMinus As Integer
+
+	Private _Vol As Integer
+	Public Property Vol As Integer
+		Get
+			Return _Vol
+		End Get
+		Set(value As Integer)
+			_Vol = value
+		End Set
+	End Property
+
+	Public Volume As Long
+
+	Private _VolPlus As Long
+	Public Property VolPlus As Long
+		Get
+			Return _VolPlus
+		End Get
+		Set(value As Long)
+			_VolPlus = value
+		End Set
+	End Property
+
+	Private _VolMinus As Long
+	Public Property VolMinus As Long
+		Get
+			Return _VolMinus
+		End Get
+		Set(value As Long)
+			_VolMinus = value
+		End Set
+	End Property
+
 	Public IsIntraDay As Boolean
 	Public OneyrTargetPrice As Single
 	Public OneyrTargetEarning As Single
@@ -163,7 +159,7 @@
 	Public Property SpecialDividendPayoutValue As Single
 
 	Public Overrides Function ToString() As String
-		Return String.Format("{0},Open:{1},High:{2},Low:{3},Last:{4},OpenNext:{5},Vol:{6},IsNull:{7}", TypeName(Me), Me.Open, Me.High, Me.Low, Me.Last, Me.OpenNext, Me.Vol, Me.IsNull)
+		Return $"{TypeName(Me)},Open:{Me.Open},High:{Me.High},Low:{Me.Low},Last:{Me.Last},OpenNext:{Me.OpenNext},Volume:{Me.Volume},IsNull:{Me.IsNull}"
 	End Function
 
 	Public Function CopyFrom() As PriceVol
@@ -182,6 +178,7 @@
 			.Low = Me.Low
 			.Open = Me.Open
 			.Vol = Me.Vol
+			.Volume = Me.Volume
 			.IsSpecialDividendPayout = Me.IsSpecialDividendPayout
 			.SpecialDividendPayoutValue = Me.SpecialDividendPayoutValue
 			.VolMinus = Me.VolMinus
@@ -205,10 +202,6 @@
 		ThisRecord.QuoteValues.Add(ThisQuoteValue)
 		Return ThisRecord
 	End Function
-
-	Public Function CopyFromAsClass() As PriceVolAsClass
-		Return New PriceVolAsClass(Me)
-	End Function
 #End Region
 
 #Region "Eguality Test"
@@ -224,7 +217,8 @@
 					 Me.Last = other.Last AndAlso
 					 Me.OpenNext = other.OpenNext AndAlso
 					 Me.LastPrevious = other.LastPrevious AndAlso
-					 Me.Vol = other.Vol
+					 Me.Vol = other.Vol AndAlso
+					 Me.Volume = other.Volume
 		' 👉 You can add more fields here if you need deeper checks
 	End Function
 
@@ -238,6 +232,7 @@
 		hash = hash * 31 + OpenNext.GetHashCode()
 		hash = hash * 31 + LastPrevious.GetHashCode()
 		hash = hash * 31 + Vol.GetHashCode()
+		hash = hash * 31 + Volume.GetHashCode()
 		Return hash
 	End Function
 
@@ -536,7 +531,7 @@
 
 	Public Property IPriceVol_VolMinus As Integer Implements IPriceVol.VolMinus
 		Get
-			Return Me.VolMinus
+			Return Me.VolMinus.ToIntegerSafe
 		End Get
 		Set(value As Integer)
 			Me.VolMinus = value
@@ -545,7 +540,7 @@
 
 	Public Property IPriceVol_VolPlus As Integer Implements IPriceVol.VolPlus
 		Get
-			Return Me.VolPlus
+			Return Me.VolPlus.ToIntegerSafe
 		End Get
 		Set(value As Integer)
 			Me.VolPlus = value
@@ -748,7 +743,7 @@
 		End Set
 	End Property
 
-	Private Property IStockPriceVol_Vol As Long Implements IStockPriceVol.Vol
+	Private Property IStockPriceVol_Volume As Long Implements IStockPriceVol.Volume
 		Get
 			Return Me.Vol
 		End Get
@@ -756,10 +751,7 @@
 			Throw New NotImplementedException()
 		End Set
 	End Property
-
-
 #End Region
-
 End Class
 
 

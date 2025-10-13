@@ -1,4 +1,5 @@
-﻿Public Class StockPriceVol
+﻿Imports YahooAccessData.ExtensionService.Extensions
+Public Class StockPriceVol
 	Implements IStockPriceVol
 	Implements IPriceVol
 
@@ -14,7 +15,7 @@
 		Me.LastPrevious = PriceVol.LastPrevious
 		Me.High = PriceVol.High
 		Me.Low = PriceVol.Low
-		Me.Vol = PriceVol.Vol
+		Me.Volume = DirectCast(PriceVol, PriceVol).Volume
 	End Sub
 
 
@@ -25,7 +26,7 @@
 	Public Property LastPrevious As Double Implements IStockPriceVol.LastPrevious
 	Public Property High As Double Implements IStockPriceVol.High
 	Public Property Low As Double Implements IStockPriceVol.Low
-	Public Property Vol As Long Implements IStockPriceVol.Vol
+	Public Property Volume As Long Implements IStockPriceVol.Volume
 	Public ReadOnly Property AsIStockPrice As IStockPriceVol Implements IStockPriceVol.AsIStockPrice
 		Get
 			Return Me
@@ -67,12 +68,12 @@
 
 	Private Property IPriceVol_VolPlus As Integer Implements IPriceVol.VolPlus
 		Get
-			If Vol > Integer.MaxValue Then
+			If Me.Volume > Integer.MaxValue Then
 				Return Integer.MaxValue
-			ElseIf Vol < Integer.MinValue Then
+			ElseIf Me.Volume < Integer.MinValue Then
 				Return Integer.MinValue
 			Else
-				Return CInt(Vol)
+				Return CInt(Me.Volume)
 			End If
 		End Get
 		Set(value As Integer)
@@ -82,12 +83,12 @@
 
 	Private Property IPriceVol_VolMinus As Integer Implements IPriceVol.VolMinus
 		Get
-			If Vol > Integer.MaxValue Then
+			If Me.Volume > Integer.MaxValue Then
 				Return Integer.MaxValue
-			ElseIf Vol < Integer.MinValue Then
+			ElseIf Me.Volume < Integer.MinValue Then
 				Return Integer.MinValue
 			Else
-				Return CInt(Vol)
+				Return CInt(Me.Volume)
 			End If
 		End Get
 		Set(value As Integer)
@@ -196,16 +197,10 @@
 
 	Private Property IPriceVol_Vol As Integer Implements IPriceVol.Vol
 		Get
-			If Vol > Integer.MaxValue Then
-				Return Integer.MaxValue
-			ElseIf Vol < Integer.MinValue Then
-				Return Integer.MinValue
-			Else
-				Return CInt(Vol)
-			End If
+			Return Me.Volume.ToIntegerSafe
 		End Get
 		Set(value As Integer)
-			Vol = value
+			Me.Volume = value
 		End Set
 	End Property
 End Class
@@ -219,5 +214,5 @@ Public Interface IStockPriceVol
 	Property LastPrevious As Double
 	Property High As Double
 	Property Low As Double
-	Property Vol As Long
+	Property Volume As Long
 End Interface

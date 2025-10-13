@@ -85,40 +85,40 @@
     End With
   End Sub
 
-  Public Sub New(ByVal PriceValue As PriceVolAsClass)
-    With Me
-      .DateLastTrade = PriceValue.DateLastTrade
-      .Open = PriceValue.Open
-      .OpenNext = PriceValue.OpenNext
-      .Last = PriceValue.Last
-      .LastPrevious = PriceValue.LastPrevious
-      .High = PriceValue.High
-      .Low = PriceValue.Low
-      .LastWeighted = PriceValue.LastWeighted
-      .Vol = PriceValue.Vol
-      .OneyrTargetPrice = PriceValue.OneyrTargetPrice
-      .OneyrTargetEarning = PriceValue.OneyrTargetEarning
-      .OneyrTargetEarningGrow = PriceValue.OneyrTargetEarningGrow
-      .FiveyrTargetEarningGrow = PriceValue.FiveyrTargetEarningGrow
-      .OneyrPEG = PriceValue.OneyrPEG
-      .FiveyrPEG = PriceValue.FiveyrPEG
-      .Range = PriceValue.Range
-      .RecordQuoteValue = PriceValue.RecordQuoteValue
-      .IsNull = PriceValue.IsNull
-      .LastAdjusted = PriceValue.LastAdjusted
-      .FilterLast = PriceValue.FilterLast
-      .DividendShare = PriceValue.DividendShare
-      .DividendYield = PriceValue.DividendYield
-      .DividendPayDate = PriceValue.DividendPayDate
-      .ExDividendDate = PriceValue.ExDividendDate
-      .EarningsShare = PriceValue.EarningsShare
-      .EPSEstimateCurrentYear = PriceValue.EPSEstimateCurrentYear
-      .EPSEstimateNextQuarter = PriceValue.EPSEstimateNextQuarter
-      .EPSEstimateNextYear = PriceValue.EPSEstimateNextYear
-    End With
-  End Sub
+	'Public Sub New(ByVal PriceValue As PriceVolAsClass)
+	'  With Me
+	'    .DateLastTrade = PriceValue.DateLastTrade
+	'    .Open = PriceValue.Open
+	'    .OpenNext = PriceValue.OpenNext
+	'    .Last = PriceValue.Last
+	'    .LastPrevious = PriceValue.LastPrevious
+	'    .High = PriceValue.High
+	'    .Low = PriceValue.Low
+	'    .LastWeighted = PriceValue.LastWeighted
+	'    .Vol = PriceValue.Vol
+	'    .OneyrTargetPrice = PriceValue.OneyrTargetPrice
+	'    .OneyrTargetEarning = PriceValue.OneyrTargetEarning
+	'    .OneyrTargetEarningGrow = PriceValue.OneyrTargetEarningGrow
+	'    .FiveyrTargetEarningGrow = PriceValue.FiveyrTargetEarningGrow
+	'    .OneyrPEG = PriceValue.OneyrPEG
+	'    .FiveyrPEG = PriceValue.FiveyrPEG
+	'    .Range = PriceValue.Range
+	'    .RecordQuoteValue = PriceValue.RecordQuoteValue
+	'    .IsNull = PriceValue.IsNull
+	'    .LastAdjusted = PriceValue.LastAdjusted
+	'    .FilterLast = PriceValue.FilterLast
+	'    .DividendShare = PriceValue.DividendShare
+	'    .DividendYield = PriceValue.DividendYield
+	'    .DividendPayDate = PriceValue.DividendPayDate
+	'    .ExDividendDate = PriceValue.ExDividendDate
+	'    .EarningsShare = PriceValue.EarningsShare
+	'    .EPSEstimateCurrentYear = PriceValue.EPSEstimateCurrentYear
+	'    .EPSEstimateNextQuarter = PriceValue.EPSEstimateNextQuarter
+	'    .EPSEstimateNextYear = PriceValue.EPSEstimateNextYear
+	'  End With
+	'End Sub
 
-  Public Sub New(ByVal PriceValue As PriceVolLargeAsClass)
+	Public Sub New(ByVal PriceValue As PriceVolLargeAsClass)
     With Me
       .DateLastTrade = PriceValue.DateLastTrade
       .Open = PriceValue.Open
