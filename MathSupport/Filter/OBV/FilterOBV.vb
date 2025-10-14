@@ -10,52 +10,62 @@ Public Class FilterOBV
 	Private MyVolumeLast As Long
 	Private MyOBVLast As Double
 	Private MyPriceFilteredLast As Double
-	Private MyVolumeFilteredLast As Double
-	Private MyFilterForVolumeLowPassExp As IFilterRun
-	Private MyFilterLowPassForOBV As IFilter
+	Private MyVolumeLogFilteredLast As Double
+	Private MyFilterForVolumeAverageExp As IFilterRun
+	Private MyFilterLowPassForOBVOut As IFilter
 
 	Public Sub New(ByVal FilterRate As Integer, Optional FilterRateForAverageVolume As Integer = FILTER_RATE_FOR_AVERAGE_VOLUME)
 		If FilterRate < 1 Then FilterRate = 1
 		MyRate = FilterRate
-		MyFilterForVolumeLowPassExp = New FilterExp(FilterRateForAverageVolume)
-		MyFilterLowPassForOBV = New FilterLowPassExp(FilterRate)
+		MyFilterForVolumeAverageExp = New FilterExp(FilterRateForAverageVolume)
+		MyFilterLowPassForOBVOut = New FilterLowPassExp(FilterRate)
 	End Sub
 
 	Public Function Filter(ByVal Volume As Long, ByVal Direction As FilterRSI.SlopeDirection) As Double
-		Dim ThisVolumeValueFiltered As Double
 		Dim ThisVolumeLogFiltered As Double
-		Dim ThisVolumeFiltered As Double
+		Dim ThisVolumeAverageFiltered As Double
 
-		MyVolumeLast = Volume
+		If MyFilterLowPassForOBVOut.Count = 0 Then
+			'OBV initialisation 
+			MyOBVLast = 0
+			MyVolumeLogFilteredLast = 0
+			MyVolumeLast = 0
+		End If
+		If Volume < 0 Then Volume = 0
 		If Volume = 0 Then
-			ThisVolumeFiltered = 0
+			ThisVolumeAverageFiltered = MyFilterForVolumeAverageExp.FilterLast
+			ThisVolumeLogFiltered = MyVolumeLogFilteredLast
 		Else
-			ThisVolumeFiltered = MyFilterForVolumeLowPassExp.FilterRun(CDbl(Volume))
+			ThisVolumeAverageFiltered = MyFilterForVolumeAverageExp.FilterRun(CDbl(Volume))
 			'limit the volume 
 			'Dim ThisVolLimited = MathPlus.WaveForm.SignalLimit(CDbl(Volume), MyLimitFactorForVolume * ThisVolumeLogFiltered)
 			'ThisVolumeLogFiltered = Math.Log((ThisVolLimited + 1) / ThisVolumeLogFiltered)
 			'applied a logaritmic fucntion to the volume
-			If Volume = 0 Then
-				'do not allow Volume to go to zero on a Log function
-				Volume = 1
-			End If
-			ThisVolumeLogFiltered = Math.Log(Volume / ThisVolumeFiltered)
-			'ThisVolumeLogFiltered = Math.Log((Volume - ThisVolumeFiltered) / ThisVolumeFiltered)
+			ThisVolumeLogFiltered = Math.Log(Volume / ThisVolumeAverageFiltered)
 		End If
-		ThisVolumeValueFiltered = ThisVolumeLogFiltered
-		If MyFilterLowPassForOBV.Count = 0 Then
-			'OBV initialisation 
-			MyOBVLast = 0
-		End If
-		If ThisVolumeValueFiltered > 0 Then
+		If ThisVolumeLogFiltered > 0 Then
+			'volume increasing relative to an average is interpreted as significant
+			'this is only when we start to change the OBV.
 			Select Case Direction
 				Case FilterRSI.SlopeDirection.Positive
-					MyOBVLast = MyOBVLast + ThisVolumeValueFiltered
+					MyOBVLast = MyOBVLast + ThisVolumeLogFiltered
 				Case FilterRSI.SlopeDirection.Negative
-					MyOBVLast = MyOBVLast - ThisVolumeValueFiltered
+					MyOBVLast = MyOBVLast - ThisVolumeLogFiltered
 			End Select
+		ElseIf ThisVolumeLogFiltered < 0 Then
+			'decreasing volume in any direction is difficult ot interpret
+			'so do nothign when the volume are decreasing for now
+			''volume decrease
+			'Select Case Direction
+			'	Case FilterRSI.SlopeDirection.Positive
+			'		MyOBVLast = MyOBVLast + 0.1 * ThisVolumeLogFiltered
+			'	Case FilterRSI.SlopeDirection.Negative
+			'		MyOBVLast = MyOBVLast - 0.1 * ThisVolumeLogFiltered
+			'End Select
 		End If
-		Return MyFilterLowPassForOBV.Filter(MyOBVLast)
+		MyVolumeLogFilteredLast = ThisVolumeLogFiltered
+		MyVolumeLast = Volume
+		Return MyFilterLowPassForOBVOut.Filter(MyOBVLast)
 	End Function
 
 	Public Function Filter(ByVal Price As Double, ByVal Volume As Long, Optional ByVal Direction As FilterRSI.SlopeDirection = FilterRSI.SlopeDirection.NotSpecified) As Double
@@ -71,7 +81,7 @@ Public Class FilterOBV
 		If Volume = 0 Then
 			ThisVolumeFiltered = 0
 		Else
-			ThisVolumeFiltered = MyFilterForVolumeLowPassExp.FilterRun(CDbl(Volume))
+			ThisVolumeFiltered = MyFilterForVolumeAverageExp.FilterRun(CDbl(Volume))
 			'limit the volume 
 			'Dim ThisVolLimited = MathPlus.WaveForm.SignalLimit(CDbl(Volume), MyLimitFactorForVolume * ThisVolumeLogFiltered)
 			'ThisVolumeLogFiltered = Math.Log((ThisVolLimited + 1) / ThisVolumeLogFiltered)
@@ -84,7 +94,7 @@ Public Class FilterOBV
 		'do not filter
 		ThisPriceValueFiltered = Price
 		ThisVolumeValueFiltered = ThisVolumeLogFiltered
-		If MyFilterLowPassForOBV.Count = 0 Then
+		If MyFilterLowPassForOBVOut.Count = 0 Then
 			'OBV initialisation 
 			MyOBVLast = 0
 			MyPriceFilteredLast = ThisPriceValueFiltered
@@ -105,7 +115,7 @@ Public Class FilterOBV
 			End Select
 		End If
 		MyPriceFilteredLast = ThisPriceValueFiltered
-		Return MyFilterLowPassForOBV.Filter(MyOBVLast)
+		Return MyFilterLowPassForOBVOut.Filter(MyOBVLast)
 	End Function
 
 	Public Function Filter(ByRef Value() As YahooAccessData.IPriceVol) As Double()
@@ -133,13 +143,13 @@ Public Class FilterOBV
 		'If Volume = 0 Then
 		'	ThisVolumePeakFiltered = 0
 		'Else
-		'	ThisVolumePeakFiltered = MyFilterForVolumeLowPassExp.FilterPredictionNext(CDbl(Volume))
+		'	ThisVolumePeakFiltered = MyFilterForVolumeAverageExp.FilterPredictionNext(CDbl(Volume))
 		'	'limit the volume
 		'	ThisVolumePeakFiltered = MathPlus.WaveForm.SignalLimit(CDbl(Volume), MyLimitFactorForVolume * ThisVolumePeakFiltered)
 		'End If
 		ThisPriceValueFiltered = Price
 		ThisVolumeValueFiltered = ThisVolumePeakFiltered
-		If MyFilterLowPassForOBV.Count = 0 Then
+		If MyFilterLowPassForOBVOut.Count = 0 Then
 			'OBV initialisation 
 			ThisOBVLast = 0
 			ThisPriceFilteredLast = ThisPriceValueFiltered
@@ -153,7 +163,7 @@ Public Class FilterOBV
 			End If
 		End If
 		ThisPriceFilteredLast = ThisPriceValueFiltered
-		Return MyFilterLowPassForOBV.FilterPredictionNext(ThisOBVLast)
+		Return MyFilterLowPassForOBVOut.FilterPredictionNext(ThisOBVLast)
 	End Function
 
 	Public Function Filter(ByVal Price As Single, ByVal Volume As Integer) As Double
@@ -176,7 +186,7 @@ Public Class FilterOBV
 
 
 	Public Function FilterLast() As Double
-		Return MyFilterLowPassForOBV.FilterLast
+		Return MyFilterLowPassForOBVOut.FilterLast
 	End Function
 
 	Public Function PriceLast() As Double
@@ -195,30 +205,30 @@ Public Class FilterOBV
 
 	Public ReadOnly Property Count As Integer
 		Get
-			Return MyFilterLowPassForOBV.Count
+			Return MyFilterLowPassForOBVOut.Count
 		End Get
 	End Property
 
 	Public ReadOnly Property Max As Double
 		Get
-			Return MyFilterLowPassForOBV.Max
+			Return MyFilterLowPassForOBVOut.Max
 		End Get
 	End Property
 
 	Public ReadOnly Property Min As Double
 		Get
-			Return MyFilterLowPassForOBV.Min
+			Return MyFilterLowPassForOBVOut.Min
 		End Get
 	End Property
 
 	Public ReadOnly Property ToList() As IList(Of Double)
 		Get
-			Return MyFilterLowPassForOBV.ToList
+			Return MyFilterLowPassForOBVOut.ToList
 		End Get
 	End Property
 
 	Public Function ToArray() As Double()
-		Return MyFilterLowPassForOBV.ToArray
+		Return MyFilterLowPassForOBVOut.ToArray
 	End Function
 
 	Public Function ToArray(ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double()
@@ -226,7 +236,7 @@ Public Class FilterOBV
 	End Function
 
 	Public Function ToArray(ByVal MinValueInitial As Double, ByVal MaxValueInitial As Double, ByVal ScaleToMinValue As Double, ByVal ScaleToMaxValue As Double) As Double()
-		Return MyFilterLowPassForOBV.ToArray(MinValueInitial, MaxValueInitial, ScaleToMinValue, ScaleToMaxValue)
+		Return MyFilterLowPassForOBVOut.ToArray(MinValueInitial, MaxValueInitial, ScaleToMinValue, ScaleToMaxValue)
 	End Function
 
 	Public Property Tag As String
