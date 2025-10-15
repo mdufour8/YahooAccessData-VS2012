@@ -83,7 +83,7 @@ Public Class RecordPrices
 
 		'add special split factor here
 		'eventually need to be in a file
-		Dim ThisSpecialSplit As SplitFactor
+		'Dim ThisSpecialSplit As SplitFactor
 		Dim ThisListOfSplitFactor As List(Of SplitFactor)
 		ThisListOfSplitFactor = New List(Of SplitFactor)
 
