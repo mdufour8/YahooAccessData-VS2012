@@ -4,7 +4,7 @@ Imports YahooAccessData.MathPlus.Filter
 <Serializable()>
 Public Class FilterOBV
 	Private Const FILTER_RATE_FOR_AVERAGE_VOLUME As Integer = 20
-	Private MyRate As Integer
+	Private MyRate As Double
 	Private MyRatePreFilter As Integer
 	Private MyPriceLast As Double
 	Private MyVolumeLast As Long
@@ -14,7 +14,7 @@ Public Class FilterOBV
 	Private MyFilterForVolumeAverageExp As IFilterRun
 	Private MyFilterLowPassForOBVOut As IFilter
 
-	Public Sub New(ByVal FilterRate As Integer, Optional FilterRateForAverageVolume As Integer = FILTER_RATE_FOR_AVERAGE_VOLUME)
+	Public Sub New(ByVal FilterRate As Double, Optional FilterRateForAverageVolume As Double = FILTER_RATE_FOR_AVERAGE_VOLUME)
 		If FilterRate < 1 Then FilterRate = 1
 		MyRate = FilterRate
 		MyFilterForVolumeAverageExp = New FilterExp(FilterRateForAverageVolume)
@@ -197,7 +197,7 @@ Public Class FilterOBV
 		Return MyVolumeLast
 	End Function
 
-	Public ReadOnly Property Rate As Integer
+	Public ReadOnly Property Rate As Double
 		Get
 			Return MyRate
 		End Get

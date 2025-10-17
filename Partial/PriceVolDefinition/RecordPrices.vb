@@ -496,29 +496,98 @@ Public Class RecordPrices
 			End If
 		End With
 	End Function
-#End Region
-#Region "Private Update Function"
-	Public Function FilterAndAdjustWeekendData(colData As IEnumerable(Of YahooAccessData.RecordQuoteValue)) As IEnumerable(Of YahooAccessData.RecordQuoteValue)
-		Dim lastRecord = colData.LastOrDefault()
-		If lastRecord Is Nothing Then
-			Throw New InvalidOperationException("The record collection is empty.")
+
+	''' <summary>
+	''' Estimate the end-of-day (EOD) trading volume based on the current volume and time of day.
+	''' 
+	''' This uses a flat-clock extrapolation, assuming trading volume continues at the same average pace
+	''' observed so far in the session. Optionally, the estimate is blended with yesterday's total EOD volume,
+	''' where the influence of yesterday decreases gradually as the trading day progresses.
+	''' 
+	''' - Early in the day, the estimate relies more on yesterday's volume (if provided).
+	''' - Later in the day, it relies more on today's realized pace (flat-clock extrapolation).
+	''' - If no VolumeEODLast is provided, only the flat estimate is returned.
+	''' </summary>
+	''' <param name="VolumeNow">The cumulative traded volume observed so far today.</param>
+	''' <param name="TimeOfDayNow">The current local time (exchange time).</param>
+	''' <param name="TimeOfOpen">The market session opening time.</param>
+	''' <param name="TimeOfClose">The market session closing time.</param>
+	''' <param name="VolumeEODLast">
+	''' The total volume observed at the end of the previous trading day (optional).
+	''' If provided, it is blended with the flat estimate with decreasing weight over time.
+	''' </param>
+	''' <param name="p">
+	''' Controls how fast the weight shifts from yesterday's EOD volume to today's flat estimate:
+	'''  p = 1.0 : linear fade (default)
+	'''  p less than 1.0 : slower fade (yesterday influences longer)
+	'''  p > 1.0 : faster fade (today dominates earlier)
+	''' </param>
+	''' <returns>
+	''' The estimated total end-of-day volume based on current trading activity and optional historical reference.
+	''' </returns>
+	Public Function EstimateEODVolumeSimple(
+		VolumeNow As Double,
+		TimeOfDayNow As DateTime,
+		TimeOfOpen As DateTime,
+		TimeOfClose As DateTime,
+		Optional VolumeEODLast As Double? = Nothing,
+		Optional Fading As Double = 1.0
+) As Long
+
+		If TimeOfClose <= TimeOfOpen Then Throw New ArgumentException("TimeOfClose must be after TimeOfOpen.")
+		Dim totalSecs = (TimeOfClose - TimeOfOpen).TotalSeconds
+
+		'Dim elapsed = Math.Max(0.0, Math.Min(totalSecs, (TimeOfDayNow - TimeOfOpen).TotalSeconds))
+
+		' Compute elapsed seconds since market open
+		Dim elapsed As Double = (TimeOfDayNow - TimeOfOpen).TotalSeconds
+
+		' Clamp elapsed time between 0 and totalSecs
+		If elapsed < 0.0 Then
+			elapsed = 0.0
+		ElseIf elapsed > totalSecs Then
+			elapsed = totalSecs
 		End If
 
-		'keep week-end tradin data but move it to next monday
-		Select Case lastRecord.DateDay.DayOfWeek
-			Case DayOfWeek.Saturday
-				lastRecord.Record.DateDay = lastRecord.DateDay.AddDays(2)
-			Case DayOfWeek.Sunday
-				lastRecord.Record.DateDay = lastRecord.DateDay.AddDays(1)
-		End Select
 
-		Return colData.Where(
-			Function(record)
-				Return record Is lastRecord OrElse
-					(record.DateDay.DayOfWeek <> DayOfWeek.Saturday AndAlso
-					record.DateDay.DayOfWeek <> DayOfWeek.Sunday)
-			End Function)
+		' Session progress τ in [0,1]
+		Dim tau = elapsed / totalSecs
+
+		' Flat-clock extrapolation: estimate EOD volume assuming constant trading pace.
+		' Use a small floor (eps) to avoid division by zero near the open.
+		Dim eps As Double = 0.01
+		'Dim flatFrac As double= Math.Max(eps, tau)
+		Dim flatFrac As Double
+		If tau < eps Then
+			flatFrac = eps
+		Else
+			flatFrac = tau
+		End If
+		Dim Vflat As Double
+
+		' If no previous day volume is provided, return the flat estimate directly.
+		If VolumeEODLast.HasValue Then
+			' Linear or power fade from yesterday's EOD volume to today's flat estimate.
+			' At the open (tau=0), weight of yesterday = 1.0
+			' At the close (tau=1), weight of yesterday = 0.0
+			Dim wFlat As Double = Math.Pow(tau, Math.Max(0.1, Fading)) 'tau^0.1 or tau^Fading
+			Dim wYest As Double = 1.0 - wFlat
+
+			' Final blended estimate
+			Vflat = wFlat * Vflat + wYest * VolumeEODLast.Value
+		Else
+			Vflat = VolumeNow / flatFrac
+		End If
+
+		If Vflat > Long.MaxValue Then
+			Return Long.MaxValue
+		ElseIf Vflat < 0 Then
+			Return 0
+		Else
+			Return CLng(Vflat)
+		End If
 	End Function
+
 
 	Private Sub ProcessDataDailyIntraDay(
 		ByRef colData As IEnumerable(Of YahooAccessData.RecordQuoteValue),

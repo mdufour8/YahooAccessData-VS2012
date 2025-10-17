@@ -316,7 +316,7 @@ Namespace MathPlus.Filter
 		End Sub
 #End Region
 #Region "Private Functions"
-		Private Function FilterLocal(ByRef Value As IPriceVol) As Double
+		Public Function FilterLocal(ByRef Value As IPriceVol) As Double
 			Dim I As Integer
 			Dim ThisStockPriceHighValueFromOpenToClose As Double
 			Dim ThisStockPriceLowValueFromOpenToClose As Double
@@ -386,6 +386,8 @@ Namespace MathPlus.Filter
 			Dim MyPriceNextDailyHighPreviousCloseToOpenSigma3 As Double
 			Dim MyPriceNextDailyLowPreviousCloseToOpenSigma3 As Double
 			Dim ThisVolatilityLast As Double = 0.0
+
+			'check for a volatility jump due to new or other events
 			Dim IsVolatilityJump As Boolean = False
 			If MyListOfPriceRangeVolatility.Count > 0 Then
 				ThisVolatilityLast = MyListOfPriceRangeVolatility.Last
@@ -425,34 +427,36 @@ Namespace MathPlus.Filter
 			'#End If
 			ThisFilterBasedVolatilityFromPreviousCloseToOpen = MyFilterVolatilityYangZhangForStatistic.ToList(Type:=FilterVolatilityYangZhang.enuVolatilityDailyPeriodType.PreviousCloseToOpen).Last
 			ThisFilterBasedVolatilityFromOpenToClose = MyFilterVolatilityYangZhangForStatistic.ToList(Type:=FilterVolatilityYangZhang.enuVolatilityDailyPeriodType.OpenToClose).Last
+			'this is the worst case volatility
 			ThisFilterBasedVolatilityFromLastPointTrailing = MyFilterVolatilityYangZhangForStatisticLastPointTrail.Filter(Value)
 			If ThisFilterBasedVolatilityTotal > 0 Then
 				ThisFilterBasedVolatilityRatioFromPreviousCloseToOpen = ThisFilterBasedVolatilityFromPreviousCloseToOpen / ThisFilterBasedVolatilityTotal
 				ThisFilterBasedVolatilityRatioFromOpenToClose = ThisFilterBasedVolatilityFromOpenToClose / ThisFilterBasedVolatilityTotal
-				'Used later to study the variation of the Volatility compared to a Gaussian distribution
-				MyStatisticalDistributionForVolatility.BucketFill(ThisFilterBasedVolatilityTotal)
-				Select Case Value.Last - Me.Last
-					Case Is = 0
-						'no decision
-						MyStatisticalDistributionForVolatilityPositive.BucketFill(ThisFilterBasedVolatilityTotal)
-						MyStatisticalDistributionForVolatilityNegative.BucketFill(ThisFilterBasedVolatilityTotal)
-					Case Is > 0
-						MyStatisticalDistributionForVolatilityPositive.BucketFill(ThisFilterBasedVolatilityTotal)
-					Case Is < 0
-						MyStatisticalDistributionForVolatilityNegative.BucketFill(ThisFilterBasedVolatilityTotal)
-				End Select
-				ThisVolatilityStatistic = MyFilterForVolatilityStatistic.Filter(ThisFilterBasedVolatilityTotal)
-				If ThisVolatilityStatistic.Variance > 0 Then
-					'see wikipedia on lognormal distribution
-					'https://en.wikipedia.org/wiki/Log-normal_distribution
-					'http://www.mathworks.com/help/stats/lognstat.html
-					ThisMu = Math.Log((ThisVolatilityStatistic.Mean ^ 2) / (Math.Sqrt(ThisVolatilityStatistic.Variance + ThisVolatilityStatistic.Mean ^ 2)))
-					ThisSigmaSquare = Math.Log(1 + (ThisVolatilityStatistic.Variance / ThisVolatilityStatistic.Mean ^ 2))
-					MyLogNormalForVolatilityStatistic = New MathNet.Numerics.Distributions.LogNormal(ThisMu, Math.Sqrt(ThisSigmaSquare))
-					MyListOfPriceVolatilityTimeProbability.Add(MyLogNormalForVolatilityStatistic.CumulativeDistribution(ThisFilterBasedVolatilityTotal))
-				Else
-					MyListOfPriceVolatilityTimeProbability.Add(0.5)
-				End If
+				'this is not use for now
+				''Used later to study the variation of the Volatility compared to a Gaussian distribution
+				'MyStatisticalDistributionForVolatility.BucketFill(ThisFilterBasedVolatilityTotal)
+				'Select Case Value.Last - Me.Last
+				'	Case Is = 0
+				'		'no decision
+				'		MyStatisticalDistributionForVolatilityPositive.BucketFill(ThisFilterBasedVolatilityTotal)
+				'		MyStatisticalDistributionForVolatilityNegative.BucketFill(ThisFilterBasedVolatilityTotal)
+				'	Case Is > 0
+				'		MyStatisticalDistributionForVolatilityPositive.BucketFill(ThisFilterBasedVolatilityTotal)
+				'	Case Is < 0
+				'		MyStatisticalDistributionForVolatilityNegative.BucketFill(ThisFilterBasedVolatilityTotal)
+				'End Select
+				'ThisVolatilityStatistic = MyFilterForVolatilityStatistic.Filter(ThisFilterBasedVolatilityTotal)
+				'If ThisVolatilityStatistic.Variance > 0 Then
+				'	'see wikipedia on lognormal distribution
+				'	'https://en.wikipedia.org/wiki/Log-normal_distribution
+				'	'http://www.mathworks.com/help/stats/lognstat.html
+				'	ThisMu = Math.Log((ThisVolatilityStatistic.Mean ^ 2) / (Math.Sqrt(ThisVolatilityStatistic.Variance + ThisVolatilityStatistic.Mean ^ 2)))
+				'	ThisSigmaSquare = Math.Log(1 + (ThisVolatilityStatistic.Variance / ThisVolatilityStatistic.Mean ^ 2))
+				'	MyLogNormalForVolatilityStatistic = New MathNet.Numerics.Distributions.LogNormal(ThisMu, Math.Sqrt(ThisSigmaSquare))
+				'	MyListOfPriceVolatilityTimeProbability.Add(MyLogNormalForVolatilityStatistic.CumulativeDistribution(ThisFilterBasedVolatilityTotal))
+				'Else
+				MyListOfPriceVolatilityTimeProbability.Add(0.5)
+				'End If
 			Else
 				ThisFilterBasedVolatilityRatioFromPreviousCloseToOpen = 1.0
 				ThisFilterBasedVolatilityRatioFromOpenToClose = 0
@@ -623,6 +627,9 @@ Namespace MathPlus.Filter
 			'are egually positive and negative on the stock.
 			'of course you view on the stock is likely different than the average but here the measurement
 			'is a market average based price range.
+			If Me.Count = 500 Then
+				ThisRate = ThisRate
+			End If
 			ThisPriceVolatilityHigh = StockOption.StockPricePrediction(
 				ThisRate,
 				MyFilterLPForPrice.FilterLast,
@@ -764,6 +771,7 @@ Namespace MathPlus.Filter
 			'the filter contain the price value that bring the 50% stochastic
 			'Note: this is a very important price threshold value that can be used to help start or terminate a trade
 			'the value that include the gain seem to be the most usuful to enter or leave a trade.
+
 			MyPLLErrorDetectorForPriceStochacticMedian.Update(
 				ThisVolatilityRegulated,
 				0.0,
@@ -899,9 +907,9 @@ Namespace MathPlus.Filter
 			MyListOfPriceNextDailyLowWithGainOpenToClose.Add(ThisStockPriceLowValueFromOpenToClose)
 			MyListOfPriceNextDailyHighWithGainOpenToClose.Add(ThisStockPriceHighValueFromOpenToClose)
 
-			'If Me.Count = 1000 Then
-			'  ThisProbHigh = ThisProbHigh
-			'End If
+			If Me.Count = 500 Then
+				ThisProbHigh = ThisProbHigh
+			End If
 			ThisProbHigh = 1 - StockOption.StockPricePredictionInverse(
 				ThisRate,
 				Value.Last,
@@ -943,9 +951,11 @@ Namespace MathPlus.Filter
 
 			ThisStochasticResult = ThisProbHigh / (ThisProbHigh + ThisProbLow)
 
+			'***Main calculation***
 			'calculate the probability to reach or exceed the Stock Price median 
 			'over 20% of the FilterRate period. 
 			'for PriceStochacticMedianWithGain
+			'the price stochastique median calculate the median price needed to bring the stochastic to 50% 
 			ThisProbOfStockMedian = 1 - StockOption.StockPricePredictionInverse(
 				NumberTradingDays:=ThisRate / 5,
 				StockPriceStart:=Value.Last,
@@ -964,7 +974,8 @@ Namespace MathPlus.Filter
 
 
 
-			'main stochactic result
+			'every thing is based on this. the rest is du fla fla rose
+			'***main stochactic result***
 			MyListOfProbabilityOfStockMedian.Add(ThisProbOfStockMedian)
 			MyFilterVolatilityForPositifNegatif.Filter(Value, IsVolatityHoldToLast:=False)
 

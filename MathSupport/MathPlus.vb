@@ -921,7 +921,7 @@ Namespace MathPlus
 			Private IsValueInitial As Boolean
 			Private MyListOfValue As ListScaled
 
-			Public Sub New(ByVal FilterRate As Integer)
+			Public Sub New(ByVal FilterRate As Double)
 				MyListOfValue = New ListScaled
 				MyFilterLP = New FilterLowPassExp(FilterRate)
 			End Sub
@@ -1215,7 +1215,7 @@ Namespace MathPlus
 #Region "FilterLowPassExp(Of T As {Structure, IPriceVolLarge})"
 		<Serializable()>
 		Friend Class FilterLowPassExp(Of T As {New, IPriceVol, PriceVol})
-			Private MyRate As Integer
+			Private MyRate As Double
 			'Private A As Double
 			'Private B As Double
 			Private FilterValueLast As IPriceVol
@@ -1228,8 +1228,11 @@ Namespace MathPlus
 			Private MyFilterHigh As IFilterRun
 			Private MyFilterLow As IFilterRun
 
-
 			Public Sub New(ByVal FilterRate As Integer)
+				Me.New(CDbl(FilterRate))
+			End Sub
+
+			Public Sub New(ByVal FilterRate As Double)
 				MyListOfValue = New List(Of IPriceVol)
 				If FilterRate < 1 Then FilterRate = 1
 				MyRate = FilterRate
@@ -1289,7 +1292,7 @@ Namespace MathPlus
 
 			Public ReadOnly Property Rate As Integer
 				Get
-					Return MyRate
+					Return CInt(MyRate)
 				End Get
 			End Property
 
@@ -6585,8 +6588,8 @@ Namespace MathPlus
 				Negative
 			End Enum
 
-			Private MyRate As Integer
-			Private MyRatePreFilter As Integer
+			Private MyRate As Double
+			Private MyRatePreFilter As Double
 			Private A As Double
 			Private B As Double
 			Private MyTickRSIUp As Double
@@ -6614,7 +6617,7 @@ Namespace MathPlus
 			Private MyListOfDIPlus As List(Of Double)
 			Private MyListOfDIMinus As List(Of Double)
 
-			Public Sub New(ByVal FilterRate As Integer)
+			Public Sub New(ByVal FilterRate As Double)
 				MyListOfRSI = New List(Of Double)
 				MyListOfADX = New List(Of Double)
 				MyListOfDIPlus = New List(Of Double)
@@ -6637,7 +6640,7 @@ Namespace MathPlus
 				Me.New(PreFilterRate:=PreFilterRate, FilterRate:=FilterRate, PostFilterHighPassRate:=0)
 			End Sub
 
-			Public Sub New(ByVal PreFilterRate As Integer, ByVal FilterRate As Integer, PostFilterHighPassRate As Integer)
+			Public Sub New(ByVal PreFilterRate As Double, ByVal FilterRate As Double, PostFilterHighPassRate As Double)
 				Me.New(FilterRate)
 				If PreFilterRate < 1 Then PreFilterRate = 1
 				MyRatePreFilter = PreFilterRate
@@ -6834,9 +6837,15 @@ Namespace MathPlus
 				Return MyValueLast
 			End Function
 
-			Public ReadOnly Property Rate As Integer
+			Public ReadOnly Property RateInternal As Double
 				Get
 					Return MyRate
+				End Get
+			End Property
+
+			Public ReadOnly Property Rate As Integer
+				Get
+					Return CInt(MyRate)
 				End Get
 			End Property
 
