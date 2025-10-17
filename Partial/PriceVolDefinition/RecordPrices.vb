@@ -497,6 +497,30 @@ Public Class RecordPrices
 		End With
 	End Function
 
+#Region "Private Update Function"
+	Public Function FilterAndAdjustWeekendData(colData As IEnumerable(Of YahooAccessData.RecordQuoteValue)) As IEnumerable(Of YahooAccessData.RecordQuoteValue)
+		Dim lastRecord = colData.LastOrDefault()
+		If lastRecord Is Nothing Then
+			Throw New InvalidOperationException("The record collection is empty.")
+		End If
+
+		'keep week-end tradin data but move it to next monday
+		Select Case lastRecord.DateDay.DayOfWeek
+			Case DayOfWeek.Saturday
+				lastRecord.Record.DateDay = lastRecord.DateDay.AddDays(2)
+			Case DayOfWeek.Sunday
+				lastRecord.Record.DateDay = lastRecord.DateDay.AddDays(1)
+		End Select
+
+		Return colData.Where(
+			Function(record)
+				Return record Is lastRecord OrElse
+					(record.DateDay.DayOfWeek <> DayOfWeek.Saturday AndAlso
+					record.DateDay.DayOfWeek <> DayOfWeek.Sunday)
+			End Function)
+	End Function
+
+
 	''' <summary>
 	''' Estimate the end-of-day (EOD) trading volume based on the current volume and time of day.
 	''' 
