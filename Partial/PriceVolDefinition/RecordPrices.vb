@@ -401,63 +401,7 @@ Public Class RecordPrices
 			Return (.Open + 2 * (.High + .Low) + 5 * .Last) / 10
 		End With
 	End Function
-
-	Public Function CalculatePriceOfOption(
-		ByVal OptionType As Measure.enuOptionType,
-		ByVal NumberOfDayToExpiration As Integer,
-		ByVal NumberOfDayForHolding As Integer,
-		ByVal Optional IsRepeatBuying As Boolean = True) As Single
-
-		Throw New NotImplementedException
-		Return Nothing
-
-
-
-		'Dim ThisListOfPriceVolWeekly = MyPriceVols.ToWeekly
-		'Dim ThisListOfPriceVolDailyForOption = New List(Of IPriceVol)
-		'Dim ThisVolatilityStandard = New MathPlus.Filter.FilterVolatility()
-		'Dim ThisWeeklyIndex As Integer
-		'Dim ThisDailyIndex As Integer
-		'Dim ThisDateStart As Date
-		'Dim ThisValueOptionStandard As Double
-		'Dim ThisTimeToExpiration As Double
-		'Dim ThisTimeToExpirationInYear As Double
-		'Dim ThisTimeToExpirationInYearDefault As Double
-		'Dim ThisTimeToForHoldingInYear As Double
-		'Dim ThisTimeToDailyInYear As Double
-		'Dim ThisStrikePrice As Double
-		'Dim ThisPriceVol As IPriceVol
-
-		'If NumberOfDayForHolding > NumberOfDayToExpiration Then
-		'  NumberOfDayForHolding = NumberOfDayToExpiration
-		'End If
-		''bring the datestart to Monday
-		'ThisDateStart = ReportDate.DateToMondayPrevious(DateStart)
-		'ThisDailyIndex = Me.ToIndex(ThisDateStart)
-		'ThisTimeToExpirationInYearDefault = NumberOfDayToExpiration / 365
-		'ThisTimeToForHoldingInYear = NumberOfDayForHolding / 365
-		'ThisTimeToDailyInYear = 1 / 365
-
-		''calculate the monthly volatility over all the data
-		'ThisStrikePrice = MyPriceVols(0).Last
-		'ThisTimeToExpirationInYear = ThisTimeToExpirationInYearDefault
-		'For I = 0 To Me.NumberPoint
-		'  ThisVolatilityStandard.Filter(MyPriceVols(I).Last)
-
-		'  ThisPriceVol = Measure.BSAmericanOption(
-		'    OptionType:=OptionType,
-		'    StockPrice:=MyPriceVols(I).AsIPriceVol,
-		'    OptionStrikePrice:=ThisStrikePrice,
-		'    TimeToExpirationInYear:=ThisTimeToExpiration,
-		'    RiskFreeRate:=0.0,
-		'    DividendRate:=0.0,
-		'    VolatilityPerYear:=ThisVolatilityStandard.FilterLast)
-
-
-
-		'  ThisListOfPriceVolDailyForOption.Add(ThisPriceVol)
-		'Next
-	End Function
+#End Region
 
 	''' <summary>
 	''' calculate the true range based on the previous last, high, low and current last value of the price
@@ -598,7 +542,7 @@ Public Class RecordPrices
 			Dim wYest As Double = 1.0 - wFlat
 
 			' Final blended estimate
-			Vflat = wFlat * Vflat + wYest * VolumeEODLast.Value
+			Vflat = wFlat * (VolumeNow / flatFrac) + wYest * VolumeEODLast.Value
 		Else
 			Vflat = VolumeNow / flatFrac
 		End If
@@ -1688,6 +1632,10 @@ Public Class RecordPrices
 
 	Public Function ToListOfPriceVol() As List(Of IPriceVol)
 		Return MyListOfPriceVol
+	End Function
+
+	Public Function ToListOfPriceVolIndexed() As IEnumerable(Of (Index As Integer, Item As IPriceVol))
+		Return MyListOfPriceVol.WithIndex
 	End Function
 
 	Public Function ToWeeklyIndex(ByVal DateValue As Date) As Integer
