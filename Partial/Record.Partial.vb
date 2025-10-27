@@ -1290,6 +1290,10 @@ Partial Public Class Record
     End Set
   End Property
 
+	''' <summary>
+	''' report if the record is a LiveUpdate record i.e. obtained while the market is currently open
+	''' </summary>
+	''' <returns></returns>
 	Public Property IsIntraDay As Boolean Implements IPriceVol.IsIntraDay
 		Get
 			If Me.RecordType = IRecordType.enuRecordType.LiveUpdate Then

@@ -20,9 +20,10 @@ Namespace MathPlus.Filter
 		Implements IStochastic
 		Implements IStochastic1
 		Implements IStochastic2
-
 		Implements IFilterRunAsync
 		Implements IStochasticPriceGain
+		Implements IStochasticBrownianData
+
 		Public Enum enuStatisticDistribution
 			Volatility
 			VolatilitySimulated
@@ -1631,12 +1632,12 @@ Namespace MathPlus.Filter
 			Dim ThisListOfPriceStopStochasticResult As List(Of Double) = New List(Of Double)
 			'extract the data to a local reference list
 			Dim ThisListOfPriceStochastic = Me.ToList
-			Dim ThisListOfPriceStopFromStochasticMedianWithGain = Me.ToList(Type:=IStochastic.enuStochasticType.PriceStochacticMedianWithGain)
-			Dim ThisListOfPriceStopFromStochasticMedianNoGain = Me.ToList(Type:=IStochastic.enuStochasticType.PriceStochacticMedian)
-			Dim ThisListOfPriceBandVolatilityLow = Me.ToList(Type:=IStochastic.enuStochasticType.PriceBandVolatilityLow)
-			Dim ThisListOfPriceBandVolatilityHigh = Me.ToList(Type:=IStochastic.enuStochasticType.PriceBandVolatilityHigh)
-			Dim ThisListOfPriceStochasticMedianWithGainDailyBandLow = Me.ToList(Type:=IStochastic.enuStochasticType.PriceStochacticMedianWithGainRangeDailyDown)
-			Dim ThisListOfPriceStochasticMedianWithGainDailyBandHigh = Me.ToList(Type:=IStochastic.enuStochasticType.PriceStochacticMedianWithGainRangeDailyUp)
+			Dim ThisListOfPriceStopFromStochasticMedianWithGain = Me.AsData.PriceStochacticMedianWithGain
+			Dim ThisListOfPriceStopFromStochasticMedianNoGain = Me.AsData.PriceStochacticMedian
+			Dim ThisListOfPriceBandVolatilityLow = Me.AsData.PriceBandVolatilityLow
+			Dim ThisListOfPriceBandVolatilityHigh = Me.AsData.PriceBandVolatilityHigh
+			Dim ThisListOfPriceStochasticMedianWithGainDailyBandLow = Me.AsData.PriceStochacticMedianWithGainRangeDailyDown
+			Dim ThisListOfPriceStochasticMedianWithGainDailyBandHigh = Me.AsData.PriceStochacticMedianWithGainRangeDailyUp
 
 			'set the price stochastic stop
 			If IsFilterGainPriceStopOneSigmaEnabled Then
@@ -2284,6 +2285,8 @@ Namespace MathPlus.Filter
 		End Property
 
 		Private MyDictionaryOfStochasticType As Dictionary(Of IStochastic.enuStochasticType, IList(Of Double))
+
+		<Obsolete("Use strongly-typed properties on IStochasticBrownianData instead of ToList(enum).", False)>
 		Public ReadOnly Property ToList(Type As IStochastic.enuStochasticType) As System.Collections.Generic.IList(Of Double) Implements IStochastic.ToList
 			Get
 				If MyDictionaryOfStochasticType Is Nothing Then
@@ -2391,7 +2394,7 @@ Namespace MathPlus.Filter
 				Case IStochastic.enuStochasticType.PriceStochacticMedianWithGainRangeDailyUpFromOpenToClose
 					Return MyListOfPriceNextDailyHighWithGain
 				Case IStochastic.enuStochasticType.PriceStochacticMedianWithGainRangeDailyDownFromOpenToClose
-					Return MyListOfPriceNextDailyHighWithGain
+					Return MyListOfPriceNextDailyLowWithGain
 				Case IStochastic.enuStochasticType.PriceStochacticMedianWithGainRangeDailyUp
 					Return MyListOfPriceNextDailyHighWithGain
 				Case IStochastic.enuStochasticType.PriceStochacticMedianWithGainRangeDailyDownDay2
@@ -2772,6 +2775,431 @@ Namespace MathPlus.Filter
 		Private ReadOnly Property IStochasticPriceGain_ToList(GainType As IStochasticPriceGain.EnuGainType, IsFromFastFilter As Boolean) As IList(Of Double) Implements IStochasticPriceGain.ToList
 			Get
 				Return MyStochasticPriceGain.ToList(GainType:=GainType, IsFromFastFilter:=IsFromFastFilter)
+			End Get
+		End Property
+#End Region
+#Region "IStochasticBrownianData"
+		'note : EditorBrowsable attribute is used to control the visibility of properties and methods in IntelliSense.
+		' EditorBrowsable is part of Visual Studio’s IntelliSense visibility system.
+		'It does Not affect runtime behavior.
+		'It does Not affect compilation.
+		'It only controls When And how the Property appears In IntelliSense For consumers Of your library.
+		'The attribute can take three values:
+		'Value	Behavior
+		'Always	Default. The member always shows in IntelliSense. (Same as having no attribute at all.)
+		'Never	The member will Not appear In IntelliSense, but can still be called manually.
+		'Advanced	The member Is hidden by Default, but appears When the user enables “Show advanced members” In VS.
+
+		''' <summary>
+		''' Get the interface IStochasticBrownianData
+		''' </summary>
+		''' <returns>the interface IStochasticBrownianData</returns>
+		<ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Always)>
+		Public ReadOnly Property AsData As IStochasticBrownianData
+			Get
+				Return Me
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_FastSlow As IList(Of Double) Implements IStochasticBrownianData.FastSlow
+			Get
+				Return MyListOfStochasticFastSlow
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_Fast As IList(Of Double) Implements IStochasticBrownianData.Fast
+			Get
+				Return MyListOfStochasticFast
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_Slow As IList(Of Double) Implements IStochasticBrownianData.Slow
+			Get
+				Return MyFilterLPOfStochasticSlow.ToList
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceBandHigh As IList(Of Double) Implements IStochasticBrownianData.PriceBandHigh
+			Get
+				Return MyListOfPriceBandHigh
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceBandLow As IList(Of Double) Implements IStochasticBrownianData.PriceBandLow
+			Get
+				Return MyListOfPriceBandLow
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceBandHighPrediction As IList(Of Double) Implements IStochasticBrownianData.PriceBandHighPrediction
+			Get
+				Return MyListOfPriceBandHighPrediction
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceBandLowPrediction As IList(Of Double) Implements IStochasticBrownianData.PriceBandLowPrediction
+			Get
+				Return MyListOfPriceBandLowPrediction
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_RangeVolatility As IList(Of Double) Implements IStochasticBrownianData.RangeVolatility
+			Get
+				Return IStochasticBrownianData_PriceStandardVolatility
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_RangeVolatilityFromPreviousCloseToOpen As IList(Of Double) Implements IStochasticBrownianData.RangeVolatilityFromPreviousCloseToOpen
+			Get
+				Return MyFilterVolatilityYangZhangForStatistic.ToList(Type:=FilterVolatilityYangZhang.enuVolatilityDailyPeriodType.PreviousCloseToOpen)
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_RangeVolatilityFromPreviousCloseToOpenRatio As IList(Of Double) Implements IStochasticBrownianData.RangeVolatilityFromPreviousCloseToOpenRatio
+			Get
+				Return MyFilterVolatilityYangZhangForStatistic.ToList(Type:=FilterVolatilityYangZhang.enuVolatilityDailyPeriodType.PreviousCloseToOpen)
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_RangeVolatilityFromOpenToClose As IList(Of Double) Implements IStochasticBrownianData.RangeVolatilityFromOpenToClose
+			Get
+				Return MyListForVolatilityRegulatedFromOpenToCloseWithGain
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_RangeVolatilityRegulatedFromPreviousCloseToOpen As IList(Of Double) Implements IStochasticBrownianData.RangeVolatilityRegulatedFromPreviousCloseToOpen
+			Get
+				Return MyListForVolatilityRegulatedPreviousCloseToOpenWithGain
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStandardVolatility As IList(Of Double) Implements IStochasticBrownianData.PriceStandardVolatility
+			Get
+				Return MyListOfPriceRangeVolatility
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_ProbabilityHigh As IList(Of Double) Implements IStochasticBrownianData.ProbabilityHigh
+			Get
+				Return MyListOfProbabilityBandHigh
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_ProbabilityLow As IList(Of Double) Implements IStochasticBrownianData.ProbabilityLow
+			Get
+				Return MyListOfProbabilityBandLow
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_ProbabilityFromBandVolatility As IList(Of Double) Implements IStochasticBrownianData.ProbabilityFromBandVolatility
+			Get
+				Return MyFilterLPForProbabilityFromBandVolatility.ToList
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_TimeProbabilityOfPriceVolatility As IList(Of Double) Implements IStochasticBrownianData.TimeProbabilityOfPriceVolatility
+			Get
+				Return MyListOfPriceVolatilityTimeProbability
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_ProbabilityPriceDailySigmaExceeded As IList(Of Double) Implements IStochasticBrownianData.ProbabilityPriceDailySigmaExceeded
+			Get
+				Return MyListOfProbabilityDailySigmaExcess
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_ProbabilityPriceDailySigmaDoubleExceeded As IList(Of Double) Implements IStochasticBrownianData.ProbabilityPriceDailySigmaDoubleExceeded
+			Get
+				Return MyListOfProbabilityDailySigmaDoubleExcess
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_ProbabilityOfPriceStochasticMedianWithGain As IList(Of Double) Implements IStochasticBrownianData.ProbabilityOfPriceStochacticMedianWithGain
+			Get
+				Throw New NotImplementedException()
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceVolatilityPDF As IList(Of Double) Implements IStochasticBrownianData.PriceVolatilityPDF
+			Get
+				MyStatisticalDistributionForVolatility.Refresh(IStatisticalDistribution.enuRefreshType.ArrayStandard)
+				Return MyStatisticalDistributionForVolatility.ToListOfPDF
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceVolatilityLCR As IList(Of Double) Implements IStochasticBrownianData.PriceVolatilityLCR
+			Get
+				MyStatisticalDistributionForVolatility.Refresh(IStatisticalDistribution.enuRefreshType.ArrayStandard)
+				Return MyStatisticalDistributionForVolatility.ToListOfLCR
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceVolatilityPDFSimulated As IList(Of Double) Implements IStochasticBrownianData.PriceVolatilityPDFSimulated
+			Get
+				If MyStatisticalDistributionForVolatilitySimulation Is Nothing Then
+					'generate the simulation on the first time
+					MyStatisticalDistributionForVolatilitySimulation = CalculateVolatilityStatisticVolatilitySimulated(MyFilterForVolatilityStatistic.FilterLast)
+				End If
+				MyStatisticalDistributionForVolatilitySimulation.Refresh(IStatisticalDistribution.enuRefreshType.ArrayStandard)
+				Return MyStatisticalDistributionForVolatilitySimulation.ToListOfPDF
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceVolatilityLCRSimulated As IList(Of Double) Implements IStochasticBrownianData.PriceVolatilityLCRSimulated
+			Get
+				If MyStatisticalDistributionForVolatilitySimulation Is Nothing Then
+					'generate the simulation on the first time
+					MyStatisticalDistributionForVolatilitySimulation = CalculateVolatilityStatisticVolatilitySimulated(MyFilterForVolatilityStatistic.FilterLast)
+				End If
+				MyStatisticalDistributionForVolatilitySimulation.Refresh(IStatisticalDistribution.enuRefreshType.ArrayStandard)
+				Return MyStatisticalDistributionForVolatilitySimulation.ToListOfLCR
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceBandVolatilityHigh As IList(Of Double) Implements IStochasticBrownianData.PriceBandVolatilityHigh
+			Get
+				Return MyListOfPriceVolatilityHigh
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceBandVolatilityLow As IList(Of Double) Implements IStochasticBrownianData.PriceBandVolatilityLow
+			Get
+				Return MyListOfPriceVolatilityLow
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceBandVolatilityGain As IList(Of Double) Implements IStochasticBrownianData.PriceBandVolatilityGain
+			Get
+				Return MyListOfPriceVolatilityGain
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceProbabilityMedian As IList(Of Double) Implements IStochasticBrownianData.PriceProbabilityMedian
+			Get
+				Return MyListOfPriceProbabilityMedian
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_StochasticSlowFromPriceBandVolatilityLow As IList(Of Double) Implements IStochasticBrownianData.StochasticSlowFromPriceBandVolatilityLow
+			Get
+				Return MyFilterLPForStochasticFromPriceVolatilityLow.ToList
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_StochasticSlowFromPriceBandVolatilityHigh As IList(Of Double) Implements IStochasticBrownianData.StochasticSlowFromPriceBandVolatilityHigh
+			Get
+				Return MyFilterLPForStochasticFromPriceVolatilityHigh.ToList
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_StochasticSlowFromPricePeakMedian As IList(Of Double) Implements IStochasticBrownianData.StochasticSlowFromPricePeakMedian
+			Get
+				Throw New NotSupportedException
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticMedian As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticMedian
+			Get
+				Return MyPLLErrorDetectorForPriceStochacticMedian.ToList
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticMedianWithGain As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticMedianWithGain
+			Get
+				Return MyPLLErrorDetectorForPriceStochacticMedianWithGain.ToList
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticMedianWithGainPrediction As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticMedianWithGainPrediction
+			Get
+				Return MyPLLErrorDetectorForPriceStochacticMedianWithGainPrediction.ToList
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticMedianWithGainHisteresisHigh As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticMedianWithGainHisteresisHigh
+			Get
+				Throw New NotSupportedException
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticMedianWithGainHisteresisLow As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticMedianWithGainHisteresisLow
+			Get
+				Throw New NotSupportedException
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticMedianWithGainPredictionHigh As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticMedianWithGainPredictionHigh
+			Get
+				Return MyPLLErrorDetectorForPriceStochacticMedianWithGainPredictionHigh.ToList
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticMedianWithGainPredictionLow As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticMedianWithGainPredictionLow
+			Get
+				Return MyPLLErrorDetectorForPriceStochacticMedianWithGainPredictionLow.ToList
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticMedianRangeDailyUp As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticMedianRangeDailyUp
+			Get
+				Return MyListOfPriceNextDailyHigh
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticMedianWithGainRangeDailyUp As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticMedianWithGainRangeDailyUp
+			Get
+				Return MyListOfPriceNextDailyHighWithGain
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticMedianRangeDailyDown As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticMedianRangeDailyDown
+			Get
+				Return MyListOfPriceNextDailyLow
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticMedianWithGainRangeDailyDown As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticMedianWithGainRangeDailyDown
+			Get
+				Return MyListOfPriceNextDailyLowWithGain
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticMedianWithGainRangeDailyUpFromOpenToClose As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticMedianWithGainRangeDailyUpFromOpenToClose
+			Get
+				Return MyListOfPriceNextDailyHighWithGain
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticMedianWithGainRangeDailyDownFromOpenToClose As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticMedianWithGainRangeDailyDownFromOpenToClose
+			Get
+				Return MyListOfPriceNextDailyLowWithGain
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticMedianWithGainRangeDailyUpToOpen As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticMedianWithGainRangeDailyUpToOpen
+			Get
+				Return MyListOfPriceNextDailyHighWithGainPreviousCloseToOpen
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticMedianWithGainRangeDailyDownToOpen As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticMedianWithGainRangeDailyDownToOpen
+			Get
+				Return MyListOfPriceNextDailyLowWithGainPreviousCloseToOpen
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticMedianWithGainRangeDailyUpDay2 As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticMedianWithGainRangeDailyUpDay2
+			Get
+				Return MyListOfPriceNextDailyHighWithGainK2
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticMedianWithGainRangeDailyDownDay2 As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticMedianWithGainRangeDailyDownDay2
+			Get
+				Return MyListOfPriceNextDailyLowWithGainK2
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticMedianWithGainRangeDailyUpAtSigma2 As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticMedianWithGainRangeDailyUpAtSigma2
+			Get
+				Return MyListOfPriceNextDailyHighWithGainAtSigma2
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticMedianWithGainRangeDailyLowAtSigma2 As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticMedianWithGainRangeDailyLowAtSigma2
+			Get
+				Return MyListOfPriceNextDailyLowWithGainAtSigma2
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticMedianWithGainRangeDailyUpAtSigma3 As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticMedianWithGainRangeDailyUpAtSigma3
+			Get
+				Return MyListOfPriceNextDailyHighWithGainAtSigma3
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticMedianWithGainRangeDailyLowAtSigma3 As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticMedianWithGainRangeDailyLowAtSigma3
+			Get
+				Return MyListOfPriceNextDailyLowWithGainAtSigma3
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceVolatilityRegulated As IList(Of Double) Implements IStochasticBrownianData.PriceVolatilityRegulated
+			Get
+				Return MyListOfVolatilityRegulatedFromPreviousCloseToCloseWithGain
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceVolatilityRegulatedPrediction As IList(Of Double) Implements IStochasticBrownianData.PriceVolatilityRegulatedPrediction
+			Get
+				Return MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain.ToList
+			End Get
+		End Property
+
+		Private ReadOnly Property PriceVolatilityLastPointTrail As IList(Of Double) Implements IStochasticBrownianData.PriceVolatilityLastPointTrail
+			Get
+				Return MyFilterVolatilityYangZhangForStatisticLastPointTrail.ToList
+			End Get
+		End Property
+
+		Private ReadOnly Property PriceVolatilityDetectorBalance As IList(Of Double) Implements IStochasticBrownianData.PriceVolatilityDetectorBalance
+			Get
+				Return MyListForVolatilityDetectorBalance
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochasticMedianVolatility As IList(Of Double) Implements IStochasticBrownianData.PriceStochasticMedianVolatility
+			Get
+				Return MyPLLErrorDetectorForPriceStochacticMedianWithGain.ToListOfVolatility
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochasticMedianNextDayLow As IList(Of Double) Implements IStochasticBrownianData.PriceStochasticMedianNextDayLow
+			Get
+				Return MyPLLErrorDetectorForPriceStochacticMedianWithGain.ToListOfPriceMedianNextDayLow
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochasticMedianNextDayHigh As IList(Of Double) Implements IStochasticBrownianData.PriceStochasticMedianNextDayHigh
+			Get
+				Return MyPLLErrorDetectorForPriceStochacticMedianWithGain.ToListOfPriceMedianNextDayHigh
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceGainPerYear As IList(Of Double) Implements IStochasticBrownianData.PriceGainPerYear
+			Get
+				Return MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYear
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceGainPerYearDerivative As IList(Of Double) Implements IStochasticBrownianData.PriceGainPerYearDerivative
+			Get
+				Return MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYearDerivative
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticVolatilityPositive As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticVolatilityPositive
+			Get
+				Return MyFilterVolatilityForPositifNegatif.ToList(FilterVolatilityYangZhang.enuVolatilityDailyPeriodType.OpenToHighClose)
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticVolatilityNegative As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticVolatilityNegative
+			Get
+				Return MyFilterVolatilityForPositifNegatif.ToList(FilterVolatilityYangZhang.enuVolatilityDailyPeriodType.OpenToLowClose)
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticVolatilityPositiveToNegativeRatio As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticVolatilityPositiveToNegativeRatio
+			Get
+				Return MyFilterVolatilityForPositifNegatif.ToList(FilterVolatilityYangZhang.enuVolatilityDailyPeriodType.OpenToHighToLowCloseRatio)
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_PriceStochacticVolatilityPositiveToNegativeRatioFiltered As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticVolatilityPositiveToNegativeRatioFiltered
+			Get
+				Return MyFilterVolatilityForPositifNegatif.ToList(FilterVolatilityYangZhang.enuVolatilityDailyPeriodType.OpenToHighToLowCloseRatioFiltered)
 			End Get
 		End Property
 #End Region

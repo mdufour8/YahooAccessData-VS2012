@@ -1,75 +1,75 @@
 ﻿Namespace MathPlus.Filter
   Public Interface IStochastic
-    Enum enuStochasticType
-      FastSlow
-      Fast
-      Slow
-      PriceBandHigh
-      PriceBandLow
-      PriceBandHighPrediction
-      PriceBandLowPrediction
-      RangeVolatility
-      ProbabilityHigh
-      ProbabilityLow
-      PriceBandVolatilityHigh
-      PriceBandVolatilityLow
-      PriceBandVolatilityGain
-      PriceStandardVolatility
-      PriceVolatilityPDF
-      PriceVolatilityLCR
-      PriceVolatilityPDFSimulated
-      PriceVolatilityLCRSimulated
-      PriceProbabilityMedian
-      ProbabilityFromBandVolatility
-      TimeProbabilityOfPriceVolatility
-      StochasticSlowFromPriceBandVolatilityLow
-      StochasticSlowFromPriceBandVolatilityHigh
-      StochasticSlowFromPricePeakMedian
-      PriceStochacticMedian
-      PriceStochacticMedianWithGain
-      PriceStochacticMedianRangeDailyUp
-      PriceStochacticMedianWithGainRangeDailyUp
-      PriceStochacticMedianRangeDailyDown
-      PriceStochacticMedianWithGainRangeDailyDown
-      ProbabilityPriceDailySigmaExceeded
-      PriceVolatilityRegulated
-      PriceVolatilityLastPointTrail
-      PriceVolatilityDetectorBalance
-      PriceStochacticMedianWithGainPrediction
-      PriceStochacticMedianWithGainHisteresisHigh  'not supported
-      PriceStochacticMedianWithGainHisteresisLow   'not supported
-      PriceVolatilityRegulatedPrediction
-      PricePeakValueGainPrediction
-      PriceStochasticMedianVolatility
-      PriceStochasticMedianNextDayLow
-      PriceStochasticMedianNextDayHigh
-      PriceStochacticMedianWithGainPredictionLow
-      PriceStochacticMedianWithGainPredictionHigh
-      ProbabilityPriceDailySigmaDoubleExceeded
-      PriceStochacticMedianWithGainRangeDailyUpDay2
-      PriceStochacticMedianWithGainRangeDailyDownDay2
-      PriceStochacticMedianWithGainRangeDailyUpToOpen
-      PriceStochacticMedianWithGainRangeDailyDownToOpen
-      RangeVolatilityFromPreviousCloseToOpen
-      RangeVolatilityFromPreviousCloseToOpenRatio
-      RangeVolatilityFromOpenToClose
-      PriceStochacticMedianWithGainRangeDailyUpFromOpenToClose
-      PriceStochacticMedianWithGainRangeDailyDownFromOpenToClose
-      ProbabilityOfPriceStochacticMedianWithGain
-      PriceGainPerYear
-      PriceGainPerYearDerivative
-      PriceStochacticMedianWithGainRangeDailyUpAtSigma2
-      PriceStochacticMedianWithGainRangeDailyLowAtSigma2
-      PriceStochacticMedianWithGainRangeDailyUpAtSigma3
-      PriceStochacticMedianWithGainRangeDailyLowAtSigma3
-      RangeVolatilityRegulatedFromPreviousCloseToOpen
-      PriceStochacticVolatilityPositive
-      PriceStochacticVolatilityNegative
-      PriceStochacticVolatilityPositiveToNegativeRatio
-      PriceStochacticVolatilityPositiveToNegativeRatioFiltered
-    End Enum
+		Enum enuStochasticType
+			FastSlow
+			Fast
+			Slow
+			PriceBandHigh
+			PriceBandLow
+			PriceBandHighPrediction
+			PriceBandLowPrediction
+			RangeVolatility
+			ProbabilityHigh
+			ProbabilityLow
+			PriceBandVolatilityHigh
+			PriceBandVolatilityLow
+			PriceBandVolatilityGain
+			PriceStandardVolatility
+			PriceVolatilityPDF
+			PriceVolatilityLCR
+			PriceVolatilityPDFSimulated
+			PriceVolatilityLCRSimulated
+			PriceProbabilityMedian
+			ProbabilityFromBandVolatility
+			TimeProbabilityOfPriceVolatility
+			StochasticSlowFromPriceBandVolatilityLow
+			StochasticSlowFromPriceBandVolatilityHigh
+			StochasticSlowFromPricePeakMedian
+			PriceStochacticMedian
+			PriceStochacticMedianWithGain
+			PriceStochacticMedianRangeDailyUp
+			PriceStochacticMedianWithGainRangeDailyUp
+			PriceStochacticMedianRangeDailyDown
+			PriceStochacticMedianWithGainRangeDailyDown
+			ProbabilityPriceDailySigmaExceeded
+			PriceVolatilityRegulated
+			PriceVolatilityLastPointTrail
+			PriceVolatilityDetectorBalance
+			PriceStochacticMedianWithGainPrediction
+			PriceStochacticMedianWithGainHisteresisHigh  'not supported
+			PriceStochacticMedianWithGainHisteresisLow   'not supported
+			PriceVolatilityRegulatedPrediction
+			PricePeakValueGainPrediction
+			PriceStochasticMedianVolatility
+			PriceStochasticMedianNextDayLow
+			PriceStochasticMedianNextDayHigh
+			PriceStochacticMedianWithGainPredictionLow
+			PriceStochacticMedianWithGainPredictionHigh
+			ProbabilityPriceDailySigmaDoubleExceeded
+			PriceStochacticMedianWithGainRangeDailyUpDay2
+			PriceStochacticMedianWithGainRangeDailyDownDay2
+			PriceStochacticMedianWithGainRangeDailyUpToOpen
+			PriceStochacticMedianWithGainRangeDailyDownToOpen
+			RangeVolatilityFromPreviousCloseToOpen
+			RangeVolatilityFromPreviousCloseToOpenRatio
+			RangeVolatilityFromOpenToClose
+			PriceStochacticMedianWithGainRangeDailyUpFromOpenToClose
+			PriceStochacticMedianWithGainRangeDailyDownFromOpenToClose
+			ProbabilityOfPriceStochacticMedianWithGain
+			PriceGainPerYear
+			PriceGainPerYearDerivative
+			PriceStochacticMedianWithGainRangeDailyUpAtSigma2
+			PriceStochacticMedianWithGainRangeDailyLowAtSigma2
+			PriceStochacticMedianWithGainRangeDailyUpAtSigma3
+			PriceStochacticMedianWithGainRangeDailyLowAtSigma3
+			RangeVolatilityRegulatedFromPreviousCloseToOpen
+			PriceStochacticVolatilityPositive
+			PriceStochacticVolatilityNegative
+			PriceStochacticVolatilityPositiveToNegativeRatio
+			PriceStochacticVolatilityPositiveToNegativeRatioFiltered
+		End Enum
 
-    Function Filter(ByVal Value As Single) As Double
+		Function Filter(ByVal Value As Single) As Double
     Function Filter(ByRef Value As Double) As Double
     Function Filter(ByRef Value As IPriceVol) As Double
     Function Filter(ByRef Value As IPriceVol, ByVal ValueExpectedMin As Double, ByVal ValueExpectedMax As Double) As Double

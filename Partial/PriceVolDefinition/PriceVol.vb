@@ -133,7 +133,24 @@ Public Class PriceVol
 		End Set
 	End Property
 
-	Public IsIntraDay As Boolean
+	''' <summary>
+	''' Provide information that during intraday data retrieval multiple value where detected for the same time slot
+	''' </summary>
+	Public IsIntraDayMultipleValueDetected As Boolean
+
+	Private _IsIntraDay As Boolean
+	''' <summary>
+	''' Indicate that the price vol data is an intraday data update and the day has not yet fnished trading
+	''' </summary>
+	''' <returns></returns>
+	Public Property IsIntraDay As Boolean
+		Get
+			Return _IsIntraDay
+		End Get
+		Set(value As Boolean)
+			_IsIntraDay = value
+		End Set
+	End Property
 	Public OneyrTargetPrice As Single
 	Public OneyrTargetEarning As Single
 	Public OneyrTargetEarningGrow As Single

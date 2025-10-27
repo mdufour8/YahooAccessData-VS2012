@@ -600,12 +600,6 @@ Public Class RecordPrices
 
 		'need one more point to include the Datestop and the next day data
 		Me.NumberPoint = ReportDate.MarketTradingDeltaDays(Me.DateStart, Me.DateStop) + 1
-		If colData.Last.Record.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
-			IsLiveUpdate = True
-			'Me.NumberPoint = Me.NumberPoint + 1
-		Else
-			IsLiveUpdate = False
-		End If
 		ReDim MyPriceVols(0 To Me.NumberPoint - 1)
 		'array declaration
 		MyPriceVolsIntraDay = New PriceVol(0 To Me.NumberPoint - 1)() {}
@@ -1093,6 +1087,16 @@ Public Class RecordPrices
 				End If
 			Next
 		End If
+		'last we need to adjust for to see if the last record is liveupdate or not and update PriceVol
+		If colData.Last.Record.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
+			IsLiveUpdate = True
+		Else
+			IsLiveUpdate = False
+		End If
+		'note there is a naming standard change to be done here
+		'The record reprot a stauc or condition but the PriceVol is higher level general object
+		'so we need to propagate the information form the record to the PriceVol object	
+		MyPriceVols(Me.NumberPoint - 1).IsIntraDay = IsLiveUpdate
 	End Sub
 
 	Private Sub ProcessSplitAdjustForIntraDay(ByRef PriceVolIntraDay() As PriceVol, ByRef PriceVol As PriceVol)
@@ -1139,7 +1143,7 @@ Public Class RecordPrices
 		Else
 			PriceVol.VolMinus = ThisVolMinus
 		End If
-		PriceVol.IsIntraDay = IsIntraDayLocalEnabled
+		PriceVol.IsIntraDayMultipleValueDetected = IsIntraDayLocalEnabled
 	End Sub
 
 	Private Function MeasureStockSplit(ByVal PriceLast As Single, ByVal PriceLastPrevious As Single) As Single

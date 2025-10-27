@@ -4919,24 +4919,24 @@ Namespace MathPlus
 					MyFilterStochasticBrownian4.FilterLast(Type:=IStochastic.enuStochasticType.RangeVolatility))
 
 				ThisProbHigh = Me.FilterUltimate(
-					MyFilterStochasticBrownian.ToList(Type:=IStochastic.enuStochasticType.ProbabilityHigh).Last,
-					MyFilterStochasticBrownian2.ToList(Type:=IStochastic.enuStochasticType.ProbabilityHigh).Last,
-					MyFilterStochasticBrownian4.ToList(Type:=IStochastic.enuStochasticType.ProbabilityHigh).Last)
+					MyFilterStochasticBrownian.AsData.ProbabilityHigh.Last,
+					MyFilterStochasticBrownian2.AsData.ProbabilityHigh.Last,
+					MyFilterStochasticBrownian4.AsData.ProbabilityHigh.Last)
 
 				ThisProbLow = Me.FilterUltimate(
-					MyFilterStochasticBrownian.ToList(Type:=IStochastic.enuStochasticType.ProbabilityLow).Last,
-					MyFilterStochasticBrownian2.ToList(Type:=IStochastic.enuStochasticType.ProbabilityLow).Last,
-					MyFilterStochasticBrownian4.ToList(Type:=IStochastic.enuStochasticType.ProbabilityLow).Last)
+					MyFilterStochasticBrownian.AsData.ProbabilityLow.Last,
+					MyFilterStochasticBrownian2.AsData.ProbabilityLow.Last,
+					MyFilterStochasticBrownian4.AsData.ProbabilityLow.Last)
 
 				ThisPriceVolatilityHigh = Me.FilterUltimate(
-					MyFilterStochasticBrownian.ToList(Type:=IStochastic.enuStochasticType.PriceBandVolatilityHigh).Last,
-					MyFilterStochasticBrownian2.ToList(Type:=IStochastic.enuStochasticType.PriceBandVolatilityHigh).Last,
-					MyFilterStochasticBrownian4.ToList(Type:=IStochastic.enuStochasticType.PriceBandVolatilityHigh).Last)
+					MyFilterStochasticBrownian.AsData.PriceBandVolatilityHigh.Last,
+					MyFilterStochasticBrownian2.AsData.PriceBandVolatilityHigh.Last,
+					MyFilterStochasticBrownian4.AsData.PriceBandVolatilityHigh.Last)
 
 				ThisPriceVolatilityLow = Me.FilterUltimate(
-					MyFilterStochasticBrownian.ToList(Type:=IStochastic.enuStochasticType.PriceBandVolatilityLow).Last,
-					MyFilterStochasticBrownian2.ToList(Type:=IStochastic.enuStochasticType.PriceBandVolatilityLow).Last,
-					MyFilterStochasticBrownian4.ToList(Type:=IStochastic.enuStochasticType.PriceBandVolatilityLow).Last)
+					MyFilterStochasticBrownian.AsData.PriceBandVolatilityLow.Last,
+					MyFilterStochasticBrownian2.AsData.PriceBandVolatilityLow.Last,
+					MyFilterStochasticBrownian4.AsData.PriceBandVolatilityLow.Last)
 
 				ThisStochasticResult = ThisProbHigh / (ThisProbHigh + ThisProbLow)
 				MyListOfProbabilityBandHigh.Add(ThisProbHigh)
