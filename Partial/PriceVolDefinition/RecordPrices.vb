@@ -499,8 +499,7 @@ Public Class RecordPrices
 		TimeOfOpen As DateTime,
 		TimeOfClose As DateTime,
 		Optional VolumeEODLast As Double? = Nothing,
-		Optional Fading As Double = 1.0
-) As Long
+		Optional Fading As Double = 1.0) As Long
 
 		If TimeOfClose <= TimeOfOpen Then Throw New ArgumentException("TimeOfClose must be after TimeOfOpen.")
 		Dim totalSecs = (TimeOfClose - TimeOfOpen).TotalSeconds

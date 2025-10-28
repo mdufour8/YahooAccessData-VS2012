@@ -146,7 +146,8 @@ Namespace MathPlus.Filter
 		Private MyStocFastLast As Double
 		Private MyStocRangeVolatility As Double
 		Private MyStochasticPriceGain As StochasticPriceGain
-
+		Private MyFilterForPriceOBV As FilterOBV
+		Private MyFilterOfPriceRSIOfOBV As FilterRSI
 
 #Region "New"
 		''' <summary>
@@ -271,6 +272,10 @@ Namespace MathPlus.Filter
 			MyListOfPriceNextDailyHighWithGainOpenToClose = New List(Of Double)
 			MyListOfPriceNextDailyLowWithGainOpenToClose = New List(Of Double)
 			MyStatisticRangeOfExcess = New StatisticRangeExcess(MyRateForVolatility)
+			MyFilterForPriceOBV = New FilterOBV(FilterRate:=1.5) With {.Tag = Symbol}
+			'the new usage is with no prefilter or very small filtering
+			MyFilterOfPriceRSIOfOBV = New FilterRSI(PreFilterRate:=1.5, FilterRate:=FilterRate, PostFilterHighPassRate:=0)
+
 			'by design nothing unless initialize at the interface level
 			MyStochasticPriceGain = Nothing
 		End Sub
@@ -996,6 +1001,37 @@ Namespace MathPlus.Filter
 			'Return MyFilterStochastic.ListDataUpdate(ThisValueHigh, ThisValueLow, ThisFilterBasedVolatilityTotal, ThisStochasticResult)
 			MyListOfPriceBandHigh.Add(ThisValueHigh)
 			MyListOfPriceBandLow.Add(ThisValueLow)
+			'---OBV Calculation based on the filtered volatility
+			'do not use that estimate for now
+			'If _
+			'		IsLastPoint AndAlso
+			'		ThisPriceVol.IsIntraDay AndAlso
+			'		ThisPriceVol.Volume > 0 AndAlso
+			'		I > 0 AndAlso
+			'		MyPriceVols(I - 1).Volume > 0 Then
+
+			'	'A lot a condition before we execute this
+			'	'The last point can be intraday and the volume is not necessarly up to date
+			'	'but we can estimate it value by using the previous close volume 
+			'	'also need to make sure that the data is not loaded again
+			'	'all data has been ead at this point
+			'	'the volume is not up to date until the close
+			'	'we can estimate the volume 
+			'	'Using this method
+			'	Dim ThisVolumeEstimateAtEOD = MyReportPrices.EstimateEODVolumeSimple(
+			'		VolumeNow:=ThisPriceVol.Volume,
+			'		TimeOfDayNow:=Now,
+			'		TimeOfOpen:=DateTime.Today.Add(ReportDate.MARKET_OPEN_TIME_DEFAULT.TimeOfDay),
+			'		TimeOfClose:=DateTime.Today.Add(ReportDate.MARKET_CLOSE_TIME_DEFAULT.TimeOfDay),
+			'		VolumeEODLast:=If(I > 0, MyPriceVols(I - 1).Volume, Nothing),
+			'		Fading:=1.5)
+
+			'	ThisFilterForPriceOBV.Filter(ThisVolumeEstimateAtEOD, ThisFilterVolatilityForPositifNegatif.FilterDirection)
+			'Else
+			'	ThisFilterForPriceOBV.Filter(ThisPriceVol.Volume, ThisFilterVolatilityForPositifNegatif.FilterDirection)
+			'End If
+			MyFilterForPriceOBV.Filter(DirectCast(Value, PriceVol).Volume, MyFilterVolatilityForPositifNegatif.FilterDirection)
+			MyFilterOfPriceRSIOfOBV.Filter(MyFilterForPriceOBV.FilterLast)
 
 			MyListOfPriceRangeVolatility.Add(ThisFilterBasedVolatilityTotal)
 			MyListOfPriceRangeVolatilityFromPreviousCloseToOpenRatio.Add(ThisFilterBasedVolatilityRatioFromPreviousCloseToOpen)
@@ -3200,6 +3236,24 @@ Namespace MathPlus.Filter
 		Private ReadOnly Property IStochasticBrownianData_PriceStochacticVolatilityPositiveToNegativeRatioFiltered As IList(Of Double) Implements IStochasticBrownianData.PriceStochacticVolatilityPositiveToNegativeRatioFiltered
 			Get
 				Return MyFilterVolatilityForPositifNegatif.ToList(FilterVolatilityYangZhang.enuVolatilityDailyPeriodType.OpenToHighToLowCloseRatioFiltered)
+			End Get
+		End Property
+
+		''' <summary>
+		''' Return the On-Balance Log scaled Volume (OBV) related data series.
+		''' </summary>
+		Private ReadOnly Property IStochasticBrownianData_GetListOfPriceOBV As IList(Of Double) Implements IStochasticBrownianData.GetListOfPriceOBV
+			Get
+				Return MyFilterForPriceOBV.ToList
+			End Get
+		End Property
+
+		''' <summary>
+		''' Return the RSI of the On-Balance Log Scaled Volume (OBVLS) related data series.
+		''' </summary>
+		Private ReadOnly Property IStochasticBrownianData_GetListOfRSIOBV As IList(Of Double) Implements IStochasticBrownianData.GetListOfRSIOBV
+			Get
+				Return MyFilterOfPriceRSIOfOBV.ToList
 			End Get
 		End Property
 #End Region
