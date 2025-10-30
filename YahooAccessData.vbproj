@@ -195,7 +195,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FileSupport\CircularBuffer.vb" />
-    <Compile Include="FileSupport\EnumerableExtension.vb" />
+    <Compile Include="Extension\EnumerableExtension.vb" />
     <Compile Include="FileSupport\FileMutex.vb" />
     <Compile Include="GlobalSuppressions.vb" />
     <Compile Include="Interface\IStockDividendSinglePayout.vb" />
@@ -205,7 +205,7 @@
     <Compile Include="MathSupport\BinaryConverter\BinaryConverter.vb" />
     <Compile Include="FileSupport\CompareByName.vb" />
     <Compile Include="FileSupport\DictionaryKeyValuePair.vb" />
-    <Compile Include="FileSupport\Extensions.vb" />
+    <Compile Include="Extension\Extensions.vb" />
     <Compile Include="Interface\ICollectionKey.vb" />
     <Compile Include="Interface\IStockDividend.vb" />
     <Compile Include="FileSupport\LinkedHashSet.vb" />
@@ -245,7 +245,6 @@
     <Compile Include="MathSupport\Filter\Oscillator\FilterPLLDetector\IFilterPLLDetector.vb" />
     <Compile Include="MathSupport\Filter\Oscillator\FilterStochastic.vb" />
     <Compile Include="MathSupport\Filter\Oscillator\FilterStochasticBrownian.vb" />
-    <Compile Include="MathSupport\Filter\Oscillator\FilterStochasticBrownianModulated.vb" />
     <Compile Include="MathSupport\Filter\Oscillator\MeasurePeakValueRange.vb" />
     <Compile Include="MathSupport\Filter\Oscillator\StatisticRangeExcess.vb" />
     <Compile Include="MathSupport\Filter\PLL\FilterLowPassPLLPredict.vb" />
@@ -265,6 +264,7 @@
     <Compile Include="MathSupport\Measure.vb" />
     <Compile Include="MathSupport\PriceCDFProbabilityAnalysis\CDFProbabilityAnalysis.vb" />
     <Compile Include="MathSupport\PriceCDFProbabilityAnalysis\FilterCDFProbability.vb" />
+    <Compile Include="MathSupport\ProbabilityMapping.vb" />
     <Compile Include="My Project\Application1.Designer.vb">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

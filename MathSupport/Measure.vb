@@ -715,38 +715,88 @@ Namespace MathPlus
       End Function
 
 			''' <summary>
-			''' Calculate the InverseNormal (Mean=0, Sigma=1) over a range of x value from -RangeX to +RangeX.
+			''' Converts a probability value (0 to 1) into a value on a standard Normal (Gaussian) distribution (μ = 0, σ = 1).
+			''' 
+			''' This uses the inverse CDF (quantile function) of the normal distribution and then clamps
+			''' the result between -RangeOfX and +RangeOfX to keep the output finite and stable for
+			''' probabilities near 0 or 1.
+			''' 
+			''' Typical use cases:
+			'''  • Mapping probability values to a fixed, symmetric X-axis (e.g., -3 to +3) for charting.
+			'''  • Converting uniform probabilities into standard normal quantiles for statistical transforms.
+			'''  • Visualizing or positioning probabilities along a bell curve.
+			'''  • Creating smooth, nonlinear mappings where the center is at 0 and extremes taper off.
+			''' 
+			''' Mapping behavior:
+			'''  p = 0.5   → x = 0      (center of the bell curve)
+			'''  p = 0.975 → x ≈  1.96  (upper 95%)
+			'''  p = 0.025 → x ≈ -1.96  (lower 95%)
+			'''  p near 0  → large negative values (clamped to -RangeOfX)
+			'''  p near 1  → large positive values (clamped to +RangeOfX)
+			''' 
+			''' This is useful when you want to map probabilities onto a symmetric,
+			''' finite real axis for visualization or numerical stability.
 			''' </summary>
-			''' <param name="ProbabilityValue"></param>
-			''' <param name="RangeOfX">The range of X from -RangeX to +RangeX</param>
-			''' <returns></returns>
+			''' <param name="ProbabilityValue">
+			''' Probability value between 0 and 1.
+			''' </param>
+			''' <param name="RangeOfX">
+			''' The maximum absolute value allowed for the output X.
+			''' Common values are 3 (±3σ covers 99.7% of the Gaussian distribution).
+			''' </param>
+			''' <returns>
+			''' A real number between -RangeOfX and +RangeOfX corresponding to the input probability.
+			''' </returns>
 			Public Shared Function InverseNormal(ByVal ProbabilityValue As Double, ByVal RangeOfX As Double) As Double
 				Dim ThisResult As Double
 				ThisResult = MathNet.Numerics.Distributions.Normal.InvCDF(mean:=0, stddev:=1.0, ProbabilityValue)
+
 				If ThisResult > RangeOfX Then
 					ThisResult = RangeOfX
 				ElseIf ThisResult < -RangeOfX Then
 					ThisResult = -RangeOfX
 				End If
+
 				Return ThisResult
 			End Function
+
 
 			''' <summary>
-			''' Calculate the value in the Log-Normal distribution corresponding to the probability {p}
-			''' It is equivalent to calculate the inverse of the Log-Normal distribution with a mu and sigma respectivly of 0 and 1	
+			''' Converts a probability value (0 to 1) into a value on a standard Log-Normal distribution (μ = 0, σ = 1).
+			''' 
+			''' This is effectively the inverse CDF (quantile function) of a log-normal distribution.
+			''' It maps low probabilities to small positive numbers near 0 and high probabilities to large positive numbers.
+			''' 
+			''' Typical use cases:
+			'''  • Mapping probability values to a positive, skewed X-axis (e.g., for log-scale charting).
+			'''  • Modeling multiplicative processes such as growth factors, volatility, or returns.
+			'''  • Transforming a uniform random variable (0–1) into a log-normal random variable.
+			'''  • Displaying probability values with more detail near the lower end of the scale.
+			''' 
+			''' Mapping behavior:
+			'''  p = 0.5  → x ≈ 1.0 (median of the log-normal)
+			'''  p near 0 → x approaches 0
+			'''  p near 1 → x grows very large
+			''' 
+			''' This is useful when you need a smooth nonlinear mapping from probability space
+			''' to a strictly positive real domain.
 			''' </summary>
-			''' <param name="ProbabilityValue"></param>
-			''' <returns></returns>
+			''' <param name="ProbabilityValue">
+			''' A probability value between 0 and 1.
+			''' </param>
+			''' <returns>
+			''' A positive real number corresponding to the input probability on the standard Log-Normal distribution.
+			''' </returns>
 			Public Shared Function InverseLogNormal(ByVal ProbabilityValue As Double) As Double
-				' Parameters of the underlying normal distribution
-				Dim mu As Double = 0.0 ' Mean
-				Dim sigma As Double = 1.0 ' Standard deviation
+				Dim mu As Double = 0.0
+				Dim sigma As Double = 1.0
 
 				Dim ThisResult As Double
-				ThisResult = MathNet.Numerics.Distributions.LogNormal.InvCDF(mu:=0.0, sigma:=1.0, ProbabilityValue)
+				ThisResult = MathNet.Numerics.Distributions.LogNormal.InvCDF(mu, sigma, ProbabilityValue)
 
 				Return ThisResult
 			End Function
+
 
 
 			Public Shared Function InverseLogNormal(ByVal ProbabilityValue As Double, Mu As Double, Sigma As Double) As Double
@@ -758,19 +808,29 @@ Namespace MathPlus
 			End Function
 
 			''' <summary>
-			''' Return the lognormal CDF distributions
+			''' Computes the cumulative probability (CDF) of a Log-Normal distribution for a given X value.
+			''' 
+			''' This maps an X value from the positive real domain to a probability between 0 and 1.
+			''' It is the forward transform corresponding to <see cref="InverseLogNormal"/>.
+			''' 
+			''' Typical use cases:
+			'''  • Converting a log-scale value back into its probability.
+			'''  • Charting or evaluating tail probabilities.
+			'''  • Inverting a previously applied log-normal quantile mapping.
+			''' 
+			''' Mapping behavior:
+			'''  x near 0  → p near 0
+			'''  x = exp(μ) → p ≈ 0.5 (median)
+			'''  x large   → p approaches 1
 			''' </summary>
-			''' <param name="x"></param>
-			''' <param name="Mean"></param>
-			''' <param name="Sigma"></param>
-			''' <returns></returns>
+			''' <param name="x">The positive value to map.</param>
+			''' <param name="Mean">μ parameter of the log-normal distribution.</param>
+			''' <param name="Sigma">σ parameter of the log-normal distribution.</param>
+			''' <returns>Probability between 0 and 1.</returns>
 			Public Shared Function LogNormalCDF(x As Double, Mean As Double, Sigma As Double) As Double
-				' Parameters of the underlying normal distribution
-
-				Dim ThisResult As Double
-				ThisResult = MathNet.Numerics.Distributions.LogNormal.CDF(mu:=Mean, sigma:=Sigma, x:=x)
-				Return ThisResult
+				Return MathNet.Numerics.Distributions.LogNormal.CDF(mu:=Mean, sigma:=Sigma, x:=x)
 			End Function
+
 
 			''' <summary>
 			''' Return a sample of a log normal distribution
@@ -820,33 +880,78 @@ Namespace MathPlus
 			End Function
 
 			''' <summary>
-			''' Compress and expand the input probabillity using the gaussian scale transformation and return a value between 0 and 1
-			''' corresponging to the gaussian scale transformation.  
+			''' Nonlinearly rescales a probability in [0, 1] using a Gaussian (normal) distribution
+			''' so that small changes near the extremes (close to 0 or 1) become more pronounced
+			''' while mid-range values remain compressed.
+			''' 
+			''' This transformation applies an inverse Gaussian quantile mapping to the input
+			''' and reprojects the result back to [0, 1], effectively “stretching” the tails
+			''' and “compressing” the center.
+			''' 
+			''' Typical use cases:
+			'''  • Emphasizing subtle but significant probability differences near 0 or 1.
+			'''  • Making small changes at high certainty (e.g., 0.999 to 0.9999) visible
+			'''    in visualizations or decision thresholds.
+			'''  • Mapping confidence levels or risk scores onto a perceptually more sensitive scale.
+			''' 
+			''' Mapping behavior:
+			'''  p = 0.5      → unchanged (0.5)
+			'''  p near 0 or 1 → pushed farther toward 0 or 1 depending on ScaleOfX
+			'''  Larger ScaleOfX ⇒ stronger tail expansion
+			''' 
+			''' Example:
+			'''  For ScaleOfX = 3:
+			'''   Input: 0.999  → Output: ~0.99987
+			'''   Input: 0.001  → Output: ~0.00013
 			''' </summary>
-			''' <param name="ProbabilityValue">The imput probability between 0 and 1</param>
-			''' <param name="ScaleOfX">the positive range of X value</param>
-			''' <returns></returns>
+			''' <param name="ProbabilityValue">The input probability in [0, 1].</param>
+			''' <param name="ScaleOfX">The Gaussian range parameter controlling tail expansion. Larger values stretch more.</param>
+			''' <returns>The transformed probability in [0, 1].</returns>
 			Public Shared Function ProbabilityToGaussianScale(ByVal ProbabilityValue As Double, ByVal ScaleOfX As Double) As Double
-        Return (Measure.InverseNormal(ProbabilityValue, ScaleOfX) / (2 * ScaleOfX)) + 0.5
-      End Function
+				Return (Measure.InverseNormal(ProbabilityValue, ScaleOfX) / (2 * ScaleOfX)) + 0.5
+			End Function
 
-      Public Shared Function ProbabilityToGaussianScale(ByVal ProbabilityValue As IEnumerable(Of Double), ByVal ScaleOfX As Double) As IEnumerable(Of Double)
-        Dim ThisList As New List(Of Double)
-        For Each ThisValue In ProbabilityValue
-          ThisList.Add((Measure.InverseNormal(ThisValue, ScaleOfX) / (2 * ScaleOfX)) + 0.5)
-        Next
-        Return ThisList
-      End Function
+			''' <summary>
+			''' Applies a Gaussian tail-expansion transformation to a sequence of probabilities,
+			''' enhancing the relative contrast of values near 0 and 1 while compressing mid-range values.
+			''' 
+			''' This is useful for datasets where small differences at the extremes
+			''' are important to decision-making but would be visually or numerically
+			''' invisible on a linear scale.
+			''' 
+			''' Typical use cases:
+			'''  • Visualizing probability curves with enhanced sensitivity at the tails.
+			'''  • Transforming risk scores, confidence levels, or signal probabilities
+			'''    before plotting or thresholding.
+			'''  • Human-in-the-loop decision interfaces where subtle shifts near
+			'''    certainty boundaries need to stand out.
+			''' 
+			''' Mapping behavior:
+			'''  Each p ∈ [0, 1] is transformed individually:
+			'''    p' = (InverseNormal(p, ScaleOfX) / (2 * ScaleOfX)) + 0.5
+			'''  Larger ScaleOfX produces stronger expansion at the tails.
+			''' </summary>
+			''' <param name="ProbabilityValue">The collection of probabilities to transform.</param>
+			''' <param name="ScaleOfX">Gaussian range parameter controlling tail expansion.</param>
+			''' <returns>A new sequence of transformed probabilities in [0, 1].</returns>
+			Public Shared Function ProbabilityToGaussianScale(ByVal ProbabilityValue As IEnumerable(Of Double), ByVal ScaleOfX As Double) As IEnumerable(Of Double)
+				Dim ThisList As New List(Of Double)
+				For Each ThisValue In ProbabilityValue
+					ThisList.Add((Measure.InverseNormal(ThisValue, ScaleOfX) / (2 * ScaleOfX)) + 0.5)
+				Next
+				Return ThisList
+			End Function
 
-      ''' <summary>
-      ''' This function return the log gain between two value with a multiplier scale value. 
-      ''' The function return zero if it teh range is too large for evaluation
-      ''' </summary>
-      ''' <param name="Value"></param>
-      ''' <param name="ValueRef"></param>
-      ''' <param name="ScaleValue"></param>
-      ''' <returns></returns>
-      Public Shared Function GainLog(ByVal Value As Double, ValueRef As Double, ByVal ScaleValue As Double) As Double
+
+			''' <summary>
+			''' This function return the log gain between two value with a multiplier scale value. 
+			''' The function return zero if it teh range is too large for evaluation
+			''' </summary>
+			''' <param name="Value"></param>
+			''' <param name="ValueRef"></param>
+			''' <param name="ScaleValue"></param>
+			''' <returns></returns>
+			Public Shared Function GainLog(ByVal Value As Double, ValueRef As Double, ByVal ScaleValue As Double) As Double
 
         Dim ThisResult As Double
         If ValueRef <= 0.0 Then
@@ -915,59 +1020,83 @@ Namespace MathPlus
       End Function
 
 			''' <summary>
-			''' The cumulative normal distribution function approimative implementation for mean=0 and sigma = 1
-			''' Converting values to a Gaussian scale, also known as standardizing or normalizing data to a Gaussian (normal) distribution, 
-			''' is a common preprocessing step in data analysis and machine learning.
-			''' see http://en.wikipedia.org/wiki/Normal_distribution
+			''' Computes the cumulative probability of the standard Normal (Gaussian) distribution (μ = 0, σ = 1)
+			''' at a given X value. This is an approximation using a fast polynomial expansion.
+			''' 
+			''' Typical use cases:
+			'''  • Converting X values into probabilities on a Gaussian scale.
+			'''  • Normalizing values in preprocessing or analysis pipelines.
+			'''  • Mapping a symmetric real axis into [0, 1] probability space.
+			'''  • Inverting a previously applied <see cref="InverseNormal"/>.
+			''' 
+			''' Mapping behavior:
+			'''  X = 0     → p ≈ 0.5
+			'''  X > 0     → p approaches 1 as X grows
+			'''  X Less than 0     → p approaches 0 as X decreases
+			''' 
+			''' Reference: https://en.wikipedia.org/wiki/Normal_distribution
 			''' </summary>
-			''' <param name="X"></param>
-			''' <returns></returns>
-			''' <remarks></remarks>
+			''' <param name="X">The input value to map.</param>
+			''' <returns>Probability between 0 and 1.</returns>
 			Public Shared Function CDFGaussian(ByVal X As Double) As Double
+				Dim L As Double, K As Double
+				Dim ThisResult As Double
 
-        Dim L As Double, K As Double
-        Dim ThisResult As Double
+				Const a1 As Double = 0.31938153
+				Const a2 As Double = -0.356563782
+				Const a3 As Double = 1.781477937
+				Const a4 As Double = -1.821255978
+				Const a5 As Double = 1.330274429
 
-        Const a1 As Double = 0.31938153
-        Const a2 As Double = -0.356563782
-        Const a3 As Double = 1.781477937
-        Const a4 As Double = -1.821255978
-        Const a5 As Double = 1.330274429
+				L = Math.Abs(X)
+				K = 1 / (1 + 0.2316419 * L)
 
-        L = Math.Abs(X)
+				ThisResult = 1 - 1 / Math.Sqrt(2 * Math.PI) * Math.Exp(-L ^ 2 / 2) *
+										(a1 * K + a2 * K ^ 2 + a3 * K ^ 3 + a4 * K ^ 4 + a5 * K ^ 5)
 
-        K = 1 / (1 + 0.2316419 * L)
+				If X < 0 Then
+					ThisResult = 1 - ThisResult
+				End If
 
-        ThisResult = 1 - 1 / Math.Sqrt(2 * Math.PI) * Math.Exp(-L ^ 2 / 2) * (a1 * K + a2 * K ^ 2 + a3 * K ^ 3 + a4 * K ^ 4 + a5 * K ^ 5)
+				Return ThisResult
+			End Function
 
-        If X < 0 Then
-          ThisResult = 1 - ThisResult
-        End If
-        Return ThisResult
-      End Function
 
-      ''' <summary>
-      ''' The cumulative normal distribution function approimative implementation for mean=0 and sigma = 1
-      ''' see http://en.wikipedia.org/wiki/Normal_distribution
-      ''' </summary>
-      ''' <param name="X">the variable point</param>
-      ''' <returns></returns>
-      ''' <remarks>This function MathNet </remarks>
-      Public Shared Function CDFGaussian(ByVal Mean As Double, ByVal StandardDeviation As Double, ByVal X As Double) As Double
-        Dim ThisNormalDist = New MathNet.Numerics.Distributions.Normal(Mean, StandardDeviation)
+			''' <summary>
+			''' Computes the cumulative probability of a Normal (Gaussian) distribution with
+			''' a specified mean and standard deviation at a given X value.
+			''' 
+			''' Typical use cases:
+			'''  • Mapping a value into probability space based on a custom Gaussian distribution.
+			'''  • Evaluating tail probabilities and confidence intervals.
+			'''  • Inverting quantile transformations performed with <see cref="InverseCDFGaussian"/>.
+			''' 
+			''' Mapping behavior:
+			'''  X = Mean             → p = 0.5
+			'''  X > Mean             → p approaches 1
+			'''  X lens than  Mean    → p approaches 0
+			''' 
+			''' Reference: https://en.wikipedia.org/wiki/Normal_distribution
+			''' </summary>
+			''' <param name="Mean">The mean (μ) of the distribution.</param>
+			''' <param name="StandardDeviation">The standard deviation (σ) of the distribution.</param>
+			''' <param name="X">The value to map.</param>
+			''' <returns>Probability between 0 and 1.</returns>
+			Public Shared Function CDFGaussian(ByVal Mean As Double, ByVal StandardDeviation As Double, ByVal X As Double) As Double
+				Dim ThisNormalDist = New MathNet.Numerics.Distributions.Normal(Mean, StandardDeviation)
+				Return ThisNormalDist.CumulativeDistribution(X)
+			End Function
 
-        Return ThisNormalDist.CumulativeDistribution(X)
-      End Function
 
 #Disable Warning BC42304 ' XML documentation parse error
-      ''' <summary>
-      ''' The cumulative normal distribution function approimative implementation for mean=0 and sigma = 1
-      ''' see http://en.wikipedia.org/wiki/Normal_distribution
-      ''' </summary>
-      ''' <param name="X">the variable point</param>
-      ''' <returns>The P(Normal Function < X)</returns>
-      ''' <remarks>This function MathNet </remarks>
-      Public Shared Function InverseCDFGaussian(ByVal Mean As Double, ByVal StandardDeviation As Double, ByVal Probability As Double) As Double
+			''' <summary>
+			''' The cumulative normal distribution function approimative implementation for mean=0 and sigma = 1
+			''' see http://en.wikipedia.org/wiki/Normal_distribution
+			''' </summary>
+			''' <param name="X">the variable point</param>
+			''' <returns>The P(Normal Function < X)</returns>
+			''' <remarks>This function MathNet </remarks>
+			Public Shared Function InverseCDFGaussian(ByVal Mean As Double, ByVal StandardDeviation As Double, ByVal Probability As Double) As Double
 #Enable Warning BC42304 ' XML documentation parse error
         Dim ThisNormalDist = New MathNet.Numerics.Distributions.Normal(Mean, StandardDeviation)
 

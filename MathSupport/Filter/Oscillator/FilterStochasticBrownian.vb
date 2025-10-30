@@ -46,7 +46,7 @@ Namespace MathPlus.Filter
 
 		Private Const FILTER_PLL_DETECTOR_COUNT_LIMIT As Integer = 20
 		Private Const FILTER_PLL_DETECTOR_ERROR_LIMIT As Double = 0.0001
-		Private Const FILTER_RATE_FOR_VOLATILITY As Integer = 30
+		Public Const FILTER_RATE_FOR_VOLATILITY As Integer = 30
 
 		Private MyRate As Integer
 		Private MyRateOutput As Double
@@ -161,11 +161,11 @@ Namespace MathPlus.Filter
 		''' A filter peak rate of -1 lock it's value to the FilterRate value
 		''' </param>
 		Public Sub New(
-									ByVal FilterRate As Integer,
-									ByVal FilterOutputRate As Double,
-									Optional ByVal IsFilterPeakEnabled As Boolean = False,
-									Optional ByVal FilterVolatilityRate As Integer = FILTER_RATE_FOR_VOLATILITY,
-									Optional ByVal FilterPeakRate As Integer = -1)
+			ByVal FilterRate As Integer,
+			ByVal FilterOutputRate As Double,
+			Optional ByVal IsFilterPeakEnabled As Boolean = False,
+			Optional ByVal FilterVolatilityRate As Integer = FILTER_RATE_FOR_VOLATILITY,
+			Optional ByVal FilterPeakRate As Integer = -1)
 
 			MyProcessorCount = Environment.ProcessorCount
 			If MyProcessorCount < 2 Then MyProcessorCount = 2
@@ -3254,6 +3254,30 @@ Namespace MathPlus.Filter
 		Private ReadOnly Property IStochasticBrownianData_GetListOfRSIOBV As IList(Of Double) Implements IStochasticBrownianData.GetListOfRSIOBV
 			Get
 				Return MyFilterOfPriceRSIOfOBV.ToList
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_ToList As IList(Of Double) Implements IStochasticBrownianData.ToList
+			Get
+				Return ToList
+			End Get
+		End Property
+
+		Public ReadOnly Property PricePeakValueGainPrediction As IList(Of Double) Implements IStochasticBrownianData.PricePeakValueGainPrediction
+			Get
+				Return MyListOfPeakValueGainPrediction.ToList
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_Count As Integer Implements IStochasticBrownianData.Count
+			Get
+				Return Me.Count
+			End Get
+		End Property
+
+		Private ReadOnly Property IStochasticBrownianData_Rate As Integer Implements IStochasticBrownianData.Rate
+			Get
+				Return Me.Rate
 			End Get
 		End Property
 #End Region

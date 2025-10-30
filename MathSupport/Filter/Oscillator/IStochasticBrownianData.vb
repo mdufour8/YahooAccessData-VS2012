@@ -104,6 +104,7 @@ Public Interface IStochasticBrownianData
 	ReadOnly Property PriceStochacticVolatilityNegative As IList(Of Double)
 	ReadOnly Property PriceStochacticVolatilityPositiveToNegativeRatio As IList(Of Double)
 	ReadOnly Property PriceStochacticVolatilityPositiveToNegativeRatioFiltered As IList(Of Double)
+	ReadOnly Property PricePeakValueGainPrediction As IList(Of Double)
 
 	''' <summary>
 	''' Return the On-Balance Log scaled Volume (OBV) related data series.
@@ -114,5 +115,13 @@ Public Interface IStochasticBrownianData
 	''' Return the RSI of the On-Balance Log Scaled Volume (OBVLS) related data series.
 	''' </summary>
 	ReadOnly Property GetListOfRSIOBV As IList(Of Double)
+
+	ReadOnly Property ToList As IList(Of Double)
+
+	ReadOnly Property Count As Integer
+
+	ReadOnly Property Rate As Integer
+
+
 End Interface
 
