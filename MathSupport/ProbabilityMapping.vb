@@ -189,7 +189,23 @@ Namespace MathPlus.Probability
 		Public Function ToGaussianScale(probs As IEnumerable(Of Double), scaleOfX As Double) As List(Of Double)
 			Dim out As New List(Of Double)
 			For Each p In probs
+				'out.Add(Measure.Measure.ProbabilityToGaussianScale(p, scaleOfX))
 				out.Add(ProbabilityToGaussianScale(p, scaleOfX))
+			Next
+			Return out
+		End Function
+
+		''' <summary>
+		''' Applies the Gaussian tail-expansion transform to each probability stream on a double stream of data
+		''' each with their own expansion for scaleOfX:
+		''' p → p' in [0,1] with more sensitivity near 0 and 1.
+		''' Example: probs.ToGaussianScale(scaleOfX:=3)
+		''' </summary>
+		<Extension>
+		Public Function ToGaussianScale(probs As IEnumerable(Of (x As Double, y As Double)), scaleOfX1 As Double, scaleOfX2 As Double) As List(Of (x As Double, y As Double))
+			Dim out As New List(Of (Double, Double))
+			For Each p In probs
+				out.Add((ProbabilityToGaussianScale(p.x, scaleOfX1), ProbabilityToGaussianScale(p.y, scaleOfX2)))
 			Next
 			Return out
 		End Function

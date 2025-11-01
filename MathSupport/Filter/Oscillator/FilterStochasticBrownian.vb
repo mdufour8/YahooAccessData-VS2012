@@ -2313,6 +2313,11 @@ Namespace MathPlus.Filter
 			Throw New NotImplementedException
 		End Function
 
+
+		''' <summary>
+		''' Returns the default stochastic list (Price Probability Median)	
+		''' </summary>
+		''' <returns></returns>
 		Public ReadOnly Property ToList As System.Collections.Generic.IList(Of Double) Implements IStochastic.ToList
 			Get
 				'Return MyFilterLPOfStochasticSlow.ToList
@@ -3278,6 +3283,12 @@ Namespace MathPlus.Filter
 		Private ReadOnly Property IStochasticBrownianData_Rate As Integer Implements IStochasticBrownianData.Rate
 			Get
 				Return Me.Rate
+			End Get
+		End Property
+
+		Public ReadOnly Property GetListOfPriceVolMomentum As IList(Of (PriceMomentum As Double, VolumeMomentum As Double)) Implements IStochasticBrownianData.GetListOfPriceVolMomentum
+			Get
+				Return Me.ToList.Zip(second:=MyFilterOfPriceRSIOfOBV.ToList, resultSelector:=Function(m, p) (PriceMomentum:=m, VolumeMomentum:=p)).ToList()
 			End Get
 		End Property
 #End Region

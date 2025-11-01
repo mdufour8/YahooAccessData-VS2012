@@ -569,5 +569,11 @@ Namespace MathPlus.Filter
 				Return _src.Rate
 			End Get
 		End Property
+
+		Public ReadOnly Property GetListOfPriceVolMomentum As IList(Of (PriceMomentum As Double, VolumeMomentum As Double)) Implements IStochasticBrownianData.GetListOfPriceVolMomentum
+			Get
+				Return _src.GetListOfPriceVolMomentum
+			End Get
+		End Property
 	End Class
 End Namespace

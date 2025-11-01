@@ -116,6 +116,16 @@ Public Interface IStochasticBrownianData
 	''' </summary>
 	ReadOnly Property GetListOfRSIOBV As IList(Of Double)
 
+	''' <summary>
+	''' Return the Price and Volume Momentum paired data series. 
+	''' This function is provided to help extracting the data in a single call stream
+	''' It combine the information obtained via calling the Stochastic function ToList and GetListOfRSIOBV. 
+	''' Based on momentum the function ToList or PriceMomentum return the probability that the signal reach the momentum predicted median 
+	''' price for the next sample. Partially based on fast momentum, GetListOfRSIOBV return the probability that the volume is in an 
+	''' accelerating accumulation phase indicating a positive condition from [0.5 to 1.0] or negative from [0.5 to 0.0]. 
+	''' </summary>
+	ReadOnly Property GetListOfPriceVolMomentum As IList(Of (PriceMomentum As Double, VolumeMomentum As Double))
+
 	ReadOnly Property ToList As IList(Of Double)
 
 	ReadOnly Property Count As Integer
