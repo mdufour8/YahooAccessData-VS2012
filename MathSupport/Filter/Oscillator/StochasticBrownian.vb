@@ -17,6 +17,8 @@ Namespace MathPlus.Filter
 		Implements IStochasticBrownianData
 
 		Private ReadOnly _src As FilterStochasticBrownian
+		Private ReadOnly _StochasticBrownianData As IStochasticBrownianData
+
 		Private ReadOnly _cache As New Dictionary(Of IStochastic.enuStochasticType, IList(Of Double))()
 
 		Public Sub New(
@@ -26,14 +28,12 @@ Namespace MathPlus.Filter
 			Optional ByVal FilterVolatilityRate As Integer = FilterStochasticBrownian.FILTER_RATE_FOR_VOLATILITY,
 			Optional ByVal FilterPeakRate As Integer = -1)
 
-			_src = New FilterStochasticBrownian(
+			Me.New(New FilterStochasticBrownian(
 				FilterRate,
 				FilterOutputRate,
 				IsFilterPeakEnabled,
 				FilterVolatilityRate,
-				FilterPeakRate)
-
-			_ToList = _src.ToList
+				FilterPeakRate))
 		End Sub
 		''' <summary>
 		''' Create a facade over an existing <see cref="FilterStochasticBrownian"/> instance.
@@ -44,6 +44,10 @@ Namespace MathPlus.Filter
 		Public Sub New(stochastic As FilterStochasticBrownian)
 			If stochastic Is Nothing Then Throw New ArgumentNullException(NameOf(stochastic))
 			_src = stochastic
+			_StochasticBrownianData = _src
+			_ToList = _src.ToList
+			_GetListOfPriceOBV = _StochasticBrownianData.GetListOfPriceOBV
+			_GetListOfRSIOBV = _StochasticBrownianData.GetListOfRSIOBV
 		End Sub
 
 		' Centralized lazy cache getter.
