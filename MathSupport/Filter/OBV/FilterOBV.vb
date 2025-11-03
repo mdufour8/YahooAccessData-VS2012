@@ -23,7 +23,7 @@ Public Class FilterOBV
 
 	Public Function Filter(ByVal Volume As Long, ByVal Direction As FilterRSI.SlopeDirection) As Double
 		Dim ThisVolumeLogFiltered As Double
-		Dim ThisVolumeAverageFiltered As Double
+		Dim ThisVolumeLongTermAverageFiltered As Double
 
 		If MyFilterLowPassForOBVOut.Count = 0 Then
 			'OBV initialisation 
@@ -33,15 +33,14 @@ Public Class FilterOBV
 		End If
 		If Volume < 0 Then Volume = 0
 		If Volume = 0 Then
-			ThisVolumeAverageFiltered = MyFilterForVolumeAverageExp.FilterLast
+			'use the last values
+			ThisVolumeLongTermAverageFiltered = MyFilterForVolumeAverageExp.FilterLast
 			ThisVolumeLogFiltered = MyVolumeLogFilteredLast
 		Else
-			ThisVolumeAverageFiltered = MyFilterForVolumeAverageExp.FilterRun(CDbl(Volume))
-			'limit the volume 
-			'Dim ThisVolLimited = MathPlus.WaveForm.SignalLimit(CDbl(Volume), MyLimitFactorForVolume * ThisVolumeLogFiltered)
-			'ThisVolumeLogFiltered = Math.Log((ThisVolLimited + 1) / ThisVolumeLogFiltered)
+			ThisVolumeLongTermAverageFiltered = MyFilterForVolumeAverageExp.FilterRun(Math.Log(Volume + 1))
 			'applied a logaritmic fucntion to the volume
-			ThisVolumeLogFiltered = Math.Log(Volume / ThisVolumeAverageFiltered)
+			'this is equivalent to a ratio of volume over average volume	
+			ThisVolumeLogFiltered = Math.Log(Volume + 1) - ThisVolumeLongTermAverageFiltered
 		End If
 		If ThisVolumeLogFiltered > 0 Then
 			'volume increasing relative to an average is interpreted as significant
@@ -68,53 +67,48 @@ Public Class FilterOBV
 		Return MyFilterLowPassForOBVOut.Filter(MyOBVLast)
 	End Function
 
+
+	''' <summary>
+	''' This function is old and should be updated 
+	''' </summary>
+	''' <param name="Price"></param>
+	''' <param name="Volume"></param>
+	''' <param name="Direction"></param>
+	''' <returns></returns>
 	Public Function Filter(ByVal Price As Double, ByVal Volume As Long, Optional ByVal Direction As FilterRSI.SlopeDirection = FilterRSI.SlopeDirection.NotSpecified) As Double
 		Dim ThisPriceVariation As Double
-		Dim ThisPriceValueFiltered As Double
-		Dim ThisVolumeValueFiltered As Double
-		Dim ThisVolumeFiltered As Double
-		Dim ThisVolumeLogFiltered As Double
+		Dim MyPriceLast As Double
+		Dim ThisVolumeLogDelta As Double
+		Dim ThisVolumeLogLongTermFiltered As Double
 
-		MyPriceLast = Price
-		MyVolumeLast = Volume
 
-		If Volume = 0 Then
-			ThisVolumeFiltered = 0
-		Else
-			ThisVolumeFiltered = MyFilterForVolumeAverageExp.FilterRun(CDbl(Volume))
-			'limit the volume 
-			'Dim ThisVolLimited = MathPlus.WaveForm.SignalLimit(CDbl(Volume), MyLimitFactorForVolume * ThisVolumeLogFiltered)
-			'ThisVolumeLogFiltered = Math.Log((ThisVolLimited + 1) / ThisVolumeLogFiltered)
-			If Volume = 0 Then
-				'do not allow Volume to go to zero on a Log function
-				Volume = 1
-			End If
-			ThisVolumeLogFiltered = Math.Log((Volume) / ThisVolumeFiltered)
-		End If
-		'do not filter
-		ThisPriceValueFiltered = Price
-		ThisVolumeValueFiltered = ThisVolumeLogFiltered
 		If MyFilterLowPassForOBVOut.Count = 0 Then
 			'OBV initialisation 
 			MyOBVLast = 0
-			MyPriceFilteredLast = ThisPriceValueFiltered
+			MyPriceFilteredLast = MyPriceLast
 		End If
-		If ThisVolumeValueFiltered > 0 Then
+		MyPriceLast = Price
+		MyVolumeLast = Volume
+
+		ThisVolumeLogLongTermFiltered = MyFilterForVolumeAverageExp.FilterRun(Math.Log(Volume + 1))
+		ThisVolumeLogDelta = Math.Log((Volume + 1)) - ThisVolumeLogLongTermFiltered
+
+		If ThisVolumeLogDelta > 0 Then
 			Select Case Direction
 				Case FilterRSI.SlopeDirection.NotSpecified
-					ThisPriceVariation = ThisPriceValueFiltered - MyPriceFilteredLast
+					ThisPriceVariation = MyPriceLast - MyPriceFilteredLast
 					If ThisPriceVariation < 0 Then
-						MyOBVLast = MyOBVLast - ThisVolumeValueFiltered
+						MyOBVLast = MyOBVLast - ThisVolumeLogDelta
 					ElseIf ThisPriceVariation > 0 Then
-						MyOBVLast = MyOBVLast + ThisVolumeValueFiltered
+						MyOBVLast = MyOBVLast + ThisVolumeLogDelta
 					End If
 				Case FilterRSI.SlopeDirection.Positive
-					MyOBVLast = MyOBVLast + ThisVolumeValueFiltered
+					MyOBVLast = MyOBVLast + ThisVolumeLogDelta
 				Case FilterRSI.SlopeDirection.Negative
-					MyOBVLast = MyOBVLast - ThisVolumeValueFiltered
+					MyOBVLast = MyOBVLast - ThisVolumeLogDelta
 			End Select
 		End If
-		MyPriceFilteredLast = ThisPriceValueFiltered
+		MyPriceFilteredLast = MyPriceLast
 		Return MyFilterLowPassForOBVOut.Filter(MyOBVLast)
 	End Function
 
@@ -126,7 +120,7 @@ Public Class FilterOBV
 		Return Me.ToArray
 	End Function
 
-	Public Function FilterPredictionNext(ByVal Price As Double, ByVal Volume As Integer) As Double
+	Private Function FilterPredictionNext(ByVal Price As Double, ByVal Volume As Integer) As Double
 		Dim ThisPriceVariation As Double
 		Dim ThisPriceValueFiltered As Double
 		Dim ThisVolumeValueFiltered As Double
