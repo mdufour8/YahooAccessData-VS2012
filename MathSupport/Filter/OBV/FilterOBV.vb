@@ -1,4 +1,6 @@
 ﻿#Region "FilterOBV"
+Imports Newtonsoft.Json.Linq
+Imports YahooAccessData.MathPlus
 Imports YahooAccessData.MathPlus.Filter
 
 <Serializable()>
@@ -11,6 +13,7 @@ Public Class FilterOBV
 	Private MyOBVLast As Double
 	Private MyPriceFilteredLast As Double
 	Private MyVolumeLogFilteredLast As Double
+	Private MyFilterVolatilityForPositifNegatif As Filter.FilterVolatilityYangZhang
 	Private MyFilterForVolumeAverageExp As IFilterRun
 	Private MyFilterLowPassForOBVOut As IFilter
 
@@ -19,8 +22,23 @@ Public Class FilterOBV
 		MyRate = FilterRate
 		MyFilterForVolumeAverageExp = New FilterExp(FilterRateForAverageVolume)
 		MyFilterLowPassForOBVOut = New FilterLowPassExp(FilterRate)
+		'use the volatility filter to later determine if the price is going up or down an establish if yes or no these volume are buy or sell acelerating volume
+		MyFilterVolatilityForPositifNegatif = New FilterVolatilityYangZhang(CInt(MyRate), FilterVolatility.enuVolatilityStatisticType.Exponential, IsUseLastSampleHighLowTrail:=False)
 	End Sub
 
+	''' <summary>
+	''' Use this call to measure the accelerating A-OBV base on the price direction that establish the positivity or not of the incoming volume
+	''' </summary>
+	''' <param name="Volume"></param>
+	''' <param name="Direction">
+	''' The direction of the price movement associated with this volume can be of 4 type: as defined here:
+	'''     NotSpecified : the direction is not specified, the function will try to determine it based on the price movement
+	'''     In that case the function behave more or less like teh standard OBV definition
+	'''     Positive : the price is moving up
+	'''     Negative : the price is moving down
+	'''     Sideways : the price is moving sideways or the same as the previous sample
+	''' </param>
+	''' <returns></returns>
 	Public Function Filter(ByVal Volume As Long, ByVal Direction As FilterRSI.SlopeDirection) As Double
 		Dim ThisVolumeLogFiltered As Double
 		Dim ThisVolumeLongTermAverageFiltered As Double
@@ -73,43 +91,13 @@ Public Class FilterOBV
 	''' </summary>
 	''' <param name="Price"></param>
 	''' <param name="Volume"></param>
-	''' <param name="Direction"></param>
 	''' <returns></returns>
-	Public Function Filter(ByVal Price As Double, ByVal Volume As Long, Optional ByVal Direction As FilterRSI.SlopeDirection = FilterRSI.SlopeDirection.NotSpecified) As Double
-		Dim ThisPriceVariation As Double
-		Dim MyPriceLast As Double
-		Dim ThisVolumeLogDelta As Double
-		Dim ThisVolumeLogLongTermFiltered As Double
-
-
-		If MyFilterLowPassForOBVOut.Count = 0 Then
-			'OBV initialisation 
-			MyOBVLast = 0
-			MyPriceFilteredLast = MyPriceLast
-		End If
-		MyPriceLast = Price
-		MyVolumeLast = Volume
-
-		ThisVolumeLogLongTermFiltered = MyFilterForVolumeAverageExp.FilterRun(Math.Log(Volume + 1))
-		ThisVolumeLogDelta = Math.Log((Volume + 1)) - ThisVolumeLogLongTermFiltered
-
-		If ThisVolumeLogDelta > 0 Then
-			Select Case Direction
-				Case FilterRSI.SlopeDirection.NotSpecified
-					ThisPriceVariation = MyPriceLast - MyPriceFilteredLast
-					If ThisPriceVariation < 0 Then
-						MyOBVLast = MyOBVLast - ThisVolumeLogDelta
-					ElseIf ThisPriceVariation > 0 Then
-						MyOBVLast = MyOBVLast + ThisVolumeLogDelta
-					End If
-				Case FilterRSI.SlopeDirection.Positive
-					MyOBVLast = MyOBVLast + ThisVolumeLogDelta
-				Case FilterRSI.SlopeDirection.Negative
-					MyOBVLast = MyOBVLast - ThisVolumeLogDelta
-			End Select
-		End If
-		MyPriceFilteredLast = MyPriceLast
-		Return MyFilterLowPassForOBVOut.Filter(MyOBVLast)
+	Public Function Filter(ByVal Price As Double, ByVal Volume As Long) As Double
+		'It is important to update the price last before filtering
+		'It is partially use to determine the direction of the price movement
+		Dim ThisPriceVol As IPriceVol = New PriceVol(PriceValue:=CSng(Price), Volume:=Volume) With {
+			.LastPrevious = CSng(MyPriceLast)}
+		Return Me.Filter(ThisPriceVol)
 	End Function
 
 	Public Function Filter(ByRef Value() As YahooAccessData.IPriceVol) As Double()
@@ -164,15 +152,17 @@ Public Class FilterOBV
 		Return Me.Filter(CDbl(Price), Volume)
 	End Function
 
-	Public Function FilterPredictionNext(ByVal Price As Single, ByVal Volume As Integer) As Double
+	Private Function FilterPredictionNext(ByVal Price As Single, ByVal Volume As Integer) As Double
 		Return Me.FilterPredictionNext(CDbl(Price), Volume)
 	End Function
 
 	Public Function Filter(ByRef PriceVol As IPriceVol) As Double
-		Return Me.Filter(CDbl(PriceVol.Last), DirectCast(PriceVol, PriceVol).Volume)
+		MyFilterVolatilityForPositifNegatif.Filter(PriceVol, IsVolatityHoldToLast:=False)
+		MyPriceLast = PriceVol.Last
+		Return Me.Filter(DirectCast(PriceVol, PriceVol).Volume, MyFilterVolatilityForPositifNegatif.FilterDirection)
 	End Function
 
-	Public Function FilterPredictionNext(ByRef PriceVol As IPriceVol) As Double
+	Private Function FilterPredictionNext(ByRef PriceVol As IPriceVol) As Double
 		With PriceVol
 			Return Me.FilterPredictionNext(CDbl(.LastWeighted), .Vol)
 		End With
