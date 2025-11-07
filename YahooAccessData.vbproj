@@ -395,6 +395,12 @@
     <Folder Include="MathSupport\Filter\PLL\Documentation\" />
     <Folder Include="MathSupport\Filter\Statistic\Old Code\" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\WebEODData\WCF\SharedContracts\SharedContracts.vbproj">
+      <Project>{ad64cc35-ea86-4039-a693-ae8b23b488f6}</Project>
+      <Name>SharedContracts</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
