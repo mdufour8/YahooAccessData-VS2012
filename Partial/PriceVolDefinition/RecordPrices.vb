@@ -190,17 +190,21 @@ Public Class RecordPrices
 		'If the predicate returns True, the element is included in the result; otherwise, it is excluded.
 		'This behavior Is Not explicitly stated In the code itself, which can make it less obvious to someone reading it. 
 
+		'flag indicating that there is more than one item per day
+		'always false
+		IsIntraDayLocalEnabled = False
+		'splitIndex is not use anymore
+		ReDim Me.SplitIndex(0 To 0)
+		Me.IsVol = False
 		If Me.Stock IsNot Nothing Then
 			If Me.Stock.IsInternational Then
-				'If the stock is international, we need to adjust the date to the local time zone
-				'This is done by adding 5 hours to the date
-				'This is not yet implemented 
-				'colData = colData.ToLocalTime()
 				colData = FilterAndAdjustWeekendData(colData)
+				If colData.Last.DateDay > DateStopValue Then
+					DateStopValue = colData.Last.DateDay
+				End If
 			End If
 			Call ProcessDataDailyIntraDay(colData, DateStartValue, DateStopValue)
 		End If
-		MyListOfPriceVol = New List(Of IPriceVol)(MyPriceVols)
 	End Sub
 
 	''' <summary>
@@ -455,13 +459,14 @@ Public Class RecordPrices
 			Case DayOfWeek.Sunday
 				lastRecord.Record.DateDay = lastRecord.DateDay.AddDays(1)
 		End Select
+		Return colData
 
-		Return colData.Where(
-			Function(record)
-				Return record Is lastRecord OrElse
-					(record.DateDay.DayOfWeek <> DayOfWeek.Saturday AndAlso
-					record.DateDay.DayOfWeek <> DayOfWeek.Sunday)
-			End Function)
+		'Return colData.Where(
+		'	Function(record)
+		'		Return record Is lastRecord OrElse
+		'			(record.DateDay.DayOfWeek <> DayOfWeek.Saturday AndAlso
+		'			record.DateDay.DayOfWeek <> DayOfWeek.Sunday)
+		'	End Function)
 	End Function
 
 
@@ -564,6 +569,7 @@ Public Class RecordPrices
 		Dim I As Integer
 		Dim J As Integer
 		Dim K As Integer
+		Dim ThisDateCurrent As Date
 		'Dim colDataDaily As IEnumerable(Of YahooAccessData.RecordQuoteValue)
 		Dim colDataDailyIntraDay As IEnumerable(Of IEnumerable(Of YahooAccessData.RecordQuoteValue))
 
@@ -578,7 +584,8 @@ Public Class RecordPrices
 		Dim ThisListOfSSpecialDividendPayout As New List(Of Integer)
 		Dim ThisOpenNext As Single
 		Dim ThisRecord As YahooAccessData.RecordQuoteValue
-		Dim ThisRecordIntraDay As IEnumerable(Of YahooAccessData.RecordQuoteValue)
+		Dim ThisRecordQuoteValue As YahooAccessData.RecordQuoteValue
+		'Dim ThisRecordQuoteValuePrevious As YahooAccessData.RecordQuoteValue
 		Dim ThisListOfPriceVols As New List(Of PriceVol)
 		Dim ThisPriceForSplitInMiddle As Single
 		Dim ThisTargetPriceStockSplit As Single
@@ -589,40 +596,89 @@ Public Class RecordPrices
 		'set the default value
 		'adjust the date for the constraint of always starting on Monday and ignore the weekend 
 		Me.DateStart = ReportDate.DateToMondayPrevious(DateStartValue.Date)
-		'DateStop should not fall on a weekend 
-		'if it does move it back to the previous friday
-
-		Me.DateStop = ReportDate.DateToWeekEndRemovePrevious(DateStopValue.Date)
+		Me.DateStop = DateStopValue.Date
 		If Me.DateStop < Me.DateStart Then
 			Me.DateStop = Me.DateStart
 		End If
-
-		'need one more point to include the Datestop and the next day data
-		Me.NumberPoint = ReportDate.MarketTradingDeltaDays(Me.DateStart, Me.DateStop) + 1
-		ReDim MyPriceVols(0 To Me.NumberPoint - 1)
+		'If Date fall on a weekend go to the next monday even if it is a future date
+		Select Case Me.DateStop.DayOfWeek
+			Case DayOfWeek.Saturday
+				Me.DateStop = Me.DateStop.AddDays(2)
+			Case DayOfWeek.Sunday
+				Me.DateStop = Me.DateStop.AddDays(1)
+		End Select
+		'not used anymore
+		'because MarketTradingDeltaDays take into account the current date and the number of tradindays may not be correct
+		'for a 24h tradin period particularly in the weekend trading session which is now supported
+		'to solve this it is better to do teh process in reverse in use a list isntead of an array
+		'at the end to maintain teh compatibillity with the previous code the list is converted to an array
+		'not use anymore
+		'Me.NumberPoint = ReportDate.MarketTradingDeltaDays(Me.DateStart, Me.DateStop) + 1
+		'ReDim MyPriceVols(0 To Me.NumberPoint - 1)
 		'array declaration
-		MyPriceVolsIntraDay = New PriceVol(0 To Me.NumberPoint - 1)() {}
-		'extract the intra day data from the full stream time data for all teh stream
+
+		'same story with the intraday data
+		'MyPriceVolsIntraDay = New PriceVol(0 To Me.NumberPoint - 1)() {}
+		'extract the intraday data from the full stream time data for all the stream
 		'only the daily data is used for the calculation	
-		colDataDailyIntraDay = colData.ToDailyIntraDay(Me.DateStart, Me.DateStop.AddHours(24).AddSeconds(-1))
-		'also patch the data to a standard weekly stream data from Monday to Friday
+		'do I really need to read from the intraday? No
+		'this was writtent long time ago to deal with the yahoo dat
+		'let try something else
+		'Dim ThisListOfPriceVolsIntraDay = New List(Of IEnumerable(Of YahooAccessData.RecordQuoteValue))(colData.ToDailyIntraDay(Me.DateStart, Me.DateStop.AddHours(24).AddSeconds(-1)))
+		'colData As IEnumerable(Of YahooAccessData.RecordQuoteValue)
 
+		'Dim ThisListOfRecordQuoteValue = colData.SkipWhile(Function(RecordQuote) RecordQuote.DateDay.DayOfWeek = DayOfWeek.Saturday OrElse RecordQuote.DateDay.DayOfWeek = DayOfWeek.Sunday).ToList
 
+		'this call group the data by day it include all date including weekend between DateStart and DateStop
+		'colDataDailyIntraDay = colData.ToDailyIntraDay(Me.DateStart, Me.DateStop.AddHours(24).AddSeconds(-1))
+		'patch the data to a standard weekly stream data from Monday to Friday
+		'data that fall on a weekend are ignored unles it is the last data point which is used to update the last price
+		'and possibly reporting the weekend data to teh future stream opening on monday
 
+		'MyPriceVolsIntraDay = New PriceVol(0 To Me.NumberPoint - 1)() {}
+		'Start the processing of the data with a nul price
+		'just in case make sure teh data in teh record also start on a weekly stream
+		'we doing that in case teh datae stsrt have been improperly selected
+		'to start on a date that is not the usual working day
+		'essentialy a safeguard againt mistaken supported date. More relevant for 24h trading stream
+		Dim ThisListOfRecordQuoteValue = New List(Of YahooAccessData.RecordQuoteValue)
+		For Each ThisRecordQuoteValueWithIndex In colData.WithIndex
+			'important to remove the time information in this test
+			'the last record may contain the time information if it is a live type of record
+			'set the value of the valid data in the data stream
+			If _
+					ThisRecordQuoteValueWithIndex.Item.DateDay.DayOfWeek = DayOfWeek.Saturday OrElse
+					ThisRecordQuoteValueWithIndex.Item.DateDay.DayOfWeek = DayOfWeek.Sunday Then
 
-		MyPriceVolsIntraDay = New PriceVol(0 To Me.NumberPoint - 1)() {}
-		MyPriceVolLast = New PriceVol(0)
-		ReDim Me.SplitIndex(0 To 0)
-
+				'ignore the week end date
+				'the current program expect to have the data presented as a weekly stream
+				Continue For
+			End If
+			ThisListOfRecordQuoteValue = New List(Of YahooAccessData.RecordQuoteValue)(colData.Skip(ThisRecordQuoteValueWithIndex.Index))
+			Exit For
+		Next
+		MyListOfPriceVol = New List(Of IPriceVol)
 		'set the default value for that condition
 		Me.StartPoint = -1
 		Me.StopPoint = -1
-		If colDataDailyIntraDay.Count = 0 Then
+		If ThisListOfRecordQuoteValue.Count = 0 Then
 			Me.IsNull = True
-			For I = 0 To Me.NumberPoint - 1
-				MyPriceVols(I) = New PriceVol(0) With {.IsNull = True}
-			Next
+			'in that case initialize the pricevol with null v`alues
+			Dim ThisDateStop As Date = Me.DateStart
+			Do
+				MyListOfPriceVol.Add(New PriceVol(0) With {.IsNull = True, .DateLastTrade = ThisDateStop})
+				ThisDateStop = ThisDateStop.AddDays(1)
+				'sunday is not possible here because DateStart is always a monday and we increase by one day at a time
+				If Me.DateStop.DayOfWeek = DayOfWeek.Saturday Then
+					ThisDateStop = ThisDateStop.AddDays(2)
+				End If
+			Loop Until ThisDateStop > Me.DateStop
+			Me.NumberPoint = MyListOfPriceVol.Count
 			Me.NumberNullPoint = Me.NumberPoint
+			ReDim MyPriceVols(0 To Me.NumberPoint - 1)
+			For Each ItemIndexed In MyListOfPriceVol.WithIndex
+				MyPriceVols(ItemIndexed.Index) = DirectCast(ItemIndexed.Item, PriceVol)
+			Next
 			Me.PriceMax = 0
 			Me.PriceMin = 0
 			Me.PriceMinTarget = 0
@@ -632,7 +688,7 @@ Public Class RecordPrices
 			Me.IsPriceTarget = False
 			Return
 		Else
-			'initialize the range variable
+			'initialize the range variable before we start the data processing
 			Me.PriceMax = 0
 			Me.PriceMin = Single.MaxValue
 			Me.PriceMinTarget = Me.PriceMin
@@ -642,449 +698,73 @@ Public Class RecordPrices
 			Me.IsPriceTarget = False
 		End If
 		'adjust the data
-		Dim ThisRecordLast As RecordQuoteValue = colDataDailyIntraDay.First.Last
-		ThisStockSplitRatio = 1.0
-		ThisStockDividendSinglePayoutValue = 0.0
+		ThisListOfPriceVols.Clear()
+		Me.StartPoint = -1
 
-		Me.IsSplit = False
-		Dim ThisDateCurrent As Date = Me.DateStart
-
-		'update the symbol from the record structure
-		Dim ThisStock = ThisRecordLast.Record.Stock
-		If ThisRecordLast.Record.Stock IsNot Nothing Then
-			Me.Symbol = ThisRecordLast.Record.Stock.Symbol
-		Else
-			Me.Symbol = ""
-		End If
-		'If Me.Symbol = "FB" Then
-		'  Me.Symbol = Me.Symbol
-		'  If ThisStock.SplitFactors.Count > 0 Then
-		'    Me.Symbol = Me.Symbol
-		'  End If
-		'End If
-		'If Symbol = "AAPL" Then
-		'  Debugger.Break()
-		'End If
-		Me.IsVol = False
-		I = 0
-		ThisStartPointForTargetPrice = -1
-		ThisPriceSum = 0
-		ThisEarningSum = 0
-		I = 0
-		MyPriceVolLast = New PriceVol(ThisRecordLast.Open)
-		MyPriceVolLast.OneyrTargetPrice = ThisRecordLast.OneyrTargetPrice
-		MyPriceVolLast.ExDividendDate = ReportDate.DateNullValue
-		MyPriceVolLast.ExDividendDatePrevious = ReportDate.DateNullValue
-		MyPriceVolLast.ExDividendDateEstimated = ReportDate.DateNullValue
-		'note that colDataDaily contain only the record between DateStart and DateStop
-
-#If IS_SPLIT_LOCAL_ENABLED Then
-		Dim ThisListOfSpecialSplit As List(Of SplitFactor)
-		Dim ThisSpecialSplit As SplitFactor
-		If MyDictionaryOfSpecialSplit.ContainsKey(Me.Symbol) Then
-			ThisListOfSpecialSplit = MyDictionaryOfSpecialSplit(Me.Symbol)
-		Else
-			ThisListOfSpecialSplit = New List(Of SplitFactor)
-		End If
-		If ThisListOfSpecialSplit.Count > 0 Then
-			ThisSpecialSplit = ThisListOfSpecialSplit.Last
-		Else
-			ThisSpecialSplit = Nothing
-		End If
-#End If
-
-#If IS_SPECIAL_DIVIDEND_ENABLED Then
-		Dim ThisListOfStockDividendSinglePayout As List(Of StockDividendSinglePayout)
-		Dim ThisStockDividendSinglePayout As StockDividendSinglePayout
-		If MyDictionaryOfStockDividendSinglePayout.ContainsKey(Me.Symbol) Then
-			ThisListOfStockDividendSinglePayout = MyDictionaryOfStockDividendSinglePayout(Me.Symbol)
-		Else
-			ThisListOfStockDividendSinglePayout = New List(Of StockDividendSinglePayout)
-		End If
-		If ThisListOfStockDividendSinglePayout.Count > 0 Then
-			ThisStockDividendSinglePayout = ThisListOfStockDividendSinglePayout.Last
-		Else
-			ThisStockDividendSinglePayout = Nothing
-		End If
-#End If
-		I = 0
-		For Each ThisRecordIntraDay In colDataDailyIntraDay
-			If ThisRecordIntraDay.Count > 1 Then
-				'flag indicating that there is more than one item per day
-				IsIntraDayLocalEnabled = True
+		'synchronize the start with the actual data
+		Dim ThisPriceVol As PriceVol
+		ThisDateCurrent = Me.DateStart
+		MyListOfPriceVol.Clear()
+		'collect to be on a valid weekly working day
+		'for the 24h trading stream we will keep only the last item and change the trading day
+		'to be on the next monday
+		Dim ThisRecordQuoteValueFirst = ThisListOfRecordQuoteValue.First
+		'scan the list and collect the priceVol data 
+		Do Until ThisDateCurrent >= ThisRecordQuoteValueFirst.DateDay.Date
+			ThisPriceVol = PriceVolUpdateToNull(ThisRecordQuoteValueFirst, ThisDateCurrent)
+			Me.NumberNullPoint = Me.NumberNullPoint + 1
+			If MyListOfPriceVol.Count > 0 Then
+				MyListOfPriceVol.Last.OpenNext = ThisPriceVol.Open
 			End If
-			'take the last element in the day which is the current end of day and 
-			'compare it with the previous day close to evaluate if there was a split
-			ThisRecord = ThisRecordIntraDay.Last
-
-#If IS_SPLIT_LOCAL_ENABLED Then
-			If Me.Stock.IsSplitEnabled Then
-				ThisStockSplitRatio = MeasureStockSplit(ThisRecord.Last, ThisRecordLast.Last)
-				'ThisSpecialSplit is a local registrated split that cannot easily be detected by MeasureStockSplit
-				If ThisSpecialSplit IsNot Nothing Then
-					If ThisSpecialSplit.DateDay = ThisRecord.DateDay Then
-						'Special split confirmed for this record
-						'replace the previous estimated ThisStockSplitRatio by the one that is provided by the user locally (for now)
-						'The special slpit deal with special split case that are rarely use by stock management and can sometime
-						'originate from buyout or other special circonstance
-						ThisStockSplitRatio = ThisSpecialSplit.Ratio
-						'remove the split from the special slpit list for this stock
-						ThisListOfSpecialSplit.RemoveAt(ThisListOfSpecialSplit.Count - 1)
-						If ThisListOfSpecialSplit.Count > 0 Then
-							'extract the next ThisSpecialSplit for this stock
-							'it will be deal with at the next iteration
-							ThisSpecialSplit = ThisListOfSpecialSplit.Last
-						Else
-							'no more special split for this stock
-							ThisSpecialSplit = Nothing
-						End If
-					End If
-				End If
-			End If
-			If ThisStockSplitRatio <> 1.0 Then
-				'Me.IsSplit confirm that this stock data contain some split in the data stream
-				Me.IsSplit = True
-				'ThisListOfSplitIndex allow to quickly find the index number of the split in the stream for further
-				'processing and data adjustment later in the final steram adjustment
-				ThisListOfSplitIndex.Add(I)
-			End If
-#End If
-#If IS_SPECIAL_DIVIDEND_ENABLED Then
-			'now proceed with the special dividend payout that can occur randomly in the data stream and 
-			'sometime issue by the management. In that case the processing is simple since
-			'we do not adjust the stock value in the stream but just flag the payout as a special day where the
-			'price range may be totally abnormal (i.e. large payout dividend for succesful company).
-			'this flag would allow some algorithm (i.e. volatility measurement) to take this into account
-			'and possibly ignore the data for that day.
-			ThisStockDividendSinglePayoutValue = 0.0
-			If ThisStockDividendSinglePayout IsNot Nothing Then
-				'make sure the comparaison is not done with the time value
-				If ThisStockDividendSinglePayout.DateReference.Date = ThisRecord.DateDay.Date Then
-					'Special dividend payout confirmed for this record
-					'replace ThisStockDividendSinglePayoutValue by it correcy value 
-					'The special dividend payout are rarely use by stock management but can sometime
-					'originate from buyout or other special circonstance
-					ThisStockDividendSinglePayoutValue = ThisStockDividendSinglePayout.PricePayoutValue
-					'remove the Special Stock divident payout from the list for this stock
-					ThisListOfStockDividendSinglePayout.RemoveAt(ThisListOfStockDividendSinglePayout.Count - 1)
-					If ThisListOfStockDividendSinglePayout.Count > 0 Then
-						'extract the next Special dividend payout for this stock
-						'it will be deal with at the next iteration
-						ThisStockDividendSinglePayout = ThisListOfStockDividendSinglePayout.Last
-					Else
-						ThisStockDividendSinglePayout = Nothing
-					End If
-				End If
-			End If
-			If ThisStockDividendSinglePayoutValue > 0.0 Then
-				'flag that the data stream contain some special dividend payout
-				Me.IsStockDividendSinglePayout = True
-				'ThisListOfSSpecialDividendPayout allow to quickly find the index number
-				ThisListOfSSpecialDividendPayout.Add(I)
-			End If
-#End If
-
-			'adjust the PriceVol array to the current date before we start the real processing of the record stream
+			MyListOfPriceVol.Add(ThisPriceVol)
+			ThisDateCurrent = ThisDateCurrent.AddDays(1)
+			ThisDateCurrent = If(ThisDateCurrent.DayOfWeek = DayOfWeek.Saturday, ThisDateCurrent.AddDays(2), ThisDateCurrent)
+		Loop
+		Me.StartPoint = MyListOfPriceVol.Count - 1
+		Dim ThisRecordQuoteValueLast = ThisListOfRecordQuoteValue.Last
+		Dim ThisRecordQuoteValuePrevious = ThisRecordQuoteValueFirst
+		For Each ThisRecordQuoteValue In ThisListOfRecordQuoteValue
 			'important to remove the time information in this test
 			'the last record may contain the time information if it is a live type of record
-			Do Until ThisDateCurrent >= ThisRecord.DateDay.Date
-				MyPriceVols(I) = PriceVolUpdateToNull(ThisRecord, ThisDateCurrent)
-				MyPriceVols(I).LastAdjusted = 1.0
-				If ThisStartPointForTargetPrice < 0 Then
-					If MyPriceVols(I).OneyrTargetPrice <> 0 Then
-						ThisStartPointForTargetPrice = I
-					End If
-				End If
+			'set the value of the valid data in the data stream
+			If ThisRecordQuoteValue Is ThisRecordQuoteValueLast Then
+				ThisRecordQuoteValue = ThisRecordQuoteValue
+			End If
+			If _
+				ThisRecordQuoteValue.DateDay.DayOfWeek = DayOfWeek.Saturday OrElse
+				ThisRecordQuoteValue.DateDay.DayOfWeek = DayOfWeek.Sunday Then
+				'ignore the week end date
+				'the current program expect to have the data presented as a weekly stream
+				Continue For
+			End If
+			Do Until ThisDateCurrent >= ThisRecordQuoteValue.DateDay.Date
+				ThisPriceVol = PriceVolUpdateToNull(ThisRecordQuoteValuePrevious, ThisDateCurrent)
 				Me.NumberNullPoint = Me.NumberNullPoint + 1
-				If I > 0 Then
-					MyPriceVols(I - 1).OpenNext = MyPriceVols(I).Open
+				If MyListOfPriceVol.Count > 0 Then
+					MyListOfPriceVol.Last.OpenNext = ThisPriceVol.Open
 				End If
-				ThisListOfPriceVols.Clear()
-				ThisListOfPriceVols.Add(MyPriceVols(I).CopyFrom)
-				MyPriceVolsIntraDay(I) = ThisListOfPriceVols.ToArray
-				'If MyPriceVols(I).Last = 0 Then
-				'  Debugger.Break()
-				'End If
-				'Debug.Print(String.Format("{0}:{1},{2}", I, MyPriceVols(I).Last, MyPriceVols(I).Vol))
-				'add a day and make sure we jump over the week end
-				ThisDateCurrent = ReportDate.DateToWeekEndRemoveNext(ThisDateCurrent.AddDays(1))
-				I = I + 1
+				MyListOfPriceVol.Add(ThisPriceVol)
+				ThisDateCurrent = ThisDateCurrent.AddDays(1)
+				ThisDateCurrent = If(ThisDateCurrent.DayOfWeek = DayOfWeek.Saturday, ThisDateCurrent.AddDays(2), ThisDateCurrent)
 			Loop
-			If Me.StartPoint = -1 Then
-				'set the value of the valid data in the data stream
-				Me.StartPoint = I
+			ThisPriceVol = PriceVolUpdate(ThisRecordQuoteValue, ThisDateCurrent)
+			If MyListOfPriceVol.Count > 0 Then
+				MyListOfPriceVol.Last.OpenNext = ThisPriceVol.Open
 			End If
-			'pointer and record date match
-			'update the PriceVol data
-			'If I = 184 Then
-			'  Debugger.Break()
-			'End If
-			'start the real update
-			'note ThisRecord as the last record in the day and include with it the full daily price variation
-			'so no need to scan all the price update record in the day to capture the full daily range
-			'If I = 719 Then
-			'	I = I
-			'End If
-			'Dim ThisDateFromIndex = ToDate(Me.DateStart, I)
-			'If ThisRecord.DateLastTrade.Date <> ThisDateFromIndex Then
-			'	I = I
-			'End If
-			'Me.ToIndex(ThisRecord.DateDay.Date) Then
-			MyPriceVols(I) = PriceVolUpdate(ThisRecord, ThisDateCurrent)
-
-			If ThisStartPointForTargetPrice < 0 Then
-				If MyPriceVols(I).OneyrTargetPrice <> 0 Then
-					ThisStartPointForTargetPrice = I
-				End If
+			MyListOfPriceVol.Add(ThisPriceVol)
+			If ThisPriceVol.Volume > 0 Then
+				Me.IsVol = True
 			End If
-			'get the pricevol for the current date
-			ThisListOfPriceVols.Clear()
-			For Each ThisRecord In ThisRecordIntraDay
-				ThisListOfPriceVols.Add(PriceVolUpdateIntraDay(ThisRecord, ThisDateCurrent))
-			Next
-			'here ThisRecord is the last sample at the end of day
-			MyPriceVolsIntraDay(I) = ThisListOfPriceVols.ToArray
-
-			'If IsIntraDayEnabled Then
-			'  Dim ThisPriceVols(0) As PriceVol
-			'  ThisPriceVols(0) = MyPriceVols(I).CopyFrom
-			'  PriceVolsDataIntraDay(I) = ThisPriceVols
-			'End If
-			'carry the stock split information
-			'do not correct yet for the adjustment
-			MyPriceVols(I).LastAdjusted = ThisStockSplitRatio
-			With MyPriceVols(I)
-				'adjust the special dividend here
-				.SpecialDividendPayoutValue = ThisStockDividendSinglePayoutValue
-				If .SpecialDividendPayoutValue > 0.0 Then
-					.IsSpecialDividendPayout = True
-				End If
-				If I > 0 Then
-					MyPriceVols(I - 1).OpenNext = .Open
-				End If
-				'not necessary
-				If .Volume > 0 Then
-					Me.IsVol = True
-				End If
-				If .IsNull = False Then
-					If .OneyrTargetEarning <> 0 Then
-						ThisPriceSum = ThisPriceSum + .Last
-						ThisEarningSum = ThisEarningSum + .OneyrTargetEarning
-					End If
-				End If
-				'If MyPriceVols(I).Last = 0 Then
-				'  Debugger.Break()
-				'End If
-				'Debug.Print(String.Format("{0}:{1},{2}", I, MyPriceVols(I).Last, MyPriceVols(I).Vol))
-			End With
-			ThisDateCurrent = ReportDate.DateToWeekEndRemoveNext(ThisDateCurrent.AddDays(1))
-			If ThisDateCurrent = #3/3/2025# Then
-				ThisDateCurrent = ThisDateCurrent
-			End If
-			'ThisRecord is le last sample at the end of day
-			ThisRecordLast = ThisRecord
-			I = I + 1
+			ThisDateCurrent = ThisDateCurrent.AddDays(1)
+			ThisDateCurrent = If(ThisDateCurrent.DayOfWeek = DayOfWeek.Saturday, ThisDateCurrent.AddDays(2), ThisDateCurrent)
+			ThisRecordQuoteValuePrevious = ThisRecordQuoteValue
 		Next
-		Me.StopPoint = I - 1
-		'make sure the data is fill with null if necessary up to DateStop
-		Do Until ThisDateCurrent > Me.DateStop
-			MyPriceVols(I) = PriceVolUpdateToNull(ThisRecordLast, ThisDateCurrent)
-			MyPriceVols(I).LastAdjusted = 1.0
-			If ThisStartPointForTargetPrice < 0 Then
-				If MyPriceVols(I).OneyrTargetPrice <> 0 Then
-					ThisStartPointForTargetPrice = I
-				End If
-			End If
-			If I > 0 Then
-				MyPriceVols(I - 1).OpenNext = MyPriceVols(I).Open
-			End If
-			'Debug.Print(String.Format("{0}:{1},{2}", I, MyPriceVols(I).Last, MyPriceVols(I).Vol))
-			Me.NumberNullPoint = Me.NumberNullPoint + 1
-			Me.NumberNullPointToEnd = Me.NumberNullPointToEnd + 1
-			'add a day and make sure we jump over the week end
-			ThisDateCurrent = ReportDate.DateToWeekEndRemoveNext(ThisDateCurrent.AddDays(1))
-			ThisListOfPriceVols.Clear()
-			ThisListOfPriceVols.Add(MyPriceVols(I).CopyFrom)
-			MyPriceVolsIntraDay(I) = ThisListOfPriceVols.ToArray
-			I = I + 1
-		Loop
-		MyPriceVols(I - 1).OpenNext = MyPriceVols(I - 1).Last
-		If ThisEarningSum <> 0 Then
-			Me.PriceToEarningTarget = ThisPriceSum / ThisEarningSum
-		Else
-			Me.PriceToEarningTarget = 0
-		End If
+		Me.StopPoint = MyListOfPriceVol.Count - 1
+		Me.NumberPoint = MyListOfPriceVol.Count
 		If Me.NumberNullPoint = Me.NumberPoint Then
 			Me.IsNull = True
 		Else
 			Me.IsNull = False
-		End If
-		If ThisStartPointForTargetPrice >= 0 Then
-			Me.IsPriceTarget = True
-		Else
-			Me.IsPriceTarget = False
-		End If
-		If Me.IsSplit Then
-			'first update the index split position
-			ReDim Me.SplitIndex(0 To ThisListOfSplitIndex.Count)
-			For I = 1 To ThisListOfSplitIndex.Count
-				Me.SplitIndex(I) = ThisListOfSplitIndex(I - 1)
-			Next
-			Me.SplitIndex(0) = ThisListOfSplitIndex.Count
-
-			'then correct for the stock splitting in the data stream
-			ThisStockSplitRatio = 1.0
-			ThisStockSplitRatioLast = ThisStockSplitRatio
-			ThisOpenNext = MyPriceVols(Me.NumberPoint - 1).Last
-			Dim ThisVol As Long
-			For I = (Me.NumberPoint - 1) To 0 Step -1
-				'If I = 717 Then
-				'  I = I
-				'End If
-				With MyPriceVols(I)
-					.Open = .Open / ThisStockSplitRatio
-					.OpenNext = ThisOpenNext
-					ThisOpenNext = .Open
-					.High = .High / ThisStockSplitRatio
-					.Low = .Low / ThisStockSplitRatio
-					.Last = .Last / ThisStockSplitRatio
-					.LastWeighted = .LastWeighted / ThisStockSplitRatio
-					ThisTemp = .Volume
-					'code could be simplified
-					'it was coded like that for debugging
-					ThisTemp = ThisTemp * ThisStockSplitRatio
-					If ThisTemp > Long.MaxValue Then
-						ThisTemp = Long.MaxValue
-					End If
-					ThisVol = CLng(ThisTemp)
-					.Vol = ThisVol.ToIntegerSafe
-					.Volume = ThisVol
-					.DividendShare = .DividendShare / ThisStockSplitRatio
-					.EarningsShare = .EarningsShare / ThisStockSplitRatio
-					.EPSEstimateCurrentYear = .EPSEstimateCurrentYear / ThisStockSplitRatio
-					.EPSEstimateNextQuarter = .EPSEstimateNextQuarter / ThisStockSplitRatio
-					.EPSEstimateNextYear = .EPSEstimateNextYear / ThisStockSplitRatio
-					ThisStockSplitRatioLast = ThisStockSplitRatio
-					'check if there is a new stocksplit
-					IsTargetPriceSplitInSync = False
-					If .LastAdjusted <> 1.0 Then
-						'occur every time there is a split in the array
-						If I > 0 Then
-							If Me.Stock.IsSplitEnabled Then
-								ThisTargetPriceStockSplit = MeasureStockSplit(MyPriceVols(I).OneyrTargetPrice, MyPriceVols(I - 1).OneyrTargetPrice)
-								If Math.Abs(Math.Log(ThisTargetPriceStockSplit / .LastAdjusted)) < 0.2 Then
-									IsTargetPriceSplitInSync = True
-								End If
-							End If
-						End If
-						'split effect are cumulative
-						ThisStockSplitRatio = ThisStockSplitRatio * .LastAdjusted
-						'bound the maximum range in case of strange stock or cumulative error
-						If ThisStockSplitRatio > 1000 Then
-							ThisStockSplitRatio = 1000
-						ElseIf ThisStockSplitRatio < 0.001 Then
-							ThisStockSplitRatio = 0.001
-						End If
-						If IsTargetPriceSplitInSync = False Then
-							'.OneyrTargetPrice is know to stay untune with the split for one more day after the split
-							If (I < (Me.NumberPoint - 1)) Then
-								K = I + PRICE_SPLIT_CHECK_TO_FUTURE_DAY_POSITION
-								'calculate the middle point price between before and after the split
-								ThisPriceForSplitInMiddle = (MyPriceVols(I).OneyrTargetPrice * (1 + 1 / ThisStockSplitRatio)) / 2
-								'always check to the limit
-								For J = I + 1 To Me.NumberPoint - 1
-									'check in the future to at least that position value of K before we allow the exit from the loop
-									If J <= K Then
-										If ThisStockSplitRatio >= 1 Then
-											If MyPriceVols(J).OneyrTargetPrice > ThisPriceForSplitInMiddle Then
-												MyPriceVols(J).OneyrTargetPrice = MyPriceVols(J).OneyrTargetPrice / ThisStockSplitRatio
-											End If
-										Else
-											If MyPriceVols(J).OneyrTargetPrice < ThisPriceForSplitInMiddle Then
-												MyPriceVols(J).OneyrTargetPrice = .OneyrTargetPrice / ThisStockSplitRatio
-											End If
-										End If
-									Else
-										'enough check in the future
-										Exit For
-									End If
-									'old code replaced to be more robust to data anomalies
-									'If MyPriceVols(J).OneyrTargetPrice = .OneyrTargetPrice Then
-									'  MyPriceVols(J).OneyrTargetPrice = .OneyrTargetPrice / ThisStockSplitRatio
-									'Else
-									'  Exit For
-									'End If
-								Next
-							End If
-						End If
-					End If
-					'these comes after any change to ThisStockSplitRatio 
-					If IsTargetPriceSplitInSync Then
-						.OneyrTargetPrice = .OneyrTargetPrice / ThisStockSplitRatioLast
-						.OneyrTargetEarning = .OneyrTargetEarning / ThisStockSplitRatioLast
-					Else
-						.OneyrTargetPrice = .OneyrTargetPrice / ThisStockSplitRatio
-						.OneyrTargetEarning = .OneyrTargetEarning / ThisStockSplitRatio
-					End If
-					.LastPrevious = .LastPrevious / ThisStockSplitRatio
-					'finally update the range
-					.Range = CalculateTrueRange(MyPriceVols(I).AsIPriceVol)
-					'and save the cumulative stock split in the LastAdjusted variable
-					.LastAdjusted = ThisStockSplitRatioLast
-				End With
-			Next
-			'finally calculate the new max and min value of the data after the split adjustment
-			Me.PriceMax = 0
-			Me.PriceMin = Single.MaxValue
-			Me.PriceMinTarget = Me.PriceMin
-			Me.PriceMaxTarget = Me.PriceMax
-			Me.VolMax = 0
-			Me.VolMin = Integer.MaxValue
-			For I = 0 To Me.NumberPoint - 1
-				'process the intraday data
-				Call ProcessSplitAdjustForIntraDay(MyPriceVolsIntraDay(I), MyPriceVols(I))
-				With MyPriceVols(I)
-					If .High > Me.PriceMax Then
-						Me.PriceMax = .High
-					End If
-					If .Low > 0 Then
-						If .Low < Me.PriceMin Then
-							Me.PriceMin = .Low
-						End If
-					End If
-					If Me.IsPriceTarget Then
-						If I < ThisStartPointForTargetPrice Then
-							.OneyrTargetPrice = MyPriceVols(ThisStartPointForTargetPrice).OneyrTargetPrice
-						End If
-						If .OneyrTargetPrice > Me.PriceMaxTarget Then
-							Me.PriceMaxTarget = .OneyrTargetPrice
-						End If
-						If .OneyrTargetPrice < Me.PriceMinTarget Then
-							Me.PriceMinTarget = .OneyrTargetPrice
-						End If
-					End If
-					If .Volume < Me.VolMin Then
-						Me.VolMin = .Volume
-					End If
-					If .Volume > Me.VolMax Then
-						Me.VolMax = .Volume
-					End If
-				End With
-			Next
-		Else
-			For I = 0 To Me.NumberPoint - 1
-				'process the intraday data
-				If MyPriceVolsIntraDay(I) IsNot Nothing Then
-					Call ProcessSplitAdjustForIntraDay(MyPriceVolsIntraDay(I), MyPriceVols(I))
-					If Me.IsPriceTarget Then
-						With MyPriceVols(I)
-							If I < ThisStartPointForTargetPrice Then
-								.OneyrTargetPrice = MyPriceVols(ThisStartPointForTargetPrice).OneyrTargetPrice
-							End If
-						End With
-					End If
-				End If
-			Next
 		End If
 		'last we need to adjust for to see if the last record is liveupdate or not and update PriceVol
 		If colData.Last.Record.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
@@ -1092,9 +772,12 @@ Public Class RecordPrices
 		Else
 			IsLiveUpdate = False
 		End If
-		'note there is a naming standard change to be done here
-		'The record reprot a stauc or condition but the PriceVol is higher level general object
-		'so we need to propagate the information form the record to the PriceVol object	
+		'propagate the liveupdate information form the record to the PriceVol object	
+		'note that there is a name change here 
+		ReDim MyPriceVols(0 To Me.NumberPoint - 1)
+		For Each ThisItemIndexed In MyListOfPriceVol.WithIndex
+			MyPriceVols(ThisItemIndexed.Index) = DirectCast(ThisItemIndexed.Item, PriceVol)
+		Next
 		MyPriceVols(Me.NumberPoint - 1).IsIntraDay = IsLiveUpdate
 	End Sub
 
@@ -1191,6 +874,9 @@ Public Class RecordPrices
 		ByRef Record As YahooAccessData.RecordQuoteValue,
 		ByRef DateValue As Date) As PriceVol
 
+		If MyPriceVolLast Is Nothing Then
+			MyPriceVolLast = New PriceVol(Record.Open)
+		End If
 		Dim ThisPriceVol As New PriceVol
 		With ThisPriceVol
 			.DateLastTrade = DateValue
@@ -1317,6 +1003,9 @@ Public Class RecordPrices
 		ByRef RecordQuote As YahooAccessData.RecordQuoteValue,
 		ByVal DateValue As Date) As PriceVol
 
+		If MyPriceVolLast Is Nothing Then
+			MyPriceVolLast = New PriceVol(RecordQuote.Open)
+		End If
 		Dim ThisPriceVol As New PriceVol
 		With ThisPriceVol
 			With .AsISentimentIndicator

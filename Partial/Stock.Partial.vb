@@ -469,6 +469,9 @@ Partial Public Class Stock
 						Dim ThisListOfNewRecord = ThisListOfNewStockQuote.ToListOfRecord
 						Dim ThisNewRecordLast = ThisListOfNewRecord.Last
 						For Each ThisNewRecord In ThisListOfNewRecord
+							If ThisNewRecord Is ThisNewRecordLast Then
+								ThisNewRecord = ThisNewRecord
+							End If
 							'set the record parameters
 							ThisNewRecord.Stock = Me
 							ThisNewRecord.StockID = ThisNewRecord.Stock.ID
