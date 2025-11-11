@@ -861,22 +861,14 @@ Namespace MathPlus
 				Return New Distributions.LogNormal(muSigma.Mean, muSigma.StandardDeviation, randomSource)
 			End Function
 
-
-
-
 			''' <summary>
-			''' Calculate the approximative logarithm gain using and squared data approximation that eliminate the problem of negative value but
-			''' that require that values to be ideally > 1 for accurate result.
-			''' See:https://people.duke.edu/~rnau/411log.htm
+			''' This function return zero by default on any error. 
 			''' </summary>
-			''' <param name="Value">should be > 1 for valid result</param>
+			''' <param name="Value"></param>
 			''' <param name="ValueRef"></param>
 			''' <returns></returns>
-			''' <remarks></remarks>
 			Public Shared Function GainLog(ByVal Value As Double, ValueRef As Double) As Double
-				'gain limiting is ignored for negative value 
-				Return GainLog(Value, ValueRef, ScaleValue:=1.0)
-				'Return Math.Log(((Value ^ 2 + 1) / (ValueRef ^ 2 + 1))) / 2
+				Return GainLog(Value, ValueRef, OnErrorReturn:=0.0)
 			End Function
 
 			''' <summary>
@@ -942,52 +934,29 @@ Namespace MathPlus
 				Return ThisList
 			End Function
 
+			''' <summary>
+			''' This function return Double.NaN by default on any error. 
+			''' However the user can select other value as zero if he prefer
+			''' </summary>
+			Public Shared Function GainLog(ByVal Value As Double, ValueRef As Double, Optional OnErrorReturn As Double = Double.NaN) As Double
+				Dim ThisResult As Double
+				If ValueRef = 0 Then Return OnErrorReturn
+				ThisResult = Value / ValueRef
+				If ThisResult <= 0 Then Return OnErrorReturn
+				ThisResult = Math.Log(Value / ValueRef)
+				'final test
+				If Double.IsNaN(ThisResult) Or Double.IsInfinity(ThisResult) Then Return OnErrorReturn
+				Return ThisResult
+			End Function
 
 			''' <summary>
-			''' This function return the log gain between two value with a multiplier scale value. 
-			''' The function return zero if it teh range is too large for evaluation
+			''' The inverse of the GainLog defined function
 			''' </summary>
-			''' <param name="Value"></param>
+			''' <param name="GainLog"></param>
 			''' <param name="ValueRef"></param>
-			''' <param name="ScaleValue"></param>
 			''' <returns></returns>
-			Public Shared Function GainLog(ByVal Value As Double, ValueRef As Double, ByVal ScaleValue As Double) As Double
-
-        Dim ThisResult As Double
-        If ValueRef <= 0.0 Then
-          'ThisResult = Double.NaN
-          ThisResult = 0.0
-        ElseIf Value <= 0 Then
-          ThisResult = 0.0
-        Else
-          ThisResult = ScaleValue * Math.Log(Value / ValueRef)
-          If Double.IsNaN(ThisResult) Or Double.IsInfinity(ThisResult) Then
-            'ThisResult = Double.NaN
-            ThisResult = 0.0
-          End If
-        End If
-        Return ThisResult
-      End Function
-
-      Public Shared Function GainLog(
-        ByVal Value As Double,
-        ByVal ValueRef As Double,
-        ByVal ScaleValue As Double,
-        ByVal LimitGainAbsolute As Double) As Double
-
-        'limit exponentially the gain value between -LimitGainAbsolute and +LimitGainAbsolute
-        Dim ThisResult = GainLog(Value, ValueRef, ScaleValue)
-        ThisResult = MathPlus.WaveForm.SignalLimit(ThisResult, LimitGainAbsolute)
-        Return ThisResult
-      End Function
-      ''' <summary>
-      ''' The inverse of the GainLog defined function
-      ''' </summary>
-      ''' <param name="GainLog"></param>
-      ''' <param name="ValueRef"></param>
-      ''' <returns></returns>
-      ''' <remarks></remarks>
-      Public Shared Function GainLogInverse(ByVal GainLog As Double, ValueRef As Double) As Double
+			''' <remarks></remarks>
+			Public Shared Function GainLogInverse(ByVal GainLog As Double, ValueRef As Double) As Double
         If Double.IsNaN(GainLog) Then
           Return Double.NaN
         Else

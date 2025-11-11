@@ -207,8 +207,8 @@ Namespace MathPlus.Filter
       Dim ThisVarianceForOpenToLow_Vl As Double
       Dim ThisVariancePositifSum As Double
       Dim ThisVarianceNegatifSum As Double
-      Dim ThisVRSUp2 As Double
-      Dim ThisVRSDown2 As Double
+			Dim ThisVRSUp2 As Double
+			Dim ThisVRSDown2 As Double
 
 			ThisValueLow = Value.Low
 			ThisValueHigh = Value.High
@@ -248,25 +248,26 @@ Namespace MathPlus.Filter
       Dim ThisReturnLogForPreviousHighToOpen = LogPriceReturn(Value.Open, MyValueLast.High)
       Dim ThisReturnLogForPreviousLowToOpen = LogPriceReturn(Value.Open, MyValueLast.Low)
 
-      'VRS calculation
-      'ThisVRSUp2 = (ln(High/Open)^ 2) + ((ln(Last/Low) ^ 2))
+			'VRS calculation
+			'ThisVRSUp2 = (ln(High/Open)^ 2) + ((ln(Last/Low) ^ 2))
 
 
-      'this is a local calcul to measure and compare the volatility Up and down of the stock
-      'it is an intraday calculation that is very predictive and related to the comportment of the stock in the future
-      'but it is not related and is not needed for the VolatilityYangZhang calculation
-      'Note that some observation show the opening to be a bit more predictive than the closing
-      'that is the reason we divide the close by 2
-      'however other trader seem to indicate that the close is more predictive
-      'an investigation is needed to clear this aspect
-      'to do: calculate both for testing in the future
-      'ThisVRSUp2 = (MyReturnLogForHighToOpen ^ 2) + ((LogPriceReturn(Value.Last, Value.Low) ^ 2) / 2)
-      'ThisVRSDown2 = (MyReturnLogForLowToOpen ^ 2) + ((LogPriceReturn(Value.Last, Value.High) ^ 2) / 2)
-      'modified mars 2024 taking into account the previous close
-      ThisVRSUp2 = ((ThisReturnLogForPreviousLowToOpen ^ 2) / 2) + (MyReturnLogForHighToOpen ^ 2) + ((LogPriceReturn(Value.Last, Value.Low) ^ 2) / 2)
-      ThisVRSDown2 = ((ThisReturnLogForPreviousHighToOpen ^ 2) / 2) + (MyReturnLogForLowToOpen ^ 2) + ((LogPriceReturn(Value.Last, Value.High) ^ 2) / 2)
+			'this is a local calcul to measure and compare the volatility Up and down of the stock
+			'it is an intraday calculation that is very predictive and related to the comportment of the stock in the future
+			'but it is not related and is not needed for the VolatilityYangZhang calculation
+			'Note that some observation show the opening to be a bit more predictive than the closing
+			'that is the reason we divide the close by 2
+			'however other trader seem to indicate that the close is more predictive
+			'an investigation is needed to clear this aspect
+			'to do: calculate both for testing in the future
+			'ThisVRSUp2 = (MyReturnLogForHighToOpen ^ 2) + ((LogPriceReturn(Value.Last, Value.Low) ^ 2) / 2)
+			'ThisVRSDown2 = (MyReturnLogForLowToOpen ^ 2) + ((LogPriceReturn(Value.Last, Value.High) ^ 2) / 2)
+			'modified mars 2024 taking into account the previous close
 
-      ThisVRSPartialOpenToHigh = MyReturnLogForHighToOpen * (MyReturnLogForHighToOpen - MyReturnLogForCloseToOpen)
+			ThisVRSUp2 = ((ThisReturnLogForPreviousLowToOpen ^ 2) / 2) + (MyReturnLogForHighToOpen ^ 2) + ((LogPriceReturn(Value.Last, Value.Low) ^ 2) / 2)
+			ThisVRSDown2 = ((ThisReturnLogForPreviousHighToOpen ^ 2) / 2) + (MyReturnLogForLowToOpen ^ 2) + ((LogPriceReturn(Value.Last, Value.High) ^ 2) / 2)
+
+			ThisVRSPartialOpenToHigh = MyReturnLogForHighToOpen * (MyReturnLogForHighToOpen - MyReturnLogForCloseToOpen)
       ThisVRSPartialOpenToLow = MyReturnLogForLowToOpen * (MyReturnLogForLowToOpen - MyReturnLogForCloseToOpen)
 
       MyReturnLogForHighToPreviousClose = LogPriceReturn(ThisValueHigh, MyValueLast.Last)
@@ -320,8 +321,8 @@ Namespace MathPlus.Filter
       'the filter is not used right now
       MyFilterExpForPositiveVariance.Filter(ThisVariancePositifSum)
       MyFilterExpForNegativeVariance.Filter(ThisVarianceNegatifSum)
-      MyListOfOpenHighAsClose.Add(ToYearCorrected(ThisVariancePositifSum))
-      MyListOfOpenLowAsClose.Add(ToYearCorrected(ThisVarianceNegatifSum))
+			MyListOfOpenHighAsClose.Add(ToYearCorrected(ThisVariancePositifSum))
+			MyListOfOpenLowAsClose.Add(ToYearCorrected(ThisVarianceNegatifSum))
       Dim ThisSumOfVolatilityPositifNegatif = ThisVariancePositifSum + ThisVarianceNegatifSum
       'the balance value of this ratio is 0.5
       If ThisSumOfVolatilityPositifNegatif > 0 Then
@@ -329,28 +330,19 @@ Namespace MathPlus.Filter
       Else
         ThisOpenToHighToLowAsCloseRatio = 0.5
       End If
-      If MyListOfOpenToHighToLowAsCloseRatio.Count > 0 Then
-        'this is much better and predictive
-        Select Case ThisOpenToHighToLowAsCloseRatio
-          Case > 0.5
-            MyFilterDirection = FilterRSI.SlopeDirection.Positive
-          Case < 0.5
-            MyFilterDirection = FilterRSI.SlopeDirection.Negative
-          Case Else
-            MyFilterDirection = FilterRSI.SlopeDirection.Zero
-        End Select
-        'this method below is not predictive and is rather useless
-        'Select Case MyListOfOpenToHighToLowAsCloseRatio.Last
-        '  Case < ThisOpenToHighToLowAsCloseRatio
-        '    MyFilterDirection = FilterRSI.SlopeDirection.Positive
-        '  Case > ThisOpenToHighToLowAsCloseRatio
-        '    MyFilterDirection = FilterRSI.SlopeDirection.Negative
-        '  Case Else
-        '    MyFilterDirection = FilterRSI.SlopeDirection.Zero
-        'End Select
-      Else
-        MyFilterDirection = FilterRSI.SlopeDirection.Zero
-      End If
+			If MyListOfOpenToHighToLowAsCloseRatio.Count > 0 Then
+				'this is much better and predictive
+				Select Case ThisOpenToHighToLowAsCloseRatio
+					Case > 0.5
+						MyFilterDirection = FilterRSI.SlopeDirection.Positive
+					Case < 0.5
+						MyFilterDirection = FilterRSI.SlopeDirection.Negative
+					Case Else
+						MyFilterDirection = FilterRSI.SlopeDirection.Zero
+				End Select
+			Else
+				MyFilterDirection = FilterRSI.SlopeDirection.Zero
+			End If
       MyListOfOpenToHighToLowAsCloseRatio.Add(ThisOpenToHighToLowAsCloseRatio)
       MyFilterOfOpenToHighToLowAsCloseRatio.Filter(ThisOpenToHighToLowAsCloseRatio)
       '~~~~~~~~~~~~~~~

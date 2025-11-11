@@ -148,6 +148,8 @@ Namespace MathPlus.Filter
 		Private MyStochasticPriceGain As StochasticPriceGain
 		Private MyFilterForPriceOBV As FilterOBV
 		Private MyFilterOfPriceRSIOfOBV As FilterRSI
+		Private MyFilterOfVolatilityRSIOfOBV As FilterRSI
+		Private MyListOfPriceRSIOfOBV As List(Of Double)
 
 #Region "New"
 		''' <summary>
@@ -275,7 +277,8 @@ Namespace MathPlus.Filter
 			MyFilterForPriceOBV = New FilterOBV(FilterRate:=1.5) With {.Tag = Symbol}
 			'the new usage is with no prefilter or very small filtering
 			MyFilterOfPriceRSIOfOBV = New FilterRSI(PreFilterRate:=1.5, FilterRate:=FilterRate, PostFilterHighPassRate:=0)
-
+			MyFilterOfVolatilityRSIOfOBV = New FilterRSI(PreFilterRate:=1.5, FilterRate:=FilterRate, PostFilterHighPassRate:=0)
+			MyListOfPriceRSIOfOBV = New List(Of Double)
 			'by design nothing unless initialize at the interface level
 			MyStochasticPriceGain = Nothing
 		End Sub
@@ -362,9 +365,6 @@ Namespace MathPlus.Filter
 			Dim ThisRateHalf As Integer = Me.Rate \ 2
 			Dim ThisGainFromStep As Double
 			Dim ThisPriceMedian As Double
-			Dim ThisMu As Double
-			Dim ThisSigmaSquare As Double
-			Dim ThisVolatilityStatistic As IStatistical
 			Dim ThisPriceNextDailyHigh As Double
 			Dim ThisPriceNextDailyLow As Double
 			Dim ThisPriceNextDailyHighNoGainAtSigma2 As Double
@@ -1030,8 +1030,23 @@ Namespace MathPlus.Filter
 			'Else
 			'	ThisFilterForPriceOBV.Filter(ThisPriceVol.Volume, ThisFilterVolatilityForPositifNegatif.FilterDirection)
 			'End If
-			MyFilterForPriceOBV.Filter(DirectCast(Value, PriceVol).Volume, MyFilterVolatilityForPositifNegatif.FilterDirection)
+			'MyFilterOfVolatilityRSIOfOBV.Filter(MyFilterVolatilityForPositifNegatif.FilterLast)
+			Dim ThisFilterDirection As FilterRSI.SlopeDirection
+			'Select Case MyFilterOfVolatilityRSIOfOBV.FilterLast
+			'	Case > 0.5
+			'		ThisFilterDirection = FilterRSI.SlopeDirection.Positive
+			'	Case < 0.5
+			'		ThisFilterDirection = FilterRSI.SlopeDirection.Negative
+			'	Case Else
+			'		ThisFilterDirection = FilterRSI.SlopeDirection.Zero
+			'End Select
+			ThisFilterDirection = MyFilterVolatilityForPositifNegatif.FilterDirection
+			MyFilterForPriceOBV.Filter(DirectCast(Value, PriceVol).Volume, ThisFilterDirection)
 			MyFilterOfPriceRSIOfOBV.Filter(MyFilterForPriceOBV.FilterLast)
+			MyListOfPriceRSIOfOBV.Add(MyFilterOfPriceRSIOfOBV.FilterLast)
+			'MyListOfPriceRSIOfOBV.Add((MyFilterOfPriceRSIOfOBV.FilterLast + MyFilterOfVolatilityRSIOfOBV.FilterLast) / 2)
+			'MyListOfPriceRSIOfOBV.Add((MyFilterOfPriceRSIOfOBV.FilterLast + MyFilterVolatilityForPositifNegatif.FilterLast) / 2)
+
 
 			MyListOfPriceRangeVolatility.Add(ThisFilterBasedVolatilityTotal)
 			MyListOfPriceRangeVolatilityFromPreviousCloseToOpenRatio.Add(ThisFilterBasedVolatilityRatioFromPreviousCloseToOpen)
@@ -3258,7 +3273,8 @@ Namespace MathPlus.Filter
 		''' </summary>
 		Private ReadOnly Property IStochasticBrownianData_GetListOfRSIOBV As IList(Of Double) Implements IStochasticBrownianData.GetListOfRSIOBV
 			Get
-				Return MyFilterOfPriceRSIOfOBV.ToList
+				'Return MyFilterOfPriceRSIOfOBV.ToList
+				Return MyListOfPriceRSIOfOBV
 			End Get
 		End Property
 
@@ -3288,7 +3304,7 @@ Namespace MathPlus.Filter
 
 		Public ReadOnly Property GetListOfPriceVolMomentum As IList(Of (PriceMomentum As Double, VolumeMomentum As Double)) Implements IStochasticBrownianData.GetListOfPriceVolMomentum
 			Get
-				Return Me.ToList.Zip(second:=MyFilterOfPriceRSIOfOBV.ToList, resultSelector:=Function(m, p) (PriceMomentum:=m, VolumeMomentum:=p)).ToList()
+				Return Me.ToList.Zip(second:=MyListOfPriceRSIOfOBV, resultSelector:=Function(m, p) (PriceMomentum:=m, VolumeMomentum:=p)).ToList()
 			End Get
 		End Property
 #End Region

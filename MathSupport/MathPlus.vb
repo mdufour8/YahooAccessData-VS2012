@@ -129,6 +129,7 @@ Namespace MathPlus
 
 #Region "Friend Local function"
 		''' <summary>
+		''' This LogPriceReturn calculation always return zero in case of failure of any kind.
 		''' note to test pseudo log
 		''' pseudoLog10  function(x) { asinh(x/2)/log(10) }
 		''' </summary>
@@ -136,22 +137,7 @@ Namespace MathPlus
 		''' <param name="ValueRef"></param>
 		''' <returns></returns>
 		Friend Function LogPriceReturn(ByVal Value As Double, ByVal ValueRef As Double) As Double
-			Dim ThisReturnLog As Double
-			'filter for value less than zero
-			If ValueRef <= 0 Then
-				ThisReturnLog = 0
-			Else
-				If Value <= 0 Then
-					ThisReturnLog = 0
-				Else
-					ThisReturnLog = Math.Log(Value / ValueRef)
-					If Double.IsNaN(ThisReturnLog) Or Double.IsInfinity(ThisReturnLog) Then
-						'ThisResult = Double.NaN
-						ThisReturnLog = 0.0
-					End If
-				End If
-			End If
-			Return ThisReturnLog
+			Return GainLog(Value, ValueRef, OnErrorReturn:=0.0)
 		End Function
 
 		'Volatility adjusted for discrete dividends European model

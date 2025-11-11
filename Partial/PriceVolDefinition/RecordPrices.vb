@@ -566,32 +566,16 @@ Public Class RecordPrices
 		ByVal DateStartValue As Date,
 		ByVal DateStopValue As Date)
 
-		Dim I As Integer
-		Dim J As Integer
-		Dim K As Integer
 		Dim ThisDateCurrent As Date
 		'Dim colDataDaily As IEnumerable(Of YahooAccessData.RecordQuoteValue)
-		Dim colDataDailyIntraDay As IEnumerable(Of IEnumerable(Of YahooAccessData.RecordQuoteValue))
 
-		Dim ThisStartPointForTargetPrice As Integer
-		Dim ThisPriceSum As Double
-		Dim ThisEarningSum As Double
-		Dim ThisStockSplitRatio As Single
-		Dim ThisStockSplitRatioLast As Single
-		Dim ThisStockDividendSinglePayoutValue As Single
 
 		Dim ThisListOfSplitIndex As New List(Of Integer)
 		Dim ThisListOfSSpecialDividendPayout As New List(Of Integer)
-		Dim ThisOpenNext As Single
-		Dim ThisRecord As YahooAccessData.RecordQuoteValue
 		Dim ThisRecordQuoteValue As YahooAccessData.RecordQuoteValue
 		'Dim ThisRecordQuoteValuePrevious As YahooAccessData.RecordQuoteValue
 		Dim ThisListOfPriceVols As New List(Of PriceVol)
-		Dim ThisPriceForSplitInMiddle As Single
-		Dim ThisTargetPriceStockSplit As Single
-		Dim IsTargetPriceSplitInSync As Boolean
 		Dim IsLiveUpdate As Boolean
-		Dim ThisTemp As Double
 		'Dim ThisDateStopEndOfDay As Date = DateStopValue.Date.AddHours(24).AddSeconds(-1)
 		'set the default value
 		'adjust the date for the constraint of always starting on Monday and ignore the weekend 
