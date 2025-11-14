@@ -2,6 +2,7 @@
 Imports MathNet.Numerics
 Imports MathNet.Numerics.RootFinding
 Imports YahooAccessData.MathPlus.Filter
+Imports YahooAccessData.MathPlus.Probability
 Imports YahooAccessData.OptionValuation
 Imports YahooAccessData.MathPlus.Measure.Measure
 Imports YahooAccessData.ExtensionService.Extensions
@@ -60,77 +61,79 @@ Namespace MathPlus.Filter
     Private MyListOfOpenHighAsClose As List(Of Double)
     Private MyListOfOpenLowAsClose As List(Of Double)
     Private MyListOfOpenToHighToLowAsCloseRatio As List(Of Double)
-    Private MyFilterOfOpenToHighToLowAsCloseRatio As Filter.FilterLowPassPLL
+		Private MyFilterOfOpenToHighToLowAsCloseRatio As Filter.FilterLowPassPLL
+		Private MyStatisticOfOpenToHighToLowAsCloseRatio As FilterStatistical
 
-    'Private MyCountOfVolNotNull As Integer
-    Private MyReturnLogForOpenToPreviousClose As Double
-    Private MyReturnLogForCloseToOpen As Double
-    Private MyReturnLogForHighToOpen As Double
-    Private MyReturnLogForLowToOpen As Double
-    Private MyReturnLogForHighToPreviousClose As Double
-    Private MyReturnLogForLowToPreviousClose As Double
+		'Private MyCountOfVolNotNull As Integer
+		Private MyReturnLogForOpenToPreviousClose As Double
+		Private MyReturnLogForCloseToOpen As Double
+		Private MyReturnLogForHighToOpen As Double
+		Private MyReturnLogForLowToOpen As Double
+		Private MyReturnLogForHighToPreviousClose As Double
+		Private MyReturnLogForLowToPreviousClose As Double
 
-    'Private MyReturnLogForCloseToHigh As Double
-    'Private MyReturnLogForCloseToLow As Double
+		'Private MyReturnLogForCloseToHigh As Double
+		'Private MyReturnLogForCloseToLow As Double
 
-    Private IsUseLastSampleHighLowTrailLocal As Boolean
+		Private IsUseLastSampleHighLowTrailLocal As Boolean
 
-    Private MyStatisticalForOpen As IFilter(Of IStatistical)
-    Private MyStatisticalForClose As IFilter(Of IStatistical)
-    Private MyStatisticalForOpenToHigh As IFilter(Of IStatistical)
-    Private MyStatisticalForOpenToLow As IFilter(Of IStatistical)
-    Private MyStatisticalForPreviousCloseToHigh As IFilter(Of IStatistical)
-    Private MyStatisticalForPreviousCloseToLow As IFilter(Of IStatistical)
-    Private MyFilterExpForPositiveVariance As Filter.FilterLowPassExp
-    Private MyFilterExpForNegativeVariance As Filter.FilterLowPassExp
+		Private MyStatisticalForOpen As IFilter(Of IStatistical)
+		Private MyStatisticalForClose As IFilter(Of IStatistical)
+		Private MyStatisticalForOpenToHigh As IFilter(Of IStatistical)
+		Private MyStatisticalForOpenToLow As IFilter(Of IStatistical)
+		Private MyStatisticalForPreviousCloseToHigh As IFilter(Of IStatistical)
+		Private MyStatisticalForPreviousCloseToLow As IFilter(Of IStatistical)
+		Private MyFilterExpForPositiveVariance As Filter.FilterLowPassExp
+		Private MyFilterExpForNegativeVariance As Filter.FilterLowPassExp
 
 		'Rogers-Satchell is an estimator for measuring the volatility of securities
 		'with an average return not equal to zero. Unlike Parkinson and Garman-Klass estimators,
 		'Rogers-Satchell incorporates a drift term (mean return not equal to zero).2022
 		Private MyStatisticalForVRSHighAsClose As IFilter(Of IStatistical)    'for Rogers and Satchell statistic
 		Private MyStatisticalForVRSLowAsClose As IFilter(Of IStatistical)    'for Rogers and Satchell statistic
-    Private MyStatisticalForVRSHigh As IFilter(Of IStatistical)    'for Rogers and Satchell statistic
-    Private MyStatisticalForVRSLow As IFilter(Of IStatistical)    'for Rogers and Satchell statistic
-    Private MyStatisticalForVRSTotal As IFilter(Of IStatistical)    'for Rogers and Satchell statistic
-    Private MyValueForK As Double
-    Private MyStatisticType As FilterVolatility.enuVolatilityStatisticType
-    Private MyVariancePositifSumLast As Double
-    Private MyVarianceNegatifSumLast As Double
-    Private MyFilterOfVolatilityPositif As Filter.FilterLowPassPLL
-    Private MyFilterOfVolatilityNegatif As Filter.FilterLowPassPLL
-    Private MyPriceNextDailyHighPreviousCloseToOpenSigma2 As Double
+		Private MyStatisticalForVRSHigh As IFilter(Of IStatistical)    'for Rogers and Satchell statistic
+		Private MyStatisticalForVRSLow As IFilter(Of IStatistical)    'for Rogers and Satchell statistic
+		Private MyStatisticalForVRSTotal As IFilter(Of IStatistical)    'for Rogers and Satchell statistic
+		Private MyValueForK As Double
+		Private MyStatisticType As FilterVolatility.enuVolatilityStatisticType
+		Private MyVariancePositifSumLast As Double
+		Private MyVarianceNegatifSumLast As Double
+		Private MyFilterOfVolatilityPositif As Filter.FilterLowPassPLL
+		Private MyFilterOfVolatilityNegatif As Filter.FilterLowPassPLL
+		Private MyPriceNextDailyHighPreviousCloseToOpenSigma2 As Double
 
 
-    Public Sub New()
-      Me.New(FILTER_RATE_DEFAULT, Math.Sqrt(NUMBER_TRADINGDAY_PER_YEAR))
-    End Sub
+		Public Sub New()
+			Me.New(FILTER_RATE_DEFAULT, Math.Sqrt(NUMBER_TRADINGDAY_PER_YEAR))
+		End Sub
 
-    Public Sub New(ByVal FilterRate As Integer, Optional StatisticType As FilterVolatility.enuVolatilityStatisticType = FilterVolatility.enuVolatilityStatisticType.Standard, Optional IsUseLastSampleHighLowTrail As Boolean = False)
-      Me.New(FilterRate, Math.Sqrt(NUMBER_TRADINGDAY_PER_YEAR), StatisticType, IsUseLastSampleHighLowTrail)
-    End Sub
+		Public Sub New(ByVal FilterRate As Integer, Optional StatisticType As FilterVolatility.enuVolatilityStatisticType = FilterVolatility.enuVolatilityStatisticType.Standard, Optional IsUseLastSampleHighLowTrail As Boolean = False)
+			Me.New(FilterRate, Math.Sqrt(NUMBER_TRADINGDAY_PER_YEAR), StatisticType, IsUseLastSampleHighLowTrail)
+		End Sub
 
-    Public Sub New(
-      ByVal FilterRate As Integer,
-      ByVal ScaleCorrection As Double,
-      Optional StatisticType As FilterVolatility.enuVolatilityStatisticType = FilterVolatility.enuVolatilityStatisticType.Standard,
-      Optional IsUseLastSampleHighLowTrail As Boolean = False)
+		Public Sub New(
+			ByVal FilterRate As Integer,
+			ByVal ScaleCorrection As Double,
+			Optional StatisticType As FilterVolatility.enuVolatilityStatisticType = FilterVolatility.enuVolatilityStatisticType.Standard,
+			Optional IsUseLastSampleHighLowTrail As Boolean = False)
 
-      IsUseLastSampleHighLowTrailLocal = IsUseLastSampleHighLowTrail
-      MyFilterVolatilityYearlyCorrection = ScaleCorrection
-      MyStatisticType = StatisticType
-      MyListOfPreviousCloseToOpenHighLowClose = New List(Of Double)
-      MyListOfPreviousCloseToOpen = New List(Of Double)
-      MyListOfOpenToClose = New List(Of Double)
-      MyListOfOpenHighAsClose = New List(Of Double)
-      MyListOfOpenLowAsClose = New List(Of Double)
-      MyListOfOpenToHighToLowAsCloseRatio = New List(Of Double)
-      MyFilterOfOpenToHighToLowAsCloseRatio = New Filter.FilterLowPassPLL(FilterRate:=FilterRate)
+			IsUseLastSampleHighLowTrailLocal = IsUseLastSampleHighLowTrail
+			MyFilterVolatilityYearlyCorrection = ScaleCorrection
+			MyStatisticType = StatisticType
+			MyListOfPreviousCloseToOpenHighLowClose = New List(Of Double)
+			MyListOfPreviousCloseToOpen = New List(Of Double)
+			MyListOfOpenToClose = New List(Of Double)
+			MyListOfOpenHighAsClose = New List(Of Double)
+			MyListOfOpenLowAsClose = New List(Of Double)
+			MyListOfOpenToHighToLowAsCloseRatio = New List(Of Double)
+			MyFilterOfOpenToHighToLowAsCloseRatio = New Filter.FilterLowPassPLL(FilterRate:=FilterRate)
+			MyStatisticOfOpenToHighToLowAsCloseRatio = New FilterStatistical(FilterRate:=FilterRate)
 
-      If FilterRate < 2 Then FilterRate = 2
-      MyRate = CInt(FilterRate)
-      'MyStatisticType = FilterVolatility.enuVolatilityStatisticType.Standard
-      Select Case MyStatisticType
-        Case FilterVolatility.enuVolatilityStatisticType.Exponential
+			If FilterRate < 2 Then FilterRate = 2
+			MyRate = CInt(FilterRate)
+			'MyStatisticType = FilterVolatility.enuVolatilityStatisticType.Standard
+			Select Case MyStatisticType
+				Case FilterVolatility.enuVolatilityStatisticType.Exponential
 					MyStatisticalForOpen = New FilterStatistical(FilterRate, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
 					MyStatisticalForClose = New FilterStatistical(FilterRate, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
 					MyStatisticalForOpenToLow = New FilterStatistical(FilterRate, StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
@@ -145,38 +148,38 @@ Namespace MathPlus.Filter
 				Case Else
 					'the default is a windows Square of data statistic
 					MyStatisticalForOpen = New FilterStatistical(FilterRate)
-          MyStatisticalForClose = New FilterStatistical(FilterRate)
-          MyStatisticalForOpenToLow = New FilterStatistical(FilterRate)
-          MyStatisticalForOpenToHigh = New FilterStatistical(FilterRate)
-          MyStatisticalForPreviousCloseToHigh = New FilterStatistical(FilterRate)
-          MyStatisticalForPreviousCloseToLow = New FilterStatistical(FilterRate)
-          MyStatisticalForVRSTotal = New FilterStatistical(FilterRate)
-          MyStatisticalForVRSHigh = New FilterStatistical(FilterRate)
-          MyStatisticalForVRSLow = New FilterStatistical(FilterRate)
-          MyStatisticalForVRSHighAsClose = New FilterStatistical(FilterRate)
-          MyStatisticalForVRSLowAsClose = New FilterStatistical(FilterRate)
-      End Select
-      MyFilterExpForPositiveVariance = New Filter.FilterLowPassExp(FilterRate)
-      MyFilterExpForNegativeVariance = New Filter.FilterLowPassExp(FilterRate)
+					MyStatisticalForClose = New FilterStatistical(FilterRate)
+					MyStatisticalForOpenToLow = New FilterStatistical(FilterRate)
+					MyStatisticalForOpenToHigh = New FilterStatistical(FilterRate)
+					MyStatisticalForPreviousCloseToHigh = New FilterStatistical(FilterRate)
+					MyStatisticalForPreviousCloseToLow = New FilterStatistical(FilterRate)
+					MyStatisticalForVRSTotal = New FilterStatistical(FilterRate)
+					MyStatisticalForVRSHigh = New FilterStatistical(FilterRate)
+					MyStatisticalForVRSLow = New FilterStatistical(FilterRate)
+					MyStatisticalForVRSHighAsClose = New FilterStatistical(FilterRate)
+					MyStatisticalForVRSLowAsClose = New FilterStatistical(FilterRate)
+			End Select
+			MyFilterExpForPositiveVariance = New Filter.FilterLowPassExp(FilterRate)
+			MyFilterExpForNegativeVariance = New Filter.FilterLowPassExp(FilterRate)
 
-      'see paper
-      MyValueForK = 0.34 / (1.34 + ((MyRate + 1) / (MyRate - 1)))
+			'see paper
+			MyValueForK = 0.34 / (1.34 + ((MyRate + 1) / (MyRate - 1)))
 
-      MyFilterValueLast = 0
-      MyFilterValueLastK1 = 0
-      MyValueLast = New YahooAccessData.PriceVol(0)
-      MyValueLastK1 = MyValueLast
-      MyFilterDirection = FilterRSI.SlopeDirection.Zero
-    End Sub
+			MyFilterValueLast = 0
+			MyFilterValueLastK1 = 0
+			MyValueLast = New YahooAccessData.PriceVol(0)
+			MyValueLastK1 = MyValueLast
+			MyFilterDirection = FilterRSI.SlopeDirection.Zero
+		End Sub
 
-    ''' <summary>
-    ''' True for ignoring the volatility jump due to an open price exceeding the expected 2x sigma price peak value.
-    ''' This can be usuful for reducing the impact of unexpected news on the stock volatility. 
-    ''' </summary>
-    ''' <returns>The current state</returns>
-    Public Property IsFilterVolatilityJump As Boolean
+		''' <summary>
+		''' True for ignoring the volatility jump due to an open price exceeding the expected 2x sigma price peak value.
+		''' This can be usuful for reducing the impact of unexpected news on the stock volatility. 
+		''' </summary>
+		''' <returns>The current state</returns>
+		Public Property IsFilterVolatilityJump As Boolean
 
-    Public Function Filter(ByVal Value As YahooAccessData.IPriceVol, ByVal IsVolatityHoldToLast As Boolean) As Double
+		Public Function Filter(ByVal Value As YahooAccessData.IPriceVol, ByVal IsVolatityHoldToLast As Boolean) As Double
 			Dim ThisResult As Double
 
 			If Value.IsSpecialDividendPayout Or IsVolatityHoldToLast Then
@@ -186,67 +189,67 @@ Namespace MathPlus.Filter
 				MyValueLastK1 = MyValueLast
 			Else
 				ThisResult = Me.CalculateFilterLocal(Value, False)
-      End If
-      Return ThisResult
-    End Function
-    Private Function CalculateFilterLocal(ByRef Value As YahooAccessData.IPriceVol, ByVal IsVolatityHoldToLast As Boolean) As Double
-      Dim ThisOpenToHighToLowAsCloseRatio As Double
-      Dim ThisVRSTotalOpenToHighLow As Double
-      Dim ThisVRSPartialOpenToHigh As Double
-      Dim ThisVRSPartialOpenToLow As Double
-      Dim ThisVRSTotalMeanForOpenToHighLow_Vrs As Double
-      Dim ThisVarianceForPreviousCloseToOpen_Vo As Double
-      Dim ThisVarianceForOpenToClose_Vc As Double
-      Dim ThisVariancePreviousCloseToOpenHighLowClose_V As Double
-      Dim ThisVarianceOpenToHighLowClose_KValue As Double
-      Dim ThisValueLow As Single
-      Dim ThisValueHigh As Single
-      Dim ThisVRSMeanUp As Double
-      Dim ThisVRSMeanDown As Double
-      Dim ThisVarianceForOpenToHigh_Vh As Double
-      Dim ThisVarianceForOpenToLow_Vl As Double
-      Dim ThisVariancePositifSum As Double
-      Dim ThisVarianceNegatifSum As Double
+			End If
+			Return ThisResult
+		End Function
+		Private Function CalculateFilterLocal(ByRef Value As YahooAccessData.IPriceVol, ByVal IsVolatityHoldToLast As Boolean) As Double
+			Dim ThisOpenToHighToLowAsCloseRatio As Double
+			Dim ThisVRSTotalOpenToHighLow As Double
+			Dim ThisVRSPartialOpenToHigh As Double
+			Dim ThisVRSPartialOpenToLow As Double
+			Dim ThisVRSTotalMeanForOpenToHighLow_Vrs As Double
+			Dim ThisVarianceForPreviousCloseToOpen_Vo As Double
+			Dim ThisVarianceForOpenToClose_Vc As Double
+			Dim ThisVariancePreviousCloseToOpenHighLowClose_V As Double
+			Dim ThisVarianceOpenToHighLowClose_KValue As Double
+			Dim ThisValueLow As Single
+			Dim ThisValueHigh As Single
+			Dim ThisVRSMeanUp As Double
+			Dim ThisVRSMeanDown As Double
+			Dim ThisVarianceForOpenToHigh_Vh As Double
+			Dim ThisVarianceForOpenToLow_Vl As Double
+			Dim ThisVariancePositifSum As Double
+			Dim ThisVarianceNegatifSum As Double
 			Dim ThisVRSUp2 As Double
 			Dim ThisVRSDown2 As Double
 
 			ThisValueLow = Value.Low
 			ThisValueHigh = Value.High
-      If MyListOfPreviousCloseToOpenHighLowClose.Count = 0 Then
-        'measure volatility from initial value only at start
-        MyFilterValueLast = 0
-        MyValueLast = New PriceVol(Value.Open)
-        MyReturnLogForOpenToPreviousClose = LogPriceReturn(Value.Open, MyValueLast.Last)
-        MyReturnLogForLowToOpen = LogPriceReturn(ThisValueLow, Value.Open)
-        'MyReturnLogForLowToOpen = LogPriceReturn(Value.Open, ThisValueLow)
-        MyReturnLogForHighToOpen = LogPriceReturn(ThisValueHigh, Value.Open)
-        MyReturnLogForCloseToOpen = LogPriceReturn(Value.Last, Value.Open)
-        IsVolatityHoldToLast = False  'always false for the first data
-      End If
-      If IsUseLastSampleHighLowTrailLocal Then
-        If MyValueLast.Low < ThisValueLow Then
-          ThisValueLow = MyValueLast.Low
-        End If
-        If MyValueLast.High > ThisValueHigh Then
-          ThisValueHigh = MyValueLast.High
-        End If
-      End If
-      'filter for value less than zero
-      'If DirectCast(Value, PriceVol).IsNull = False Then
-      '        MyCountOfVolNotNull = MyCountOfVolNotNull + 1
-      'End If
+			If MyListOfPreviousCloseToOpenHighLowClose.Count = 0 Then
+				'measure volatility from initial value only at start
+				MyFilterValueLast = 0
+				MyValueLast = New PriceVol(Value.Open)
+				MyReturnLogForOpenToPreviousClose = LogPriceReturn(Value.Open, MyValueLast.Last)
+				MyReturnLogForLowToOpen = LogPriceReturn(ThisValueLow, Value.Open)
+				'MyReturnLogForLowToOpen = LogPriceReturn(Value.Open, ThisValueLow)
+				MyReturnLogForHighToOpen = LogPriceReturn(ThisValueHigh, Value.Open)
+				MyReturnLogForCloseToOpen = LogPriceReturn(Value.Last, Value.Open)
+				IsVolatityHoldToLast = False  'always false for the first data
+			End If
+			If IsUseLastSampleHighLowTrailLocal Then
+				If MyValueLast.Low < ThisValueLow Then
+					ThisValueLow = MyValueLast.Low
+				End If
+				If MyValueLast.High > ThisValueHigh Then
+					ThisValueHigh = MyValueLast.High
+				End If
+			End If
+			'filter for value less than zero
+			'If DirectCast(Value, PriceVol).IsNull = False Then
+			'        MyCountOfVolNotNull = MyCountOfVolNotNull + 1
+			'End If
 
-      'ln(Open1/Close0)
-      MyReturnLogForOpenToPreviousClose = LogPriceReturn(Value.Open, MyValueLast.Last)
-      'ln(Low1/Open1)
-      MyReturnLogForLowToOpen = LogPriceReturn(ThisValueLow, Value.Open)
-      'ln(High1/Open1)
-      MyReturnLogForHighToOpen = LogPriceReturn(ThisValueHigh, Value.Open)
-      'ln(Close1/Open1)
-      MyReturnLogForCloseToOpen = LogPriceReturn(Value.Last, Value.Open)
+			'ln(Open1/Close0)
+			MyReturnLogForOpenToPreviousClose = LogPriceReturn(Value.Open, MyValueLast.Last)
+			'ln(Low1/Open1)
+			MyReturnLogForLowToOpen = LogPriceReturn(ThisValueLow, Value.Open)
+			'ln(High1/Open1)
+			MyReturnLogForHighToOpen = LogPriceReturn(ThisValueHigh, Value.Open)
+			'ln(Close1/Open1)
+			MyReturnLogForCloseToOpen = LogPriceReturn(Value.Last, Value.Open)
 
-      Dim ThisReturnLogForPreviousHighToOpen = LogPriceReturn(Value.Open, MyValueLast.High)
-      Dim ThisReturnLogForPreviousLowToOpen = LogPriceReturn(Value.Open, MyValueLast.Low)
+			Dim ThisReturnLogForPreviousHighToOpen = LogPriceReturn(Value.Open, MyValueLast.High)
+			Dim ThisReturnLogForPreviousLowToOpen = LogPriceReturn(Value.Open, MyValueLast.Low)
 
 			'VRS calculation
 			'ThisVRSUp2 = (ln(High/Open)^ 2) + ((ln(Last/Low) ^ 2))
@@ -263,73 +266,74 @@ Namespace MathPlus.Filter
 			'ThisVRSUp2 = (MyReturnLogForHighToOpen ^ 2) + ((LogPriceReturn(Value.Last, Value.Low) ^ 2) / 2)
 			'ThisVRSDown2 = (MyReturnLogForLowToOpen ^ 2) + ((LogPriceReturn(Value.Last, Value.High) ^ 2) / 2)
 			'modified mars 2024 taking into account the previous close
-
 			ThisVRSUp2 = ((ThisReturnLogForPreviousLowToOpen ^ 2) / 2) + (MyReturnLogForHighToOpen ^ 2) + ((LogPriceReturn(Value.Last, Value.Low) ^ 2) / 2)
 			ThisVRSDown2 = ((ThisReturnLogForPreviousHighToOpen ^ 2) / 2) + (MyReturnLogForLowToOpen ^ 2) + ((LogPriceReturn(Value.Last, Value.High) ^ 2) / 2)
 
 			ThisVRSPartialOpenToHigh = MyReturnLogForHighToOpen * (MyReturnLogForHighToOpen - MyReturnLogForCloseToOpen)
-      ThisVRSPartialOpenToLow = MyReturnLogForLowToOpen * (MyReturnLogForLowToOpen - MyReturnLogForCloseToOpen)
+			ThisVRSPartialOpenToLow = MyReturnLogForLowToOpen * (MyReturnLogForLowToOpen - MyReturnLogForCloseToOpen)
 
-      MyReturnLogForHighToPreviousClose = LogPriceReturn(ThisValueHigh, MyValueLast.Last)
-      MyReturnLogForLowToPreviousClose = LogPriceReturn(ThisValueLow, MyValueLast.Last)
+			MyReturnLogForHighToPreviousClose = LogPriceReturn(ThisValueHigh, MyValueLast.Last)
+			MyReturnLogForLowToPreviousClose = LogPriceReturn(ThisValueLow, MyValueLast.Last)
 
-      'If Me.Count = 1576 Then
-      'ThisVarianceNegatifSum = ThisVarianceNegatifSum
-      'End If
+			'If Me.Count = 1576 Then
+			'ThisVarianceNegatifSum = ThisVarianceNegatifSum
+			'End If
 
-      'ThisVRSPartialOpenToHigh = MyReturnLogForHighToOpen * (MyReturnLogForHighToOpen - 0)
-      'ThisVRSPartialOpenToLow = MyReturnLogForLowToOpen * (MyReturnLogForLowToOpen - 0)
+			'ThisVRSPartialOpenToHigh = MyReturnLogForHighToOpen * (MyReturnLogForHighToOpen - 0)
+			'ThisVRSPartialOpenToLow = MyReturnLogForLowToOpen * (MyReturnLogForLowToOpen - 0)
+			'this is the Vrs(i) value in the ref. paper, but we need to average it to get it current value
+			ThisVRSTotalOpenToHighLow = ThisVRSPartialOpenToHigh + ThisVRSPartialOpenToLow
 
-      ThisVRSTotalOpenToHighLow = ThisVRSPartialOpenToHigh + ThisVRSPartialOpenToLow
+			'calculate the variance for the open and close
+			'This is Vo in the ref. paper
+			ThisVarianceForPreviousCloseToOpen_Vo = MyStatisticalForOpen.Filter(MyReturnLogForOpenToPreviousClose).Variance
+			'This is Vc in the ref. paper
+			ThisVarianceForOpenToClose_Vc = MyStatisticalForClose.Filter(MyReturnLogForCloseToOpen).Variance
+			'those two variable are nor use in the calculation
+			'may be of interesting to evaluate
+			ThisVarianceForOpenToHigh_Vh = MyStatisticalForOpenToHigh.Filter(MyReturnLogForHighToOpen).Variance
+			ThisVarianceForOpenToLow_Vl = MyStatisticalForOpenToLow.Filter(MyReturnLogForLowToOpen).Variance
 
-      'calculate the variance for the open and close
-      'This is Vo in the ref. paper
-      ThisVarianceForPreviousCloseToOpen_Vo = MyStatisticalForOpen.Filter(MyReturnLogForOpenToPreviousClose).Variance
-      'This is Vc in the ref. paper
-      ThisVarianceForOpenToClose_Vc = MyStatisticalForClose.Filter(MyReturnLogForCloseToOpen).Variance
-      ThisVarianceForOpenToHigh_Vh = MyStatisticalForOpenToHigh.Filter(MyReturnLogForHighToOpen).Variance
-      ThisVarianceForOpenToLow_Vl = MyStatisticalForOpenToLow.Filter(MyReturnLogForLowToOpen).Variance
+			'not used right now
+			'ThisVarianceForPreviousCloseToHigh_Vh = MyStatisticalForOpenToLow.Filter(MyReturnLogForHighToPreviousClose).Variance
+			'ThisVarianceForPreviousCloseToLow_Vl = MyStatisticalForOpenToLow.Filter(MyReturnLogForLowToPreviousClose).Variance
 
-      'not used right now
-      'ThisVarianceForPreviousCloseToHigh_Vh = MyStatisticalForOpenToLow.Filter(MyReturnLogForHighToPreviousClose).Variance
-      'ThisVarianceForPreviousCloseToLow_Vl = MyStatisticalForOpenToLow.Filter(MyReturnLogForLowToPreviousClose).Variance
+			'calculate le mean for the total high and low variation to close
+			'this is Vrs in the ref. paper
+			ThisVRSTotalMeanForOpenToHighLow_Vrs = MyStatisticalForVRSTotal.Filter(ThisVRSTotalOpenToHighLow).Mean
 
-      'calculate le mean for the total high and low variation to close
-      'this is Vrs in the ref. paper
-      ThisVRSTotalMeanForOpenToHighLow_Vrs = MyStatisticalForVRSTotal.Filter(ThisVRSTotalOpenToHighLow).Mean
+			ThisVarianceOpenToHighLowClose_KValue = MyValueForK * ThisVarianceForOpenToClose_Vc + (1 - MyValueForK) * ThisVRSTotalMeanForOpenToHighLow_Vrs
+			'this is the final volatility
+			ThisVariancePreviousCloseToOpenHighLowClose_V = ThisVarianceForPreviousCloseToOpen_Vo + ThisVarianceOpenToHighLowClose_KValue
 
-      ThisVarianceOpenToHighLowClose_KValue = MyValueForK * ThisVarianceForOpenToClose_Vc + (1 - MyValueForK) * ThisVRSTotalMeanForOpenToHighLow_Vrs
-      'this is the final volatility
-      ThisVariancePreviousCloseToOpenHighLowClose_V = ThisVarianceForPreviousCloseToOpen_Vo + ThisVarianceOpenToHighLowClose_KValue
+			'separate the variance in positif and negatif value for calculation of the PriceVolatilityPositif measurement
+			'ThisVariancePositifSum = (1 - MyValueForK) * (ThisVRSMeanUp / ThisVariancePreviousCloseToOpenHighLowClose_V)
+			'ThisVarianceNegatifSum = (1 - MyValueForK) * (ThisVRSMeanDown / ThisVariancePreviousCloseToOpenHighLowClose_V)
+			ThisVRSMeanUp = MyStatisticalForVRSHigh.Filter(ThisVRSUp2).Mean
+			ThisVRSMeanDown = MyStatisticalForVRSLow.Filter(ThisVRSDown2).Mean
+			ThisVariancePositifSum = (1 - MyValueForK) * ThisVRSMeanUp
+			ThisVarianceNegatifSum = (1 - MyValueForK) * ThisVRSMeanDown
+			'correct the value for the yearly variation
 
-      'separate the variance in positif and negatif value for calculation of the PriceVolatilityPositif measurement
-      'ThisVariancePositifSum = (1 - MyValueForK) * (ThisVRSMeanUp / ThisVariancePreviousCloseToOpenHighLowClose_V)
-      'ThisVarianceNegatifSum = (1 - MyValueForK) * (ThisVRSMeanDown / ThisVariancePreviousCloseToOpenHighLowClose_V)
-      ThisVRSMeanUp = MyStatisticalForVRSHigh.Filter(ThisVRSUp2).Mean
-      ThisVRSMeanDown = MyStatisticalForVRSLow.Filter(ThisVRSDown2).Mean
-      ThisVariancePositifSum = (1 - MyValueForK) * ThisVRSMeanUp
-      ThisVarianceNegatifSum = (1 - MyValueForK) * ThisVRSMeanDown
-      'correct the value for the yearly variation
+			MyFilterValueLastK1 = MyFilterValueLast
+			MyFilterValueLast = ToYearCorrected(ThisVariancePreviousCloseToOpenHighLowClose_V)
+			MyListOfPreviousCloseToOpenHighLowClose.Add(MyFilterValueLast)
+			MyListOfPreviousCloseToOpen.Add(ToYearCorrected(ThisVarianceForPreviousCloseToOpen_Vo))
+			MyListOfOpenToClose.Add(ToYearCorrected(ThisVarianceOpenToHighLowClose_KValue))
 
-      MyFilterValueLastK1 = MyFilterValueLast
-      MyFilterValueLast = ToYearCorrected(ThisVariancePreviousCloseToOpenHighLowClose_V)
-      MyListOfPreviousCloseToOpenHighLowClose.Add(MyFilterValueLast)
-      MyListOfPreviousCloseToOpen.Add(ToYearCorrected(ThisVarianceForPreviousCloseToOpen_Vo))
-      MyListOfOpenToClose.Add(ToYearCorrected(ThisVarianceOpenToHighLowClose_KValue))
-
-      '~~~~~~~~~~~~~~~
-      'the filter is not used right now
-      MyFilterExpForPositiveVariance.Filter(ThisVariancePositifSum)
-      MyFilterExpForNegativeVariance.Filter(ThisVarianceNegatifSum)
+			'~~~~~~~~~~~~~~~
+			'the filter is not used right now
+			MyFilterExpForPositiveVariance.Filter(ThisVariancePositifSum)
+			MyFilterExpForNegativeVariance.Filter(ThisVarianceNegatifSum)
 			MyListOfOpenHighAsClose.Add(ToYearCorrected(ThisVariancePositifSum))
 			MyListOfOpenLowAsClose.Add(ToYearCorrected(ThisVarianceNegatifSum))
-      Dim ThisSumOfVolatilityPositifNegatif = ThisVariancePositifSum + ThisVarianceNegatifSum
-      'the balance value of this ratio is 0.5
-      If ThisSumOfVolatilityPositifNegatif > 0 Then
-        ThisOpenToHighToLowAsCloseRatio = ThisVariancePositifSum / ThisSumOfVolatilityPositifNegatif
-      Else
-        ThisOpenToHighToLowAsCloseRatio = 0.5
-      End If
+			Dim ThisSumOfVolatilityPositifNegatif = ThisVariancePositifSum + ThisVarianceNegatifSum
+			'the balance value of this ratio is 0.5
+			If ThisSumOfVolatilityPositifNegatif > 0 Then
+				ThisOpenToHighToLowAsCloseRatio = ThisVariancePositifSum / ThisSumOfVolatilityPositifNegatif
+			Else
+				ThisOpenToHighToLowAsCloseRatio = 0.5
+			End If
 			If MyListOfOpenToHighToLowAsCloseRatio.Count > 0 Then
 				'this is much better and predictive
 				Select Case ThisOpenToHighToLowAsCloseRatio
@@ -343,8 +347,18 @@ Namespace MathPlus.Filter
 			Else
 				MyFilterDirection = FilterRSI.SlopeDirection.Zero
 			End If
-      MyListOfOpenToHighToLowAsCloseRatio.Add(ThisOpenToHighToLowAsCloseRatio)
-      MyFilterOfOpenToHighToLowAsCloseRatio.Filter(ThisOpenToHighToLowAsCloseRatio)
+			Dim ThisSD = MyStatisticOfOpenToHighToLowAsCloseRatio.Filter(ThisOpenToHighToLowAsCloseRatio).StandardDeviation
+			'make the one standard deviation like a 2 sigma
+			ThisOpenToHighToLowAsCloseRatio = (2 * (ThisOpenToHighToLowAsCloseRatio - 0.5)) + 0.5
+			If ThisOpenToHighToLowAsCloseRatio > 1 Then
+				ThisOpenToHighToLowAsCloseRatio = 1
+			ElseIf ThisOpenToHighToLowAsCloseRatio < 0 Then
+				ThisOpenToHighToLowAsCloseRatio = 0
+			End If
+			'not needed
+			'ThisOpenToHighToLowAsCloseRatio = ProbabilityMapping.ProbabilityToGaussianScale(ThisOpenToHighToLowAsCloseRatio, ScaleOfX:=3)
+			MyListOfOpenToHighToLowAsCloseRatio.Add(ThisOpenToHighToLowAsCloseRatio)
+			MyFilterOfOpenToHighToLowAsCloseRatio.Filter(ThisOpenToHighToLowAsCloseRatio)
       '~~~~~~~~~~~~~~~
 
       MyValueLastK1 = MyValueLast

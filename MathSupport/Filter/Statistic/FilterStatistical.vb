@@ -4,7 +4,7 @@ Imports YahooAccessData.MathPlus.Filter.FilterVolatility
 
 ''' <summary>
 ''' The FilterStatistical class calculates the mean, variance, and standard deviation of a series of values.
-''' It uses a sliding window approach if a FilterRate is specified.
+''' It uses a sliding window approach 
 ''' </summary>
 <Serializable()>
 Public Class FilterStatistical

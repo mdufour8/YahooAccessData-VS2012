@@ -123,11 +123,16 @@ Partial Public Class Report
     MyDictionaryOfStockRecordLoaded = New Dictionary(Of String, String)
     MyStockRecordQueue = New Queue(Of String)
     MyStockRecordQueueCount = STOCK_RECORD_QUEUE_SIZE_DEFAULT
-    IStockRecordInfo_Enabled = False  'by default
-    With Me
+		IStockRecordInfo_Enabled = False  'by default
+		'always set teh datestart to bwgin to the previous monday
+		'this is better because we work more on a weekly workday than a pure daily format
+		'even if the data is collected daly the program expect to ahve completed weekly data
+		'every week is then assign a daily 5 day per week fixed stream
+		DateStart = ReportDate.DateToMondayPrevious(DateStart)
+		With Me
       .ID = 1
-      .DateStart = DateStart
-      .DateStop = Me.DateStart
+			.DateStart = DateStart
+			.DateStop = Me.DateStart
       .Name = Name
       .Industries = New LinkedHashSet(Of Industry, String)
       With CType(.Industries, IRegisterKey(Of String))
@@ -187,11 +192,12 @@ Partial Public Class Report
     Return DateStart.AddDays(7 * ThisNumberOfTradingFullWeek).AddDays(ThisNumberOfTradingDayLeft)
   End Function
 
-  Public Function ToDate(ByVal Index As Integer) As Date
-    Return RecordPrices.ToDate(Me.DateStart, Index)
-  End Function
+	Public Function ToDate(ByVal Index As Integer) As Date
+		Return RecordPrices.ToDate(Me.DateStart, Index)
+	End Function
 
-  Public Property Tag As String
+
+	Public Property Tag As String
 
   Public Overrides Function ToString() As String
     Dim ThisCountRecord As Integer = 0

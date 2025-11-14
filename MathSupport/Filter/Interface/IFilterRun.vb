@@ -31,6 +31,7 @@ Public Interface IFilterRun(Of T)
 	ReadOnly Property IsReset As Boolean
 End Interface
 
+
 Public Interface IFilterChain
 	ReadOnly Property Filters As IReadOnlyList(Of IFilterRun)
 End Interface

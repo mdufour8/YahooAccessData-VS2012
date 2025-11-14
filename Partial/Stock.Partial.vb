@@ -587,6 +587,8 @@ Partial Public Class Stock
 				IsRealTimeAPI:=True)
 
 			Return ThisResponseQuery.IsSuccess AndAlso ThisResponseQuery.Result.Count > 0
+		Else
+			Return False
 		End If
 	End Function
 
@@ -815,7 +817,6 @@ Partial Public Class Stock
 		ThisTaskOfRecordQuoteValue = New Task(Of IEnumerable(Of RecordQuoteValue))(
 			Function()
 				Dim ThisRecordQuoteValue As IEnumerable(Of RecordQuoteValue) = Nothing
-				Dim IsLoaded As Boolean
 				'Dim IsThisTheLastRecordReadingRequest As Boolean
 				'this command load the data in memory only one thread at the time
 
@@ -3107,9 +3108,11 @@ Partial Public Class Stock
 	''' calculations.
 	''' </summary>
 	''' <returns></returns>
-	Public Function GetRecordsPrices() As RecordPrices
-		Return _RecordPrices
-	End Function
+	Public ReadOnly Property GetRecordsPrices() As RecordPrices
+		Get
+			Return _RecordPrices
+		End Get
+	End Property
 
 	''' <summary>
 	''' Can be use as a temporary holder of the prices for various calculations
