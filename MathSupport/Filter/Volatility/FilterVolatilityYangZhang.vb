@@ -347,21 +347,24 @@ Namespace MathPlus.Filter
 			Else
 				MyFilterDirection = FilterRSI.SlopeDirection.Zero
 			End If
+			'If Me.Count = 500 Then
+			'	MyFilterDirection = MyFilterDirection
+			'End If
 			Dim ThisSD = MyStatisticOfOpenToHighToLowAsCloseRatio.Filter(ThisOpenToHighToLowAsCloseRatio).StandardDeviation
-			'make the one standard deviation like a 2 sigma
-			ThisOpenToHighToLowAsCloseRatio = (2 * (ThisOpenToHighToLowAsCloseRatio - 0.5)) + 0.5
-			If ThisOpenToHighToLowAsCloseRatio > 1 Then
-				ThisOpenToHighToLowAsCloseRatio = 1
-			ElseIf ThisOpenToHighToLowAsCloseRatio < 0 Then
-				ThisOpenToHighToLowAsCloseRatio = 0
-			End If
-			'not needed
-			'ThisOpenToHighToLowAsCloseRatio = ProbabilityMapping.ProbabilityToGaussianScale(ThisOpenToHighToLowAsCloseRatio, ScaleOfX:=3)
-			MyListOfOpenToHighToLowAsCloseRatio.Add(ThisOpenToHighToLowAsCloseRatio)
-			MyFilterOfOpenToHighToLowAsCloseRatio.Filter(ThisOpenToHighToLowAsCloseRatio)
-      '~~~~~~~~~~~~~~~
+			'ThisOpenToHighToLowAsCloseRatio is contain between [0,1] assume 25% of the maximum for the standard deviation
+			ThisSD = If(ThisSD > 0, ThisSD, 0.25)
+			Dim ThisOpenToHighToLowAsCloseRatioToSDRatio = (ThisOpenToHighToLowAsCloseRatio - 0.5) / ThisSD
+			'Assuming a Gaussian probability what is the equivalent probability 
+			Dim ThisProbOfOpenToHighToLowAsCloseRatioToSDRatio = ProbabilityMapping.GaussianCDF(ThisOpenToHighToLowAsCloseRatioToSDRatio)
+			''now put that probability on a Gaussian scale for display
+			''bit a compression around 0.5 and expansion at higher probability
+			'ThisProbOfOpenToHighToLowAsCloseRatioToSDRatio = ProbabilityMapping.ProbabilityToGaussianScale(ThisProbOfOpenToHighToLowAsCloseRatioToSDRatio, ScaleOfX:=2.0)
 
-      MyValueLastK1 = MyValueLast
+			MyListOfOpenToHighToLowAsCloseRatio.Add(ThisProbOfOpenToHighToLowAsCloseRatioToSDRatio)
+			MyFilterOfOpenToHighToLowAsCloseRatio.Filter(ThisProbOfOpenToHighToLowAsCloseRatioToSDRatio)
+			'~~~~~~~~~~~~~~~
+
+			MyValueLastK1 = MyValueLast
       MyValueLast = Value
       Return MyFilterValueLast
     End Function

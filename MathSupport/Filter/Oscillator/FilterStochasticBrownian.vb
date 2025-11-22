@@ -1032,19 +1032,11 @@ Namespace MathPlus.Filter
 			'End If
 			'MyFilterOfVolatilityRSIOfOBV.Filter(MyFilterVolatilityForPositifNegatif.FilterLast)
 			Dim ThisFilterDirection As FilterRSI.SlopeDirection
-			'Select Case MyFilterOfVolatilityRSIOfOBV.FilterLast
-			'	Case > 0.5
-			'		ThisFilterDirection = FilterRSI.SlopeDirection.Positive
-			'	Case < 0.5
-			'		ThisFilterDirection = FilterRSI.SlopeDirection.Negative
-			'	Case Else
-			'		ThisFilterDirection = FilterRSI.SlopeDirection.Zero
-			'End Select
 			ThisFilterDirection = MyFilterVolatilityForPositifNegatif.FilterDirection
 			Dim ThisVolatilityPositiveToNegativeRatio = MyFilterVolatilityForPositifNegatif.ToList(Type:=FilterVolatilityYangZhang.enuVolatilityDailyPeriodType.OpenToHighToLowCloseRatioFiltered).Last
 			MyFilterForPriceOBV.Filter(DirectCast(Value, PriceVol).Volume, ThisFilterDirection)
 			MyFilterOfPriceRSIOfOBV.Filter(MyFilterForPriceOBV.FilterLast)
-			MyListOfPriceRSIOfOBV.Add((MyFilterOfPriceRSIOfOBV.FilterLast + ThisVolatilityPositiveToNegativeRatio) / 2)
+			MyListOfPriceRSIOfOBV.Add((0.75 * MyFilterOfPriceRSIOfOBV.FilterLast + 0.25 * ThisVolatilityPositiveToNegativeRatio))
 			'MyListOfPriceRSIOfOBV.Add((MyFilterOfPriceRSIOfOBV.FilterLast + MyFilterOfVolatilityRSIOfOBV.FilterLast) / 2)
 			'MyListOfPriceRSIOfOBV.Add((MyFilterOfPriceRSIOfOBV.FilterLast + MyFilterVolatilityForPositifNegatif.FilterLast) / 2)
 

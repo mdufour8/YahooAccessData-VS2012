@@ -135,6 +135,8 @@ Namespace MathPlus.Filter
 			ThisVarianceOfY = MySumOfY2Mean - (MySumOfYMean * MySumOfYMean)
 			ThisStandardDeviationOfXY = Math.Sqrt(ThisVarianceOfX) * Math.Sqrt(ThisVarianceOfY)
 
+
+
 			If ThisStandardDeviationOfXY > 0 Then
 				MyFilterLast = ThisCovarianceOfXY / ThisStandardDeviationOfXY
 			Else
