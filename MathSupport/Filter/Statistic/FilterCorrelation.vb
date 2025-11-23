@@ -25,10 +25,16 @@ Namespace MathPlus.Filter
 		Private MySumOfXYMean As Double
 		Private MySumOfX2Mean As Double
 		Private MySumOfY2Mean As Double
-		Private MyFilterLast As Double
+		Private MyFilterLast As (Correlation As Double, JoinProbability As Double)
+		Private MyCovarianceOfXY As Double
+		Private MyVarianceOfX As Double
+		Private MyVarianceOfY As Double
+		Private MyStandardDeviationOfXY As Double
+		Private MyJoinProbabilityOfXY As Double
+
 		Private _lastInputs As (X As Double, Y As Double)
 
-		Private MyListOfCorrelation As List(Of Double)
+		Private MyListOfCorrelationProbability As List(Of (Correlation As Double, JoinProbability As Double))
 		Private MyRate As Integer
 
 		Public Sub New(ByVal FilterRate As Integer)
@@ -40,30 +46,25 @@ Namespace MathPlus.Filter
 			MyQueueOfXY = New Queue(Of Double)(MyRate)
 			MyQueueOfX2 = New Queue(Of Double)(MyRate)
 			MyQueueOfY2 = New Queue(Of Double)(MyRate)
-			MyListOfCorrelation = New List(Of Double)
+			MyListOfCorrelationProbability = New List(Of (Correlation As Double, JoinProbability As Double))
 			_lastInputs.X = 0.0
 			_lastInputs.Y = 0.0
 		End Sub
 
 		Public ReadOnly Property Count As Integer Implements IFilterDuplex.Count
 			Get
-				Return MyListOfCorrelation.Count
+				Return MyListOfCorrelationProbability.Count
 			End Get
 		End Property
 
-		Public Function Filter(X As Double, Y As Double) As Double Implements IFilterDuplex.Filter
+		Public Function Filter(X As Double, Y As Double) As (Double, Double) Implements IFilterDuplex.Filter
 			Dim ThisTemp As Double
 			Dim ThisCount As Integer
-			Dim ThisCovarianceOfXY As Double
-			Dim ThisVarianceOfX As Double
-			Dim ThisVarianceOfY As Double
-			Dim ThisStandardDeviationOfXY As Double
-
 
 			_lastInputs.X = X
 			_lastInputs.Y = Y
 			'data capture 
-			If MyListOfCorrelation.Count = 0 Then
+			If MyListOfCorrelationProbability.Count = 0 Then
 				'initialization
 				MyQueueOfX.Enqueue(X)
 				MySumOfX = X
@@ -130,24 +131,24 @@ Namespace MathPlus.Filter
 			MySumOfXYMean = MySumOfXY / ThisCount
 			MySumOfX2Mean = MySumOfX2 / ThisCount
 			MySumOfY2Mean = MySumOfY2 / ThisCount
-			ThisCovarianceOfXY = MySumOfXYMean - (MySumOfXMean * MySumOfYMean)
-			ThisVarianceOfX = MySumOfX2Mean - (MySumOfXMean * MySumOfXMean)
-			ThisVarianceOfY = MySumOfY2Mean - (MySumOfYMean * MySumOfYMean)
-			ThisStandardDeviationOfXY = Math.Sqrt(ThisVarianceOfX) * Math.Sqrt(ThisVarianceOfY)
-
-
-
-			If ThisStandardDeviationOfXY > 0 Then
-				MyFilterLast = ThisCovarianceOfXY / ThisStandardDeviationOfXY
+			MyCovarianceOfXY = MySumOfXYMean - (MySumOfXMean * MySumOfYMean)
+			MyVarianceOfX = MySumOfX2Mean - (MySumOfXMean * MySumOfXMean)
+			MyVarianceOfY = MySumOfY2Mean - (MySumOfYMean * MySumOfYMean)
+			MyStandardDeviationOfXY = Math.Sqrt(MyVarianceOfX) * Math.Sqrt(MyVarianceOfY)
+			If MyStandardDeviationOfXY > 0 Then
+				Dim ThisCorrelation = MyCovarianceOfXY / MyStandardDeviationOfXY
+				'calculate the Probability that both process are moving together or are positive at the same time i.e.	P(X And Y)
+				Dim ThisJoinProbabilityOfXY = Measure.Measure.JointProbabilityApproximate(ThisCorrelation)
+				ThisJoinProbabilityOfXY = ThisJoinProbabilityOfXY
+				MyFilterLast = (ThisCorrelation, ThisJoinProbabilityOfXY)
 			Else
-				'in this case assume the last value is the correct one
+				MyFilterLast = (0.0, 0.5)
 			End If
-			MyListOfCorrelation.Add(MyFilterLast)
-			'MyListOfCorrelation.Add((X - Y) ^ 2 / (X + Y) ^ 2)
+			MyListOfCorrelationProbability.Add(MyFilterLast)
 			Return MyFilterLast
 		End Function
 
-		Public Function FilterLast() As Double Implements IFilterDuplex.FilterLast
+		Public Function FilterLast() As (Correlation As Double, JoinProbability As Double) Implements IFilterDuplex.FilterLast
 			Return MyFilterLast
 		End Function
 
@@ -163,23 +164,87 @@ Namespace MathPlus.Filter
 
 		Public Property Tag As String Implements IFilterDuplex.Tag
 
-		Public ReadOnly Property ToListOfCorrelation As List(Of Double)
+		Public ReadOnly Property ToList As IList(Of (Correlation As Double, JoinProbability As Double)) Implements IFilterDuplex.ToList
 			Get
-				Return MyListOfCorrelation
-			End Get
-		End Property
-
-		Public ReadOnly Property ToList As IList(Of Double) Implements IFilterDuplex.ToList
-			Get
-				Return MyListOfCorrelation
+				Return MyListOfCorrelationProbability
 			End Get
 		End Property
 
 		Public Overrides Function ToString() As String Implements IFilterDuplex.ToString
-			Return ""
+			Return FilterLast.ToString
 		End Function
-	End Class
 
+		Public ReadOnly Property SumOfX As Double
+			Get
+				Return MySumOfX
+			End Get
+		End Property
+		Public ReadOnly Property SumOfY As Double
+			Get
+				Return MySumOfY
+			End Get
+		End Property
+		Public ReadOnly Property SumOfXY As Double
+			Get
+				Return MySumOfXY
+			End Get
+		End Property
+		Public ReadOnly Property SumOfX2 As Double
+			Get
+				Return MySumOfX2
+			End Get
+		End Property
+		Public ReadOnly Property SumOfY2 As Double
+			Get
+				Return MySumOfY2
+			End Get
+		End Property
+		Public ReadOnly Property SumOfXMean As Double
+			Get
+				Return MySumOfXMean
+			End Get
+		End Property
+		Public ReadOnly Property SumOfYMean As Double
+			Get
+				Return MySumOfYMean
+			End Get
+		End Property
+		Public ReadOnly Property SumOfXYMean As Double
+			Get
+				Return MySumOfXYMean
+			End Get
+		End Property
+		Public ReadOnly Property SumOfX2Mean As Double
+			Get
+				Return MySumOfX2Mean
+			End Get
+		End Property
+		Public ReadOnly Property SumOfY2Mean As Double
+			Get
+				Return MySumOfY2Mean
+			End Get
+		End Property
+		Public ReadOnly Property CovarianceOfXY As Double
+			Get
+				Return MyCovarianceOfXY
+			End Get
+		End Property
+		Public ReadOnly Property VarianceOfX As Double
+			Get
+				Return MyVarianceOfX
+			End Get
+		End Property
+		Public ReadOnly Property VarianceOfY As Double
+			Get
+				Return MyVarianceOfY
+			End Get
+		End Property
+		Public ReadOnly Property StandardDeviationOfXY As Double
+			Get
+				Return MyStandardDeviationOfXY
+			End Get
+		End Property
+	End Class
 
 	Public Interface IFilterDuplex
 		''' <summary>
@@ -189,12 +254,12 @@ Namespace MathPlus.Filter
 		''' <param name="Y"></param>
 		''' <returns>the correlation factor for the last n samples</returns>
 		''' <remarks></remarks>
-		Function Filter(ByVal X As Double, ByVal Y As Double) As Double
-		Function FilterLast() As Double
+		Function Filter(ByVal X As Double, ByVal Y As Double) As (Correlation As Double, JoinProbability As Double)
+		Function FilterLast() As (Correlation As Double, JoinProbability As Double)
 		Function Last() As (X As Double, Y As Double)
 		ReadOnly Property Rate As Integer
 		ReadOnly Property Count As Integer
-		ReadOnly Property ToList() As IList(Of Double)
+		ReadOnly Property ToList() As IList(Of (Correlation As Double, JoinProbability As Double))
 		Property Tag As String
 		Function ToString() As String
 	End Interface

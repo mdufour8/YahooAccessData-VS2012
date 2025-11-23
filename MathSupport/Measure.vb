@@ -248,12 +248,14 @@ Namespace MathPlus
 			''' - The output probability is between 0 and 1.
 			''' </summary>
 			''' <param name="rho">The Pearson correlation coefficient between the two signals (−1 to +1).</param>
-			''' <returns>Estimated joint probability P(X > 0 and Y > 0).</returns>
+			''' <returns>Estimated joint probability P(X > 0 and Y > 0)  .</returns>
 			Public Shared Function JointProbabilityApproximate(rho As Double) As Double
-				If rho < -1 OrElse rho > 1 Then
-					Throw New ArgumentOutOfRangeException(NameOf(rho), "Correlation must be between -1 and +1.")
+				If rho < -1.0 Then
+					rho = -1.0
+				ElseIf rho > 1.0 Then
+					rho = 1.0
 				End If
-				Return 0.25 + Math.Asin(rho) / (2 * Math.PI)
+				Return 0.5 + Math.Asin(rho) / Math.PI
 			End Function
 
 
