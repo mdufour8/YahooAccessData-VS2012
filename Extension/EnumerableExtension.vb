@@ -4,6 +4,65 @@ Imports System.Runtime.CompilerServices
 
 Namespace ExtensionService
 	Public Module EnumerableExtension
+
+		''' <summary>
+		''' Returns a shifted view of an indexable sequence.
+		''' Negative shift = shift left (use first element to pad),
+		''' Positive shift = shift right (use last element to pad),
+		''' Zero shift = original sequence.
+		''' </summary>
+		<Extension>
+		Public Iterator Function WithShift(Of T)(
+				source As IList(Of T),
+				shiftValue As Integer
+		) As IEnumerable(Of T)
+
+			If source Is Nothing Then Throw New ArgumentNullException(NameOf(source))
+
+			Dim count = source.Count
+			If count = 0 Then
+				' Nothing to yield
+				Return
+			End If
+
+			Dim first = source(0)
+			Dim last = source(count - 1)
+
+			' Loop over indices once
+			For i = 0 To count - 1
+				Dim j As Integer
+
+				If shiftValue = 0 Then
+					j = i
+				Else
+					' Note: sign convention to match your original code
+					If shiftValue < 0 Then
+						' shift left => i + |shift|
+						j = i + (-shiftValue)
+					Else
+						' shift right => i - shift
+						j = i - shiftValue
+					End If
+				End If
+
+				If j < 0 Then
+					Yield first
+				ElseIf j >= count Then
+					Yield last
+				Else
+					Yield source(j)
+				End If
+			Next
+		End Function
+
+		<Extension>
+		Public Iterator Function WithIndex(Of T)(source As IList(Of T)) As IEnumerable(Of (Index As Integer, Item As T))
+			For i = 0 To source.Count - 1
+				Yield (Index:=i, Item:=source(i))
+			Next
+		End Function
+
+
 		''' <summary>
 		''' Enumerates a sequence, yielding each item along with its zero-based index.
 		''' Equivalent to Python's enumerate().
@@ -13,6 +72,14 @@ Namespace ExtensionService
 			Dim i As Integer = 0
 			For Each SourceItem In source
 				Yield (Index:=i, Item:=SourceItem)
+				i += 1
+			Next
+		End Function
+
+		Public Iterator Function WithIndexFrom(Of T)(source As IList(Of T), startIndex As Integer) As IEnumerable(Of (Index As Integer, Item As T))
+			Dim i As Integer = startIndex
+			For j = 0 To source.Count - 1
+				Yield (Index:=i, Item:=source(j))
 				i += 1
 			Next
 		End Function

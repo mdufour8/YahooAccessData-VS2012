@@ -22,9 +22,9 @@ Namespace MathPlus.Filter
   ''' <remarks>The current implementation support any rate or output filter</remarks>
   <Serializable()>
   Public Class FilterStochastic
-    Implements IStochastic
+		Implements IStochastic
 
-    Private Const FILTER_ATTACK_DECAY_RATIO As Double = 0.5
+		Private Const FILTER_ATTACK_DECAY_RATIO As Double = 0.5
     Private MyValueMax As IPriceVolLarge
     Private MyValueMin As IPriceVolLarge
     Private MyListOfValueWindows As ListWindow(Of PriceVolLargeAsClass)
