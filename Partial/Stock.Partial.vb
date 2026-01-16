@@ -404,8 +404,7 @@ Partial Public Class Stock
 				ExchangeCode:=ThisWebEOD.ExchangeCode,
 				Symbol:=ThisWebEOD.SymbolCode,
 				DateStart:=ThisWebDateStart,
-				DateStop:=RecordDateStop,
-				IsRealTimeAPI:=True)
+				DateStop:=RecordDateStop)
 			'use just a test
 			If ThisResponseQuery Is Nothing Then
 				ThisResponseQuery = ThisResponseQuery
@@ -548,9 +547,9 @@ Partial Public Class Stock
 	End Function
 
 	''' <summary>
-	''' This function check if there is some data in the server cache ready to be read from the web source
+	''' This function load the data in the server cache ready to be read later from the usual web call
 	''' </summary>
-	Public Async Function WebRefreshBufferReady() As Task(Of Boolean)
+	Public Function WebRefreshCache() As Boolean
 		Dim ThisWebDataSource = Me.Report.WebDataSource
 
 		If ThisWebDataSource Is Nothing Then Return False
@@ -577,16 +576,15 @@ Partial Public Class Stock
 				Return False
 			End If
 		End If
-		'check if the symbol exit and some buffered data exit in the cache
+		'check if the exchange and symbol exit
 		If ThisWebDataSource.GetDictionaryOfStockSymbolBySymbol(ThisWebEOD.ExchangeCode).ContainsKey(ThisWebEOD.SymbolCode) Then
-			Dim ThisResponseQuery = Await DirectCast(ThisWebDataSource, IServiceClient).LoadStockQuoteFromBufferAsync(
+			DirectCast(ThisWebDataSource, IServiceClient).LoadStockQuoteToCache(
 				ExchangeCode:=ThisWebEOD.ExchangeCode,
 				Symbol:=ThisWebEOD.SymbolCode,
 				DateStart:=ThisWebDateStart,
-				DateStop:=RecordDateStop,
-				IsRealTimeAPI:=True)
+				DateStop:=RecordDateStop)
 
-			Return ThisResponseQuery.IsSuccess AndAlso ThisResponseQuery.Result.Count > 0
+			Return True
 		Else
 			Return False
 		End If

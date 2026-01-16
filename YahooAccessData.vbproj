@@ -361,6 +361,7 @@
     <None Include="MathSupport\Filter\PLL\DPLL_Detailed_Frequency_Response_Analysis_1.pdf" />
     <None Include="MathSupport\Filter\PLL\dpll_ieee.pdf" />
     <None Include="MathSupport\Filter\PLL\wirelesspi-phase-locked-loop-pll-in-a-software-defined-radio-sdr.pdf" />
+    <None Include="MathSupport\Filter\Statistic\Covariance_Correlation_Regression_Reference.pdf" />
     <None Include="MathSupport\Filter\Volatility\Parkinson_Volatility_Estimator_Description.pdf" />
     <None Include="MathSupport\Filter\Volatility\Yang Drift-Independent Volatility .pdf" />
     <None Include="MathSupport\Info\erf-approx.pdf" />
@@ -398,7 +399,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\WebEODData\WCF\SharedContracts\SharedContracts.vbproj">
-      <Project>{ad64cc35-ea86-4039-a693-ae8b23b488f6}</Project>
+      <Project>{AD64CC35-EA86-4039-A693-AE8B23B488F6}</Project>
       <Name>SharedContracts</Name>
     </ProjectReference>
   </ItemGroup>

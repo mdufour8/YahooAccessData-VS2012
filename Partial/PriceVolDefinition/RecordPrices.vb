@@ -1285,7 +1285,7 @@ Public Class RecordPrices
 		Return ThisList
 	End Function
 
-	Public Function ToListOfStockPriceGain() As List(Of IPriceVol)
+	Public Function ToListOfPriceGainLog() As List(Of IPriceVol)
 		Dim ThisList = New List(Of IPriceVol)
 
 		'take the reference as the first price
@@ -1298,8 +1298,14 @@ Public Class RecordPrices
 		'stability and the revenue growth are a major concern
 
 		'Dim ThisPriceVolGain As IPriceVolGain
+		For Each PriceVol In MyListOfPriceVol
+
+
+
+		Next
+
+
 		For I = 0 To Me.NumberPoint - 1
-			'ThisPriceVolGain = New PriceVolGain
 
 			ThisList.Add(New StockPriceVol(MyPriceVols(I)))
 		Next
@@ -1344,19 +1350,30 @@ Public Class RecordPrices
 		End Set
 	End Property
 
-
 	Public Function PriceVols(ByVal Index As Integer) As PriceVol
-		Return MyPriceVols(Index)
+		If MyListOfPriceVol.Count = 0 Then Return Nothing
+		If Index >= 0 Then
+			If Index < MyListOfPriceVol.Count Then
+				Return DirectCast(MyListOfPriceVol.Item(Index), PriceVol)
+			Else
+				Return DirectCast(MyListOfPriceVol.Last, PriceVol)
+			End If
+		Else
+			Return DirectCast(MyListOfPriceVol.Item(0), PriceVol)
+		End If
 	End Function
 
-	''' <summary>
-	''' This function allow a direct access to the IPriceVol interface which return a function pointer. It is more efficient 
-	''' that the PriceVols(I) that effectively make a copy of PriceVol which is defined as a structure not a classes.
-	''' </summary>
-	''' <param name="Index"></param>
-	''' <returns></returns>
 	Public Function GetPriceVolInterface(ByVal Index As Integer) As IPriceVol
-		Return MyPriceVols(Index)
+		If MyListOfPriceVol.Count = 0 Then Return Nothing
+		If Index >= 0 Then
+			If Index < MyListOfPriceVol.Count Then
+				Return MyListOfPriceVol.Item(Index)
+			Else
+				Return MyListOfPriceVol.Last
+			End If
+		Else
+			Return MyListOfPriceVol.Item(0)
+		End If
 	End Function
 
 	''' <summary>
