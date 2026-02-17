@@ -13,6 +13,22 @@ Imports YahooAccessData.MathPlus.Filter
 ' 4. Use WindowFrameDebug traces (Add, State, Decimate, Summary)
 '    to quickly catch mismatches against graph outputs.
 
+' ----------------------------------------------------------------------
+' LEGACY / NOT USED
+'
+' This class was used in early experiments with decimation windows and
+' genetic-algorithm evaluation. It is no longer part of the active
+' processing pipeline.
+'
+' Replaced by:
+'   - CircularBuffer(Of T)
+'   - ListWindowFrame
+'   - delta-update processing
+'
+' Kept only for reference.
+' ----------------------------------------------------------------------
+
+
 Public Class ListWindowFrameAsClass(Of T As {Class, New, IPriceVol, IPricePivotPoint})
 	Implements IList(Of T)
 	'Implements IListWindowsFrame(Of T)

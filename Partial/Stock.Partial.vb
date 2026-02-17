@@ -301,7 +301,8 @@ Partial Public Class Stock
 			Debug.Print($"WebRefreshRecord: {Me.Symbol} executed in {ThisStockWatch.ElapsedMilliseconds} ms")
 
 			If Not ThisResult.IsSuccess Then
-				MsgBox(ThisResult.Message)
+				'MsgBox(ThisResult.Message)
+				Trace.WriteLine(ThisResult.Message)
 			ElseIf ThisResult.Message.Length > 0 Then
 				Trace.WriteLine(ThisResult.Message)
 			End If

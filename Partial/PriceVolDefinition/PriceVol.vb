@@ -100,18 +100,28 @@ Public Class PriceVol
 	Public High As Single
 	Public Low As Single
 	Public LastWeighted As Single
-
-	Private _Vol As Integer
+	Private Property _Vol As Integer
 	Public Property Vol As Integer
 		Get
 			Return _Vol
 		End Get
 		Set(value As Integer)
 			_Vol = value
+			_Volume = value
 		End Set
 	End Property
 
-	Public Volume As Long
+	Private Property _Volume As Long
+	Public Property Volume As Long
+		Get
+			Return _Volume
+		End Get
+		Set(value As Long)
+			_Volume = value
+			_Vol = value.ToIntegerSafe()
+		End Set
+	End Property
+
 
 	Private _VolPlus As Long
 	Public Property VolPlus As Long
@@ -762,10 +772,10 @@ Public Class PriceVol
 
 	Private Property IStockPriceVol_Volume As Long Implements IStockPriceVol.Volume
 		Get
-			Return Me.Vol
+			Return Me.Volume
 		End Get
 		Set(value As Long)
-			Throw New NotImplementedException()
+			Me.Volume = value
 		End Set
 	End Property
 #End Region

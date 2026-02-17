@@ -2459,6 +2459,20 @@ Namespace MathPlus
 		End Class
 #End Region
 #Region "FilterPriceDecimation"
+		' ----------------------------------------------------------------------
+		' LEGACY / NOT USED
+		'
+		' This class was used in early experiments with decimation windows and
+		' genetic-algorithm evaluation. It is no longer part of the active
+		' processing pipeline.
+		'
+		' Replaced by:
+		'   - CircularBuffer(Of T)
+		'   - ListWindowFrame
+		'   - delta-update processing
+		'
+		' Kept only for reference.
+		' ----------------------------------------------------------------------
 		<Serializable()>
 		Public Class FilterPriceDecimation
 			Implements IFilter(Of IPriceVol)

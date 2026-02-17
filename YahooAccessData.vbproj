@@ -194,8 +194,9 @@
     <Import Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FileSupport\CircularBuffer.vb" />
     <Compile Include="Extension\EnumerableExtension.vb" />
+    <Compile Include="Extension\Extensions.vb" />
+    <Compile Include="MathSupport\Buffer\CircularBuffer.vb" />
     <Compile Include="FileSupport\FileMutex.vb" />
     <Compile Include="GlobalSuppressions.vb" />
     <Compile Include="Interface\IStockDividendSinglePayout.vb" />
@@ -205,7 +206,6 @@
     <Compile Include="MathSupport\BinaryConverter\BinaryConverter.vb" />
     <Compile Include="FileSupport\CompareByName.vb" />
     <Compile Include="FileSupport\DictionaryKeyValuePair.vb" />
-    <Compile Include="Extension\Extensions.vb" />
     <Compile Include="Interface\ICollectionKey.vb" />
     <Compile Include="Interface\IStockDividend.vb" />
     <Compile Include="FileSupport\LinkedHashSet.vb" />
@@ -217,8 +217,8 @@
     <Compile Include="MathSupport\Filter\Exponential\FilterDoubleExp.vb" />
     <Compile Include="MathSupport\Filter\FilterGraph.vb" />
     <Compile Include="MathSupport\Filter\Interface\IFilterConnector.vb" />
+    <Compile Include="MathSupport\Filter\Interface\IUndoLastState.vb" />
     <Compile Include="MathSupport\Filter\ListWindowsFrame\ListWindowFrameAsClass.vb" />
-    <Compile Include="MathSupport\Filter\ListWindowsFrame\ListWindowFrameAsStuct.vb" />
     <Compile Include="MathSupport\Filter\ListWindowsFrame\WindowFrameDebug.vb" />
     <Compile Include="MathSupport\Filter\OBV\FilterOBV.vb" />
     <Compile Include="MathSupport\Filter\Oscillator\IStochasticBrownianData.vb" />
@@ -290,6 +290,7 @@
     <Compile Include="Partial\BondRate.Partial.vb" />
     <Compile Include="Partial\BondRate1.vb" />
     <Compile Include="Partial\BondRateRecord.vb" />
+    <Compile Include="Partial\PriceVolDefinition\Extension\StockPriceLogGainExtensions.vb" />
     <Compile Include="Partial\PriceVolDefinition\IPricePivotPoint.vb" />
     <Compile Include="Partial\PriceVolDefinition\IPriceVol.vb" />
     <Compile Include="Partial\PriceVolDefinition\IPriceVolGain.vb" />

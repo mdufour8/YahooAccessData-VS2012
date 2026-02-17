@@ -2,9 +2,21 @@
 Imports System.Numerics
 
 Public Class FilterExp
+	Implements IUndoLastState
+
 	Implements IFilterRun
 	Implements IFilter
 	Implements IFilterState
+
+	Private Structure FilterUndoState
+		Public ValueLast As Double
+		Public ValueLastK1 As Double
+		Public FilterValueLast As Double
+		Public FilterValueLastK1 As Double
+		Public _IsReset As Boolean
+		Public IsValid As Boolean
+	End Structure
+
 
 	Private MyRate As Integer
 	Private MyFilterRate As Double
@@ -16,7 +28,7 @@ Public Class FilterExp
 	Private ValueLastK1 As Double
 	Private _IsReset As Boolean
 	Private MyCircularBuffer As CircularBuffer(Of Double)
-
+	Private _FilterUndoState As FilterUndoState
 #Region "New"
 	Public Sub New(ByVal FilterRate As Double, Optional BufferCapacity As Integer = 0)
 
@@ -75,8 +87,11 @@ Public Class FilterExp
 		FilterValueLastK1 = 0
 		ValueLast = 0
 		ValueLastK1 = 0
-		MyCircularBuffer = New CircularBuffer(Of Double)(capacity:=BufferCapacity, 0.0)
+		'make it explicit that the buffer is never of capacity zero
+		'to avoid error and mismanagement with the undo state
+		MyCircularBuffer = New CircularBuffer(Of Double)(capacity:=Math.Max(1, BufferCapacity), 0.0)
 		_IsReset = True
+		_FilterUndoState.IsValid = False
 	End Sub
 #End Region
 
@@ -160,6 +175,15 @@ Public Class FilterExp
 	''' <returns>The filtered value.</returns>
 	''' <remarks>Note that the filter is reset at the first call.</remarks>
 	Public Function FilterRun(Value As Double) As Double Implements IFilterRun.FilterRun
+		With _FilterUndoState
+			.ValueLast = ValueLast
+			.ValueLastK1 = ValueLastK1
+			.FilterValueLast = FilterValueLast
+			.FilterValueLastK1 = FilterValueLastK1
+			._IsReset = _IsReset
+			.IsValid = True
+		End With
+
 		If _IsReset Then
 			'initialization
 			FilterValueLast = Value
@@ -238,7 +262,7 @@ Public Class FilterExp
 
 	Public ReadOnly Property FilterTrendLast As Double Implements IFilterRun.FilterTrendLast
 		Get
-			Return 0.0
+			Return FilterValueLast - FilterValueLastK1
 		End Get
 	End Property
 
@@ -392,6 +416,20 @@ Public Class FilterExp
 	Public Overrides Function ToString() As String Implements IFilter.ToString
 		Return $"{Me.GetType().Name}: FilterRate={MyFilterRate},{Me.FilterLast}"
 	End Function
+
+	Public Function RestoreLastState() As Boolean Implements IUndoLastState.RestoreLastState
+		With _FilterUndoState
+			If Not .IsValid Then Return False
+			ValueLast = .ValueLast
+			ValueLastK1 = .ValueLastK1
+			FilterValueLast = .FilterValueLast
+			FilterValueLastK1 = .FilterValueLastK1
+			_IsReset = ._IsReset
+			.IsValid = False
+		End With
+		Return MyCircularBuffer.RestoreLastState()
+	End Function
 #End Region
 End Class
+
 

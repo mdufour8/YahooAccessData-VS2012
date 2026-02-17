@@ -3,11 +3,22 @@ Public Class StockPriceVol
 	Implements IStockPriceVol
 	Implements IPriceVol
 
-	Public Sub New()
+	Public Enum StockPriceDataType
+		RawPrice = 0
+		CumulativeLogReturn = 1
+	End Enum
 
+	Private ReadOnly _dataType As StockPriceDataType = StockPriceDataType.RawPrice
+
+
+	Public Sub New()
+		Me.DateDay = Now.Date
 	End Sub
 
-	Public Sub New(PriceVol As IPriceVol)
+
+	Public Sub New(PriceVol As IStockPriceVol, Optional DataType As StockPriceDataType = StockPriceDataType.RawPrice)
+		_dataType = DataType
+
 		Me.DateDay = PriceVol.DateDay
 		Me.Open = PriceVol.Open
 		Me.OpenNext = PriceVol.OpenNext
@@ -15,9 +26,14 @@ Public Class StockPriceVol
 		Me.LastPrevious = PriceVol.LastPrevious
 		Me.High = PriceVol.High
 		Me.Low = PriceVol.Low
-		Me.Volume = DirectCast(PriceVol, PriceVol).Volume
+		Me.Volume = PriceVol.Volume
 	End Sub
 
+	Public ReadOnly Property DataType As StockPriceDataType
+		Get
+			Return _dataType
+		End Get
+	End Property
 
 	Public Property DateDay As Date Implements IStockPriceVol.DateDay
 	Public Property Open As Double Implements IStockPriceVol.Open

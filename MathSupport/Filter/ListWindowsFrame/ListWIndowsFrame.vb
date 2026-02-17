@@ -1,27 +1,68 @@
 ﻿Imports YahooAccessData.MathPlus.Filter
 
 Public Class ListWindowFrame
-	Implements IList(Of Double)
+	Implements IUndoLastState
 	Implements IListWindowsFrame(Of Double)
 	Implements IListWindowsFrame1(Of Double)
 
-	Private MyListOfIPriceVol As List(Of Double)
+	Private _buf As CircularBuffer(Of Double)
+	Private _dirtyMinMax As Boolean
+
 	Private MyWindowSize As Integer
 	Private MyItemsSum As Double
 	Private MyItemHighIndex As Integer
 	Private MyItemLowIndex As Integer
-	Private MyItemRemoved As Nullable(Of Double)
-	Private IsItemRemoved As Boolean
+	Private MyItemRemoved As Double?
+
+	Private _hasUndo As Boolean
+	Private Structure UndoFrame
+		Public PrevSum As Double
+		Public PrevRemoved As Double?
+		Public PrevDirty As Boolean
+		Public PrevHighIndex As Integer
+		Public PrevLowIndex As Integer
+	End Structure
+
+	Private _undo As UndoFrame
+
 
 #Region "New"
 	Public Sub New(ByVal WindowSize As Integer)
-		MyListOfIPriceVol = New List(Of Double)(WindowSize)
+		_buf = New CircularBuffer(Of Double)(WindowSize, defaultValue:=0.0R)
+		MyWindowSize = _buf.Capacity   ' ← clamp to actual buffer size
+		MyItemsSum = 0.0
 		MyItemHighIndex = -1
 		MyItemLowIndex = -1
 		MyItemRemoved = Nothing
-		MyWindowSize = WindowSize
+		_dirtyMinMax = True
+		_hasUndo = False
 	End Sub
 #End Region
+
+	Public Sub Add(item As Double)
+		' Save undo for the FRAME state (buffer handles its own undo)
+		_undo = New UndoFrame With {
+				.PrevSum = MyItemsSum,
+				.PrevRemoved = MyItemRemoved,
+				.PrevDirty = _dirtyMinMax,
+				.PrevHighIndex = MyItemHighIndex,
+				.PrevLowIndex = MyItemLowIndex
+		}
+		_hasUndo = True
+
+		Dim evicted As Double
+		Dim hadEviction As Boolean = _buf.AddLast(item, evicted)
+
+		If hadEviction Then
+			MyItemRemoved = evicted
+			MyItemsSum -= evicted
+		Else
+			MyItemRemoved = Nothing
+		End If
+		MyItemsSum += item
+		_dirtyMinMax = True
+	End Sub
+
 #Region "IListWindowsFrame"
 	Private ReadOnly Property AsIListWindowsFrame As IListWindowsFrame(Of Double) Implements IListWindowsFrame(Of Double).AsIListWindowsFrame
 		Get
@@ -34,45 +75,39 @@ Public Class ListWindowFrame
 	End Function
 
 	Public Function ItemFirst() As Double? Implements IListWindowsFrame(Of Double).ItemFirst
-		If MyListOfIPriceVol.Count > 0 Then
-			Return MyListOfIPriceVol(0)
-		Else
-			Return Nothing
-		End If
+		If _buf.Count = 0 Then Return Nothing
+		Return _buf.PeekFirst()
 	End Function
 
 	Public Function ItemHigh() As Double? Implements IListWindowsFrame(Of Double).ItemHigh
-		If MyListOfIPriceVol.Count > 0 Then
-			Return MyListOfIPriceVol(MyItemHighIndex)
-		Else
-			Return Nothing
-		End If
+		If _buf.Count = 0 Then Return Nothing
+		EnsureMinMax()
+		Return _buf(MyItemHighIndex)
 	End Function
 
 	Public ReadOnly Property ItemHighIndex As Integer Implements IListWindowsFrame(Of Double).ItemHighIndex
 		Get
+			If _buf.Count = 0 Then Return -1
+			EnsureMinMax()
 			Return MyItemHighIndex
 		End Get
 	End Property
 
 	Public Function ItemLast() As Double? Implements IListWindowsFrame(Of Double).ItemLast
-		If MyListOfIPriceVol.Count > 0 Then
-			Return MyListOfIPriceVol(MyListOfIPriceVol.Count - 1)
-		Else
-			Return Nothing
-		End If
+		If _buf.Count = 0 Then Return Nothing
+		Return _buf.PeekLast()
 	End Function
 
 	Public Function ItemLow() As Double? Implements IListWindowsFrame(Of Double).ItemLow
-		If MyListOfIPriceVol.Count > 0 Then
-			Return MyListOfIPriceVol(MyItemLowIndex)
-		Else
-			Return Nothing
-		End If
+		If _buf.Count = 0 Then Return Nothing
+		EnsureMinMax()
+		Return _buf(MyItemLowIndex)
 	End Function
 
 	Public ReadOnly Property ItemLowIndex As Integer Implements IListWindowsFrame(Of Double).ItemLowIndex
 		Get
+			If _buf.Count = 0 Then Return -1
+			EnsureMinMax()
 			Return MyItemLowIndex
 		End Get
 	End Property
@@ -137,11 +172,12 @@ Public Class ListWindowFrame
 
 	Private Function IListWindowsFrame1_ItemLast() As Double Implements IListWindowsFrame1(Of Double).ItemLast
 		If Me.ItemLast.HasValue Then
-			Return Me.ItemFirst.Value
+			Return Me.ItemLast.Value   ' <-- not ItemFirst
 		Else
 			Return Double.NaN
 		End If
 	End Function
+
 
 	Private Function IListWindowsFrame1_ItemDecimate() As Double Implements IListWindowsFrame1(Of Double).ItemDecimate
 		If Me.ItemDecimate.HasValue Then
@@ -159,149 +195,68 @@ Public Class ListWindowFrame
 		End If
 	End Function
 #End Region
-#Region "ICollection"
-	Public Sub Add(item As Double) Implements ICollection(Of Double).Add
-		Dim I As Integer
 
-		With MyListOfIPriceVol
-			If .Count = MyWindowSize Then
-				MyItemRemoved = .First
-				MyItemsSum = MyItemsSum - .First
-				.RemoveAt(0)
-				'adjust the index position due to the item being removed
-				MyItemHighIndex = MyItemHighIndex - 1
-				MyItemLowIndex = MyItemLowIndex - 1
-			Else
-				MyItemRemoved = Nothing
+	Private Sub EnsureMinMax()
+		If Not _dirtyMinMax Then Return
+
+		If _buf.Count = 0 Then
+			MyItemHighIndex = -1
+			MyItemLowIndex = -1
+			_dirtyMinMax = False
+			Return
+		End If
+
+		Dim hi As Integer = 0
+		Dim lo As Integer = 0
+		Dim vHi As Double = _buf(0)
+		Dim vLo As Double = vHi
+
+		'starting at 1, since we already used 0 to initialize the min/max
+		For i = 1 To _buf.Count - 1
+			Dim v = _buf(i)
+			If v > vHi Then
+				vHi = v
+				hi = i
 			End If
-			If .Count > 0 Then
-				'if the element removed was a min or a max we need to find another one
-				'the min and the max are not necessary located at the same index
-				If MyItemRemoved IsNot Nothing Then
-					If MyItemHighIndex < 0 Then
-						'MyItemRemoved Is MyItemHigh 
-						If MyItemLowIndex < 0 Then
-							'MyItemRemoved is also MyItemLow 
-							'need to search for a maximum and a minimum at the same time
-							'should be a rare occurence
-							MyItemHighIndex = 0
-							MyItemLowIndex = 0
-							For I = 1 To MyListOfIPriceVol.Count - 1
-								If MyListOfIPriceVol(I) > MyListOfIPriceVol(MyItemHighIndex) Then
-									MyItemHighIndex = I
-								End If
-								If MyListOfIPriceVol(I) < MyListOfIPriceVol(MyItemLowIndex) Then
-									MyItemLowIndex = I
-								End If
-							Next
-						Else
-							'MyItemRemoved Is MyItemHigh 
-							'MyItemLow is not changed
-							'search only for a maximum
-							MyItemHighIndex = 0
-							For I = 1 To MyListOfIPriceVol.Count - 1
-								If MyListOfIPriceVol(I) > MyListOfIPriceVol(MyItemHighIndex) Then
-									MyItemHighIndex = I
-								End If
-							Next
-						End If
-					Else
-						If MyItemLowIndex < 0 Then
-							'MyItemRemoved is MyItemLow 
-							'need to search for a minimum 
-							MyItemLowIndex = 0
-							For I = 1 To MyListOfIPriceVol.Count - 1
-								If MyListOfIPriceVol(I) < MyListOfIPriceVol(MyItemLowIndex) Then
-									MyItemLowIndex = I
-								End If
-							Next
-						End If
-					End If
-				End If
-				'update the max and min with the latest data
-				If item > MyListOfIPriceVol(MyItemHighIndex) Then
-					MyItemHighIndex = MyListOfIPriceVol.Count
-				End If
-				If item < MyListOfIPriceVol(MyItemLowIndex) Then
-					MyItemLowIndex = MyListOfIPriceVol.Count
-				End If
-			Else
-				MyItemHighIndex = MyListOfIPriceVol.Count
-				MyItemLowIndex = MyListOfIPriceVol.Count
+			If v < vLo Then
+				vLo = v
+				lo = i
 			End If
-			MyItemsSum = MyItemsSum + item
-			.Add(item)
-		End With
+		Next
+		MyItemHighIndex = hi
+		MyItemLowIndex = lo
+		_dirtyMinMax = False
 	End Sub
 
-	Public Sub Clear() Implements ICollection(Of Double).Clear
-		MyListOfIPriceVol.Clear()
+	Public Sub Clear()
+		_buf.Clear()
 		MyItemsSum = 0
 		MyItemHighIndex = -1
 		MyItemLowIndex = -1
 		MyItemRemoved = Nothing
+		_dirtyMinMax = True
+		_hasUndo = False
 	End Sub
 
-	Public Function Contains(item As Double) As Boolean Implements ICollection(Of Double).Contains
-		Return MyListOfIPriceVol.Contains(item)
-	End Function
-
-	Public Sub CopyTo(array() As Double, arrayIndex As Integer) Implements ICollection(Of Double).CopyTo
-		MyListOfIPriceVol.CopyTo(array, arrayIndex)
-	End Sub
-
-	Public ReadOnly Property Count As Integer Implements ICollection(Of Double).Count
+	Public ReadOnly Property Count As Integer
 		Get
-			Return MyListOfIPriceVol.Count
+			Return _buf.Count
 		End Get
 	End Property
 
-	Public ReadOnly Property IsReadOnly As Boolean Implements ICollection(Of Double).IsReadOnly
-		Get
-			Return False
-		End Get
-	End Property
+	Public Function RestoreLastState() As Boolean Implements IUndoLastState.RestoreLastState
+		If Not _hasUndo Then Return False
+		If Not _buf.RestoreLastState() Then Return False
 
-	Public Function Remove(item As Double) As Boolean Implements ICollection(Of Double).Remove
-		Throw New NotImplementedException
+		MyItemsSum = _undo.PrevSum
+		MyItemRemoved = _undo.PrevRemoved
+		_dirtyMinMax = _undo.PrevDirty
+		MyItemHighIndex = _undo.PrevHighIndex
+		MyItemLowIndex = _undo.PrevLowIndex
+
+		_hasUndo = False
+		Return True
 	End Function
-#End Region
-#Region "IEnumerable"
-	Public Function GetEnumerator() As IEnumerator(Of Double) Implements IEnumerable(Of Double).GetEnumerator
-		Return MyListOfIPriceVol.GetEnumerator
-	End Function
-
-	''' <summary>
-	''' non generic implementation does not need to be public
-	''' </summary>
-	''' <returns></returns>
-	''' <remarks></remarks>
-	Private Function IList_GetEnumerator() As System.Collections.IEnumerator Implements System.Collections.IEnumerable.GetEnumerator
-		Return Me.GetEnumerator()
-	End Function
-#End Region
-#Region "IList"
-	Public Function IndexOf(item As Double) As Integer Implements IList(Of Double).IndexOf
-		Return MyListOfIPriceVol.IndexOf(item)
-	End Function
-
-	Public Sub Insert(index As Integer, item As Double) Implements IList(Of Double).Insert
-		Throw New NotImplementedException
-	End Sub
-
-	Default Public Property Item(index As Integer) As Double Implements IList(Of Double).Item
-		Get
-			Return MyListOfIPriceVol.Item(index)
-		End Get
-		Set(value As Double)
-			Throw New NotImplementedException
-		End Set
-	End Property
-
-	Public Sub RemoveAt(index As Integer) Implements IList(Of Double).RemoveAt
-		Throw New NotImplementedException
-	End Sub
-#End Region
 End Class
 
 

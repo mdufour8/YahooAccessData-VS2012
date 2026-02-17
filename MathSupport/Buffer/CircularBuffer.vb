@@ -20,10 +20,20 @@
 ''' </summary>
 ''' <typeparam name="T">The type of elements stored in the buffer.</typeparam>
 Public Class CircularBuffer(Of T)
+	Implements IUndoLastState
+
 	Private ReadOnly buffer As List(Of T)
 	Private head As Integer
 	Private MyBufferCount As Integer
 	Public ReadOnly Capacity As Integer
+
+	' One-level undo
+	Private _undoValid As Boolean
+	Private _undoHead As Integer
+	Private _undoCount As Integer
+	Private _undoOverwriteIndex As Integer
+	Private _undoOverwriteValue As T
+
 
 	Public Sub New(capacity As Integer, Optional defaultValue As T = Nothing)
 		If capacity < 1 Then
@@ -42,25 +52,51 @@ Public Class CircularBuffer(Of T)
 	''' Adds a value at the head (front). Overwrites the oldest value if full.
 	''' </summary>
 	Public Sub AddFirst(value As T)
-		head = (head - 1 + Capacity) Mod Capacity
+		Dim newHead = (head - 1 + Capacity) Mod Capacity
+
+		' capture undo before overwriting
+		CaptureCurrentState(newHead)
+
+		head = newHead
 		buffer(head) = value
+
 		If MyBufferCount < Capacity Then
 			MyBufferCount += 1
 		End If
 	End Sub
 
+
 	''' <summary>
 	''' Adds a value at the tail (end). Overwrites the oldest value if full.
 	''' </summary>
-	Public Sub AddLast(value As T)
+	Public Function AddLast(value As T) As Boolean
+		Dim ignored As T = Nothing
+		Return AddLast(value, ignored)
+	End Function
+
+
+	''' <summary>
+	''' Adds a value at the tail (end). If the buffer is full, evicts the oldest value and returns it via ByRef.
+	''' Returns True if an eviction occurred; otherwise False.
+	''' </summary>
+	Public Function AddLast(value As T, ByRef evicted As T) As Boolean
 		Dim tail = (head + MyBufferCount) Mod Capacity
-		buffer(tail) = value
-		If MyBufferCount < Capacity Then
-			MyBufferCount += 1
-		Else
+
+		CaptureCurrentState(tail)
+
+		If MyBufferCount = Capacity Then
+			evicted = buffer(head)
+			buffer(tail) = value
 			head = (head + 1) Mod Capacity
+			Return True
+		Else
+			evicted = Nothing
+			buffer(tail) = value
+			MyBufferCount += 1
+			Return False
 		End If
-	End Sub
+	End Function
+
 
 	''' <summary>
 	''' Gets the item at logical index (0 = oldest, Count - 1 = newest).
@@ -106,6 +142,7 @@ Public Class CircularBuffer(Of T)
 		Dim value = buffer(head)
 		head = (head + 1) Mod Capacity
 		MyBufferCount -= 1
+		_undoValid = False
 		Return value
 	End Function
 
@@ -117,6 +154,7 @@ Public Class CircularBuffer(Of T)
 		Dim tail = (head + MyBufferCount - 1 + Capacity) Mod Capacity
 		Dim value = buffer(tail)
 		MyBufferCount -= 1
+		_undoValid = False
 		Return value
 	End Function
 
@@ -126,6 +164,7 @@ Public Class CircularBuffer(Of T)
 	Public Function ToArray() As T()
 		Dim arr(MyBufferCount - 1) As T
 		For i = 0 To MyBufferCount - 1
+			'Me(i) call the default property me.Item(i) to get the item at logical index i
 			arr(i) = Me(i)
 		Next
 		Return arr
@@ -148,5 +187,24 @@ Public Class CircularBuffer(Of T)
 	Public Sub Clear()
 		head = 0
 		MyBufferCount = 0
+		_undoValid = False
 	End Sub
+
+	Private Sub CaptureCurrentState(overwriteIndex As Integer)
+		_undoHead = head
+		_undoCount = MyBufferCount
+		_undoOverwriteIndex = overwriteIndex
+		_undoOverwriteValue = buffer(overwriteIndex)
+		_undoValid = True
+	End Sub
+
+	Public Function RestoreLastState() As Boolean Implements IUndoLastState.RestoreLastState
+		If Not _undoValid Then Return False
+
+		buffer(_undoOverwriteIndex) = _undoOverwriteValue
+		head = _undoHead
+		MyBufferCount = _undoCount
+		_undoValid = False
+		Return True
+	End Function
 End Class
