@@ -67,54 +67,62 @@ Namespace MathPlus.Filter
 			Me.Tag = TypeName(Me)  'by default
     End Sub
 
-    Public Function RunErrorDetector(Input As Double, InputFeedback As Double) As Double Implements IFilterPLLDetector.RunErrorDetector
-      Dim ThisProbHigh As Tuple(Of Double, Double)
-      Dim ThisProbLow As Tuple(Of Double, Double)
-      Dim ThisCDFDetectorSlope As Double
+		''' <summary>
+		''' Not use anymore since the error is calculated in a different way now, but keep it here for reference
+		''' 'Eventually clean the redundant code that is calling this function liek in 
+		''' </summary>
+		''' <param name="Input"></param>
+		''' <param name="InputFeedback"></param>
+		''' <returns></returns>
+		''' <remarks></remarks>
+		Public Function RunErrorDetector(Input As Double, InputFeedback As Double) As Double Implements IFilterPLLDetector.RunErrorDetector
+			Dim ThisProbHigh As Tuple(Of Double, Double)
+			Dim ThisProbLow As Tuple(Of Double, Double)
+			Dim ThisCDFDetectorSlope As Double
 
-      Dim ThisValueStart As Double = Me.ValueOutput(Input, InputFeedback)
+			Dim ThisValueStart As Double = Me.ValueOutput(Input, InputFeedback)
 
-      'If Math.Abs(InputFeedback / Input) > 0.2 Then
-      '  ThisValueStart = ThisValueStart
-      'End If
-      If MyVolatility > 0 Then
-        ThisProbHigh = Me.StockPricePredictionInverse(MyRate, ThisValueStart, MyGain, MyGainDerivative, MyVolatility, MyPriceEndHigh)
-        ThisProbLow = Me.StockPricePredictionInverse(MyRate, ThisValueStart, MyGain, MyGainDerivative, MyVolatility, MyPriceEndLow)
-        If IsStochasticProbabilityHisteresis Then
-          ThisCDFDetectorSlope = (MyStochasticProbabilityHisteresis * ThisProbLow.Item2 + (1 - MyStochasticProbabilityHisteresis) * ThisProbHigh.Item2) / 2
-          If ThisCDFDetectorSlope < 0 Then
-            MyErrorLast = ((MyStochasticProbabilityHisteresis * ThisProbLow.Item1) - ((1 - MyStochasticProbabilityHisteresis) * (1 - ThisProbHigh.Item1))) / ThisCDFDetectorSlope
-          Else
-            MyErrorLast = ((MyStochasticProbabilityHisteresis * ThisProbLow.Item1) - ((1 - MyStochasticProbabilityHisteresis) * (1 - ThisProbHigh.Item1))) / -1
-          End If
-        Else
-          ThisCDFDetectorSlope = (ThisProbLow.Item2 + ThisProbHigh.Item2) / 2
-          If ThisCDFDetectorSlope < 0 Then
-            MyErrorLast = ((ThisProbLow.Item1) - ((1 - ThisProbHigh.Item1))) / ThisCDFDetectorSlope
-          Else
-            MyErrorLast = ((ThisProbLow.Item1) - ((1 - ThisProbHigh.Item1))) / -1
-          End If
-        End If
-      Else
-        MyErrorLast = 0.0
-      End If
-      MyErrorLast = ThisValueStart * YahooAccessData.MathPlus.WaveForm.SignalLimit(MyErrorLast / ThisValueStart, 0.5)
-      'MyErrorLast = ThisValueStart * YahooAccessData.MathPlus.WaveForm.SignalLimit(MyErrorLast / ThisValueStart, 0.5)
-      MyCount = MyCount + 1
-      Return MyErrorLast
-    End Function
+			'If Math.Abs(InputFeedback / Input) > 0.2 Then
+			'  ThisValueStart = ThisValueStart
+			'End If
+			If MyVolatility > 0 Then
+				ThisProbHigh = Me.StockPricePredictionInverse(MyRate, ThisValueStart, MyGain, MyGainDerivative, MyVolatility, MyPriceEndHigh)
+				ThisProbLow = Me.StockPricePredictionInverse(MyRate, ThisValueStart, MyGain, MyGainDerivative, MyVolatility, MyPriceEndLow)
+				If IsStochasticProbabilityHisteresis Then
+					ThisCDFDetectorSlope = (MyStochasticProbabilityHisteresis * ThisProbLow.Item2 + (1 - MyStochasticProbabilityHisteresis) * ThisProbHigh.Item2) / 2
+					If ThisCDFDetectorSlope < 0 Then
+						MyErrorLast = ((MyStochasticProbabilityHisteresis * ThisProbLow.Item1) - ((1 - MyStochasticProbabilityHisteresis) * (1 - ThisProbHigh.Item1))) / ThisCDFDetectorSlope
+					Else
+						MyErrorLast = ((MyStochasticProbabilityHisteresis * ThisProbLow.Item1) - ((1 - MyStochasticProbabilityHisteresis) * (1 - ThisProbHigh.Item1))) / -1
+					End If
+				Else
+					ThisCDFDetectorSlope = (ThisProbLow.Item2 + ThisProbHigh.Item2) / 2
+					If ThisCDFDetectorSlope < 0 Then
+						MyErrorLast = ((ThisProbLow.Item1) - ((1 - ThisProbHigh.Item1))) / ThisCDFDetectorSlope
+					Else
+						MyErrorLast = ((ThisProbLow.Item1) - ((1 - ThisProbHigh.Item1))) / -1
+					End If
+				End If
+			Else
+				MyErrorLast = 0.0
+			End If
+			MyErrorLast = ThisValueStart * YahooAccessData.MathPlus.WaveForm.SignalLimit(MyErrorLast / ThisValueStart, 0.5)
+			'MyErrorLast = ThisValueStart * YahooAccessData.MathPlus.WaveForm.SignalLimit(MyErrorLast / ThisValueStart, 0.5)
+			MyCount = MyCount + 1
+			Return MyErrorLast
+		End Function
 
 
-    ''' <summary>
-    ''' Update all the function parameters
-    ''' </summary>
-    ''' <param name="Volatility"></param>
-    ''' <param name="Gain"></param>
-    ''' <param name="GainDerivative"></param>
-    ''' <param name="PriceEndHigh"></param>
-    ''' <param name="PriceEndLow"></param>
-    ''' <remarks></remarks>
-    Public Sub Update(
+		''' <summary>
+		''' Update all the function parameters
+		''' </summary>
+		''' <param name="Volatility"></param>
+		''' <param name="Gain"></param>
+		''' <param name="GainDerivative"></param>
+		''' <param name="PriceEndHigh"></param>
+		''' <param name="PriceEndLow"></param>
+		''' <remarks></remarks>
+		Public Sub Update(
                      ByVal Volatility As Double,
                      ByVal Gain As Double,
                      ByVal GainDerivative As Double,
@@ -122,33 +130,25 @@ Namespace MathPlus.Filter
                      ByVal PriceEndLow As Double)
 
 
-      Dim ThisVolatility As Double
-      Dim ThisGainPerYear As Double
-      Dim ThisGainPerYearDerivative As Double
-      Dim ThisTimeInYear As Double = MyRate / YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR
-      Dim ThisGain As Double = Gain + (ThisTimeInYear * GainDerivative)
-      Dim ThisMu As Double = (ThisGain - Volatility ^ 2 / 2) * ThisTimeInYear
+			Dim ThisVolatility As Double
+			Dim ThisGainPerYear As Double
+			Dim ThisGainPerYearDerivative As Double
 
-      MyVolatility = Volatility
+			MyVolatility = Volatility
       MyGain = Gain
       MyGainDerivative = GainDerivative
       MyPriceEndHigh = PriceEndHigh
       MyPriceEndLow = PriceEndLow
-      'MyFilterPLL.Filter((MyPriceEndLow + MyPriceEndHigh) / 2, Me)
-      'If MyFilterPLL.Count = 0 Then
-      '  ThisPriceStart = (MyPriceEndLow + MyPriceEndHigh) / 2
-      'Else
-      '  ThisPriceStart = MyFilterPLL.FilterLast
-      '  'ThisPriceStart = (MyPriceEndLow + MyPriceEndHigh) / 2
-      'End If
-      'ThisPriceStart = (MyPriceEndLow + MyPriceEndHigh) / 2
-      'the exact solution is:
 
-      'Dim ThisSigma As Double = Volatility * Math.Sqrt(ThisTimeInYear)
-      MyPriceForMidStochastic = Math.Sqrt(MyPriceEndLow * MyPriceEndHigh) * Math.Exp(-ThisMu)
-      'MyPriceForMidStochastic = Math.Sqrt(MyPriceEndLow * MyPriceEndHigh)
-      MyFilterPLLForGain.Filter(MyPriceForMidStochastic)
-      ThisVolatility = MyFilterVolatilityForPriceStochasticMedian.Filter(MyPriceForMidStochastic)
+			MyPriceForMidStochastic = StockOption.StockPricePredictionMedian(
+				NumberTradingDays:=MyRate,
+				StockPrice:=Math.Sqrt(MyPriceEndLow * MyPriceEndHigh),
+				Gain:=Gain,
+				GainDerivative:=GainDerivative,
+				Volatility:=Volatility)
+
+			MyFilterPLLForGain.Filter(MyPriceForMidStochastic)
+			ThisVolatility = MyFilterVolatilityForPriceStochasticMedian.Filter(MyPriceForMidStochastic)
       ThisGainPerYear = MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYear.Last
       ThisGainPerYearDerivative = MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYearDerivative.Last
 
@@ -238,14 +238,14 @@ Namespace MathPlus.Filter
       Dim ThisResultOfCDF As Double
       Dim ThisResultForSlope As Double
       Dim ThisTimeInYear As Double = NumberTradingDays / YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR
-      Dim ThisGain As Double = Gain + (ThisTimeInYear * GainDerivative)
-      'Dim ThisPricePrediction As Double = StockOption.StockPricePrediction(NumberTradingDays, StockPrice, Gain)
-      'Dim ThisPricePredictionMedian As Double = StockOption.StockPricePredictionMedian(NumberTradingDays, StockPrice, Gain, Volatility)
+			Dim ThisGain As Double = Gain * (1 + ThisTimeInYear * GainDerivative)
+			'Dim ThisPricePrediction As Double = StockOption.StockPricePrediction(NumberTradingDays, StockPrice, Gain)
+			'Dim ThisPricePredictionMedian As Double = StockOption.StockPricePredictionMedian(NumberTradingDays, StockPrice, Gain, Volatility)
 
-      'Since the variable Ut=(μ−σ2/2)t+σZt has the normal distribution with mean (μ−σ2/2)t and standard deviation σ√t, 
-      'it follows that Xt=exp(Ut) has the lognormal distribution with these parameters. 
-      'These result for the PDF then follow directly from the corresponding results for the lognormal PDF.
-      Dim ThisMu As Double = (ThisGain - Volatility ^ 2 / 2) * ThisTimeInYear
+			'Since the variable Ut=(μ−σ2/2)t+σZt has the normal distribution with mean (μ−σ2/2)t and standard deviation σ√t, 
+			'it follows that Xt=exp(Ut) has the lognormal distribution with these parameters. 
+			'These result for the PDF then follow directly from the corresponding results for the lognormal PDF.
+			Dim ThisMu As Double = (ThisGain - Volatility ^ 2 / 2) * ThisTimeInYear
       Dim ThisSigma As Double = Volatility * Math.Sqrt(ThisTimeInYear)
 
       If ThisSigma > 0 Then

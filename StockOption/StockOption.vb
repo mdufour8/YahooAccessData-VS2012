@@ -1484,7 +1484,7 @@ Namespace OptionValuation
 																											ByVal StockPriceEnd As Double) As Double
 			Dim ThisResult As Double
 			Dim ThisTimeInYear As Double = NumberTradingDays / MathPlus.NUMBER_TRADINGDAY_PER_YEAR
-			Dim ThisGain As Double = Gain + (ThisTimeInYear * GainDerivative)
+			Dim ThisGain As Double = Gain * (1 + ThisTimeInYear * GainDerivative)
 			'Dim ThisPricePrediction As Double = StockOption.StockPricePrediction(NumberTradingDays, StockPrice, Gain)
 			'Dim ThisPricePredictionMedian As Double = StockOption.StockPricePredictionMedian(NumberTradingDays, StockPrice, Gain, Volatility)
 
@@ -1554,14 +1554,14 @@ Namespace OptionValuation
       Dim ThisResult As Double
       Dim ThisVolatilityRatio As Double
       Dim ThisTimeInYear As Double = NumberTradingDays / YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR
-      Dim ThisGain As Double = Gain + (ThisTimeInYear * GainDerivative)
-      'Dim ThisPricePrediction As Double = StockOption.StockPricePrediction(NumberTradingDays, StockPrice, Gain)
-      'Dim ThisPricePredictionMedian As Double = StockOption.StockPricePredictionMedian(NumberTradingDays, StockPrice, Gain, Volatility)
+			Dim ThisGain As Double = Gain * (1 + ThisTimeInYear * GainDerivative)
+			'Dim ThisPricePrediction As Double = StockOption.StockPricePrediction(NumberTradingDays, StockPrice, Gain)
+			'Dim ThisPricePredictionMedian As Double = StockOption.StockPricePredictionMedian(NumberTradingDays, StockPrice, Gain, Volatility)
 
-      'Since the variable Ut=(μ−σ2/2)t+σZt has the normal distribution with mean (μ−σ2/2)t and standard deviation σ√t, 
-      'it follows that Xt=exp(Ut) has the lognormal distribution with these parameters. 
-      'These result for the PDF then follow directly from the corresponding results for the lognormal PDF.
-      Dim ThisMu As Double = (ThisGain - Volatility ^ 2 / 2) * ThisTimeInYear
+			'Since the variable Ut=(μ−σ2/2)t+σZt has the normal distribution with mean (μ−σ2/2)t and standard deviation σ√t, 
+			'it follows that Xt=exp(Ut) has the lognormal distribution with these parameters. 
+			'These result for the PDF then follow directly from the corresponding results for the lognormal PDF.
+			Dim ThisMu As Double = (ThisGain - Volatility ^ 2 / 2) * ThisTimeInYear
       Dim ThisSigma As Double = Volatility * Math.Sqrt(ThisTimeInYear)
 
       'this is an exact mathematic solution
@@ -1694,8 +1694,8 @@ Namespace OptionValuation
                                                      ByVal Volatility As Double) As Double
 
       Dim ThisTimeInYear As Double = NumberTradingDays / YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR
-      Dim ThisGain As Double = Gain + (ThisTimeInYear * GainDerivative)
-      Dim ThisStockPriceMedian As Double = StockPrice * Math.Exp((ThisGain - Volatility ^ 2 / 2) * ThisTimeInYear)
+			Dim ThisGain As Double = Gain * (1 + ThisTimeInYear * GainDerivative)
+			Dim ThisStockPriceMedian As Double = StockPrice * Math.Exp((ThisGain - Volatility ^ 2 / 2) * ThisTimeInYear)
       Return ThisStockPriceMedian
     End Function
 

@@ -25,7 +25,7 @@ Namespace MathPlus.Filter
 		Private MySumOfXYMean As Double
 		Private MySumOfX2Mean As Double
 		Private MySumOfY2Mean As Double
-		Private MyFilterLast As (Correlation As Double, JoinProbability As Double, RegressionCoefficient As Double)
+		Private MyFilterLast As ICorrelationData
 		Private MyCovarianceOfXY As Double
 		Private MyVarianceOfX As Double
 		Private MyVarianceOfY As Double
@@ -36,7 +36,7 @@ Namespace MathPlus.Filter
 
 		Private _lastInputs As (X As Double, Y As Double)
 
-		Private MyListOfCorrelationProbability As List(Of (Correlation As Double, JoinProbability As Double, RegressionCoefficient As Double))
+		Private MyListOfCorrelationProbability As List(Of ICorrelationData)
 		Private MyRate As Integer
 
 		Public Sub New(ByVal FilterRate As Integer)
@@ -48,7 +48,7 @@ Namespace MathPlus.Filter
 			MyQueueOfXY = New Queue(Of Double)(MyRate)
 			MyQueueOfX2 = New Queue(Of Double)(MyRate)
 			MyQueueOfY2 = New Queue(Of Double)(MyRate)
-			MyListOfCorrelationProbability = New List(Of (Correlation As Double, JoinProbability As Double, RegressionCoefficient As Double))
+			MyListOfCorrelationProbability = New List(Of ICorrelationData)
 			_lastInputs.X = 0.0
 			_lastInputs.Y = 0.0
 		End Sub
@@ -59,7 +59,7 @@ Namespace MathPlus.Filter
 			End Get
 		End Property
 
-		Public Function Filter(X As Double, Y As Double) As (Correlation As Double, JoinProbability As Double, RegressionCoefficient As Double) Implements IFilterDuplex.Filter
+		Public Function Filter(X As Double, Y As Double) As ICorrelationData Implements IFilterDuplex.Filter
 			Dim ThisTemp As Double
 			Dim ThisCount As Integer
 
@@ -145,16 +145,20 @@ Namespace MathPlus.Filter
 				Dim ThisCorrelation = MyCovarianceOfXY / MyStandardDeviationOfXY
 				'calculate the Probability that both process are moving together or are positive at the same time i.e.	P(X And Y)
 				Dim ThisJoinProbabilityOfXY = Measure.Measure.JointProbabilityApproximate(ThisCorrelation)
-				ThisJoinProbabilityOfXY = ThisJoinProbabilityOfXY
-				MyFilterLast = (ThisCorrelation, ThisJoinProbabilityOfXY, MyCovarianceOfXY / MyVarianceOfX)
+				'In simple linear regression, the coefficient represents the slope of the line between the two variales 
+				'and Is calculated as the covariance of the two variables divided by the variance of the independent variable.
+				'In this case, we are treating X as the independent variable And Y as the dependent variable, so the regression coefficient Is calculated as the covariance of X And Y
+				'divided by the variance of X.
+				Dim ThisRegression = If(MyVarianceOfX > 0.0, MyCovarianceOfXY / MyVarianceOfX, 0.0)
+				MyFilterLast = New CorrelationData(ThisCorrelation, ThisJoinProbabilityOfXY, ThisRegression, MySumOfYMean, MyStandardDeviationOfY)
 			Else
-				MyFilterLast = (0.0, 0.5, 0.0)
+				MyFilterLast = New CorrelationData(0.0, 0.5, 0.0, MySumOfYMean, MyStandardDeviationOfY)
 			End If
 			MyListOfCorrelationProbability.Add(MyFilterLast)
 			Return MyFilterLast
 		End Function
 
-		Public Function FilterLast() As (Correlation As Double, JoinProbability As Double, RegressionCoefficient As Double) Implements IFilterDuplex.FilterLast
+		Public Function FilterLast() As ICorrelationData Implements IFilterDuplex.FilterLast
 			Return MyFilterLast
 		End Function
 
@@ -170,7 +174,7 @@ Namespace MathPlus.Filter
 
 		Public Property Tag As String Implements IFilterDuplex.Tag
 
-		Public ReadOnly Property ToList As IList(Of (Correlation As Double, JoinProbability As Double, RegressionCoefficient As Double)) Implements IFilterDuplex.ToList
+		Public ReadOnly Property ToList As IList(Of ICorrelationData) Implements IFilterDuplex.ToList
 			Get
 				Return MyListOfCorrelationProbability
 			End Get
@@ -272,12 +276,12 @@ Namespace MathPlus.Filter
 		''' <param name="Y"></param>
 		''' <returns>the correlation factor for the last n samples</returns>
 		''' <remarks></remarks>
-		Function Filter(ByVal X As Double, ByVal Y As Double) As (Correlation As Double, JoinProbability As Double, RegressionCoefficient As Double)
-		Function FilterLast() As (Correlation As Double, JoinProbability As Double, RegressionCoefficient As Double)
+		Function Filter(ByVal X As Double, ByVal Y As Double) As ICorrelationData
+		Function FilterLast() As ICorrelationData
 		Function Last() As (X As Double, Y As Double)
 		ReadOnly Property Rate As Integer
 		ReadOnly Property Count As Integer
-		ReadOnly Property ToList() As IList(Of (Correlation As Double, JoinProbability As Double, RegressionCoefficient As Double))
+		ReadOnly Property ToList() As IList(Of ICorrelationData)
 		Property Tag As String
 		Function ToString() As String
 	End Interface

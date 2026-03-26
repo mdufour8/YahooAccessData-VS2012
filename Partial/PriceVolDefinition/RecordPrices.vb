@@ -26,6 +26,7 @@ Public Class RecordPrices
 
 	Private MyPriceVolLast As PriceVol
 	Private MyPriceVols() As PriceVol
+	Private MyPriceVolsAsLog() As PriceVol
 	Private MyPriceVolsIntraDay()() As PriceVol
 	Private IsIntraDayLocalEnabled As Boolean
 	Private MyFilterForEarningsShare As FilterHoldFromZero
@@ -36,7 +37,8 @@ Public Class RecordPrices
 	Private MyDictionaryOfSpecialSplit As Dictionary(Of String, List(Of SplitFactor))
 	Private MyDictionaryOfStockDividendSinglePayout As Dictionary(Of String, List(Of StockDividendSinglePayout))
 	Private MyDictionaryOfStockPriceDataError As Dictionary(Of String, IList(Of IPriceVol))
-	Private MyListOfPriceVol As List(Of IPriceVol)
+	Private MyListOfIPriceVol As List(Of IPriceVol)
+	Private MyListOfPriceVol As List(Of PriceVol)
 
 #End Region
 #Region "New"
@@ -641,7 +643,7 @@ Public Class RecordPrices
 			ThisListOfRecordQuoteValue = New List(Of YahooAccessData.RecordQuoteValue)(colData.Skip(ThisRecordQuoteValueWithIndex.Index))
 			Exit For
 		Next
-		MyListOfPriceVol = New List(Of IPriceVol)
+		MyListOfIPriceVol = New List(Of IPriceVol)
 		'set the default value for that condition
 		Me.StartPoint = -1
 		Me.StopPoint = -1
@@ -650,17 +652,18 @@ Public Class RecordPrices
 			'in that case initialize the pricevol with null v`alues
 			Dim ThisDateStop As Date = Me.DateStart
 			Do
-				MyListOfPriceVol.Add(New PriceVol(0) With {.IsNull = True, .DateLastTrade = ThisDateStop})
+				MyListOfIPriceVol.Add(New PriceVol(0) With {.IsNull = True, .DateLastTrade = ThisDateStop})
 				ThisDateStop = ThisDateStop.AddDays(1)
 				'sunday is not possible here because DateStart is always a monday and we increase by one day at a time
 				If Me.DateStop.DayOfWeek = DayOfWeek.Saturday Then
 					ThisDateStop = ThisDateStop.AddDays(2)
 				End If
 			Loop Until ThisDateStop > Me.DateStop
-			Me.NumberPoint = MyListOfPriceVol.Count
+			Me.NumberPoint = MyListOfIPriceVol.Count
 			Me.NumberNullPoint = Me.NumberPoint
 			ReDim MyPriceVols(0 To Me.NumberPoint - 1)
-			For Each ItemIndexed In MyListOfPriceVol.WithIndex
+
+			For Each ItemIndexed In MyListOfIPriceVol.WithIndex
 				MyPriceVols(ItemIndexed.Index) = DirectCast(ItemIndexed.Item, PriceVol)
 			Next
 			Me.PriceMax = 0
@@ -670,6 +673,9 @@ Public Class RecordPrices
 			Me.VolMax = 0
 			Me.VolMin = 0
 			Me.IsPriceTarget = False
+
+
+
 			Return
 		Else
 			'initialize the range variable before we start the data processing
@@ -688,7 +694,7 @@ Public Class RecordPrices
 		'synchronize the start with the actual data
 		Dim ThisPriceVol As PriceVol
 		ThisDateCurrent = Me.DateStart
-		MyListOfPriceVol.Clear()
+		MyListOfIPriceVol.Clear()
 		'collect to be on a valid weekly working day
 		'for the 24h trading stream we will keep only the last item and change the trading day
 		'to be on the next monday
@@ -697,14 +703,14 @@ Public Class RecordPrices
 		Do Until ThisDateCurrent >= ThisRecordQuoteValueFirst.DateDay.Date
 			ThisPriceVol = PriceVolUpdateToNull(ThisRecordQuoteValueFirst, ThisDateCurrent)
 			Me.NumberNullPoint = Me.NumberNullPoint + 1
-			If MyListOfPriceVol.Count > 0 Then
-				MyListOfPriceVol.Last.OpenNext = ThisPriceVol.Open
+			If MyListOfIPriceVol.Count > 0 Then
+				MyListOfIPriceVol.Last.OpenNext = ThisPriceVol.Open
 			End If
-			MyListOfPriceVol.Add(ThisPriceVol)
+			MyListOfIPriceVol.Add(ThisPriceVol)
 			ThisDateCurrent = ThisDateCurrent.AddDays(1)
 			ThisDateCurrent = If(ThisDateCurrent.DayOfWeek = DayOfWeek.Saturday, ThisDateCurrent.AddDays(2), ThisDateCurrent)
 		Loop
-		Me.StartPoint = MyListOfPriceVol.Count - 1
+		Me.StartPoint = MyListOfIPriceVol.Count - 1
 		Dim ThisRecordQuoteValueLast = ThisListOfRecordQuoteValue.Last
 		Dim ThisRecordQuoteValuePrevious = ThisRecordQuoteValueFirst
 		For Each ThisRecordQuoteValue In ThisListOfRecordQuoteValue
@@ -724,18 +730,18 @@ Public Class RecordPrices
 			Do Until ThisDateCurrent >= ThisRecordQuoteValue.DateDay.Date
 				ThisPriceVol = PriceVolUpdateToNull(ThisRecordQuoteValuePrevious, ThisDateCurrent)
 				Me.NumberNullPoint = Me.NumberNullPoint + 1
-				If MyListOfPriceVol.Count > 0 Then
-					MyListOfPriceVol.Last.OpenNext = ThisPriceVol.Open
+				If MyListOfIPriceVol.Count > 0 Then
+					MyListOfIPriceVol.Last.OpenNext = ThisPriceVol.Open
 				End If
-				MyListOfPriceVol.Add(ThisPriceVol)
+				MyListOfIPriceVol.Add(ThisPriceVol)
 				ThisDateCurrent = ThisDateCurrent.AddDays(1)
 				ThisDateCurrent = If(ThisDateCurrent.DayOfWeek = DayOfWeek.Saturday, ThisDateCurrent.AddDays(2), ThisDateCurrent)
 			Loop
 			ThisPriceVol = PriceVolUpdate(ThisRecordQuoteValue, ThisDateCurrent)
-			If MyListOfPriceVol.Count > 0 Then
-				MyListOfPriceVol.Last.OpenNext = ThisPriceVol.Open
+			If MyListOfIPriceVol.Count > 0 Then
+				MyListOfIPriceVol.Last.OpenNext = ThisPriceVol.Open
 			End If
-			MyListOfPriceVol.Add(ThisPriceVol)
+			MyListOfIPriceVol.Add(ThisPriceVol)
 			If ThisPriceVol.Volume > 0 Then
 				Me.IsVol = True
 			End If
@@ -743,8 +749,8 @@ Public Class RecordPrices
 			ThisDateCurrent = If(ThisDateCurrent.DayOfWeek = DayOfWeek.Saturday, ThisDateCurrent.AddDays(2), ThisDateCurrent)
 			ThisRecordQuoteValuePrevious = ThisRecordQuoteValue
 		Next
-		Me.StopPoint = MyListOfPriceVol.Count - 1
-		Me.NumberPoint = MyListOfPriceVol.Count
+		Me.StopPoint = MyListOfIPriceVol.Count - 1
+		Me.NumberPoint = MyListOfIPriceVol.Count
 		If Me.NumberNullPoint = Me.NumberPoint Then
 			Me.IsNull = True
 		Else
@@ -759,7 +765,7 @@ Public Class RecordPrices
 		'propagate the liveupdate information form the record to the PriceVol object	
 		'note that there is a name change here 
 		ReDim MyPriceVols(0 To Me.NumberPoint - 1)
-		For Each ThisItemIndexed In MyListOfPriceVol.WithIndex
+		For Each ThisItemIndexed In MyListOfIPriceVol.WithIndex
 			MyPriceVols(ThisItemIndexed.Index) = DirectCast(ThisItemIndexed.Item, PriceVol)
 		Next
 		MyPriceVols(Me.NumberPoint - 1).IsIntraDay = IsLiveUpdate
@@ -1306,7 +1312,7 @@ Public Class RecordPrices
 		'stability and the revenue growth are a major concern
 
 		'Dim ThisPriceVolGain As IPriceVolGain
-		For Each PriceVol In MyListOfPriceVol
+		For Each PriceVol In MyListOfIPriceVol
 
 
 
@@ -1321,11 +1327,11 @@ Public Class RecordPrices
 	End Function
 
 	Public Function ToListOfPriceVol() As List(Of IPriceVol)
-		Return MyListOfPriceVol
+		Return MyListOfIPriceVol
 	End Function
 
 	Public Function ToListOfPriceVolIndexed() As IEnumerable(Of (Index As Integer, Item As IPriceVol))
-		Return MyListOfPriceVol.WithIndex
+		Return MyListOfIPriceVol.WithIndex
 	End Function
 
 	Public Function ToWeeklyIndex(ByVal DateValue As Date) As Integer
@@ -1351,7 +1357,7 @@ Public Class RecordPrices
 
 	Public Property PriceVolLast As PriceVol
 		Get
-			Return DirectCast(MyListOfPriceVol.Last, PriceVol)
+			Return DirectCast(MyListOfIPriceVol.Last, PriceVol)
 		End Get
 		Set(value As PriceVol)
 			Throw New NotSupportedException
@@ -1359,28 +1365,28 @@ Public Class RecordPrices
 	End Property
 
 	Public Function PriceVols(ByVal Index As Integer) As PriceVol
-		If MyListOfPriceVol.Count = 0 Then Return Nothing
+		If MyListOfIPriceVol.Count = 0 Then Return Nothing
 		If Index >= 0 Then
-			If Index < MyListOfPriceVol.Count Then
-				Return DirectCast(MyListOfPriceVol.Item(Index), PriceVol)
+			If Index < MyListOfIPriceVol.Count Then
+				Return DirectCast(MyListOfIPriceVol.Item(Index), PriceVol)
 			Else
-				Return DirectCast(MyListOfPriceVol.Last, PriceVol)
+				Return DirectCast(MyListOfIPriceVol.Last, PriceVol)
 			End If
 		Else
-			Return DirectCast(MyListOfPriceVol.Item(0), PriceVol)
+			Return DirectCast(MyListOfIPriceVol.Item(0), PriceVol)
 		End If
 	End Function
 
 	Public Function GetPriceVolInterface(ByVal Index As Integer) As IPriceVol
-		If MyListOfPriceVol.Count = 0 Then Return Nothing
+		If MyListOfIPriceVol.Count = 0 Then Return Nothing
 		If Index >= 0 Then
-			If Index < MyListOfPriceVol.Count Then
-				Return MyListOfPriceVol.Item(Index)
+			If Index < MyListOfIPriceVol.Count Then
+				Return MyListOfIPriceVol.Item(Index)
 			Else
-				Return MyListOfPriceVol.Last
+				Return MyListOfIPriceVol.Last
 			End If
 		Else
-			Return MyListOfPriceVol.Item(0)
+			Return MyListOfIPriceVol.Item(0)
 		End If
 	End Function
 

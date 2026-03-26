@@ -223,6 +223,7 @@
     <Compile Include="MathSupport\Filter\OBV\FilterOBV.vb" />
     <Compile Include="MathSupport\Filter\Oscillator\IStochasticBrownianData.vb" />
     <Compile Include="MathSupport\Filter\Oscillator\StochasticBrownian.vb" />
+    <Compile Include="MathSupport\Filter\Statistic\ICorrelationData.vb" />
     <Compile Include="MathSupport\Filter\Statistic\StatisticalData.vb" />
     <Compile Include="MathSupport\Filter\Statistic\FilterStatistical.vb" />
     <Compile Include="MathSupport\Filter\Statistic\FilterCorrelation.vb" />

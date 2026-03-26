@@ -66,8 +66,8 @@ Namespace MathPlus.Filter
 		Private MyListOfPriceVolatilityTimeProbability As List(Of Double)
 		Private MyListOfProbabilityPDF() As Integer
 		Private MyListOfProbabilityLCR() As Integer
-		'Private MyFilterLPForPrice As IFilter
-		Private MyFilterLPForPrice As FilterLowPassPLL
+		'Private MyFilterLowPassForPrice As IFilter
+		Private MyFilterLowPassForPrice As FilterLowPassPLL
 		Private MyFilterLPForProbabilityFromBandVolatility As FilterLowPassExp
 		Private MyFilterLPForStochasticFromPriceVolatilityHigh As IFilter
 		Private MyFilterLPForStochasticFromPriceVolatilityLow As IFilter
@@ -197,7 +197,7 @@ Namespace MathPlus.Filter
 			MyFilterVolatilityYangZhangForStatistic = New FilterVolatilityYangZhang(MyRateForVolatility, FilterVolatility.enuVolatilityStatisticType.Exponential, IsUseLastSampleHighLowTrail:=False)
 			MyFilterVolatilityForPositifNegatif = New FilterVolatilityYangZhang(FilterRate, FilterVolatility.enuVolatilityStatisticType.Exponential, IsUseLastSampleHighLowTrail:=False)
 			MyFilterVolatilityYangZhangForStatisticLastPointTrail = New FilterVolatilityYangZhang(MyRateForVolatility, FilterVolatility.enuVolatilityStatisticType.Exponential, IsUseLastSampleHighLowTrail:=True)
-			MyFilterLPForPrice = New FilterLowPassPLL(FilterRate, NumberOfPredictionOutput:=0)
+			MyFilterLowPassForPrice = New FilterLowPassPLL(FilterRate, NumberOfPredictionOutput:=0)
 
 			MyFilterPLLForGain = New FilterLowPassPLL(FilterRate, IsPredictionEnabled:=True)
 			MyFilterPLLForGainPrediction = New FilterLowPassPLL(FilterRate:=FilterRate, NumberOfPredictionOutput:=1, IsPredictionEnabled:=True)
@@ -388,12 +388,12 @@ Namespace MathPlus.Filter
 				MyValueLast = Value
 			End If
 			MyListOfValue.Add(Value)
-			MyFilterLPForPrice.Filter(Value.Last)
+			MyFilterLowPassForPrice.Filter(Value.Last)
 			Dim MyPriceNextDailyHighPreviousCloseToOpenSigma3 As Double
 			Dim MyPriceNextDailyLowPreviousCloseToOpenSigma3 As Double
 			Dim ThisVolatilityLast As Double = 0.0
 
-			'check for a volatility jump due to new or other events
+			'check for a volatility jump due to news or other events
 			Dim IsVolatilityJump As Boolean = False
 			If MyListOfPriceRangeVolatility.Count > 0 Then
 				ThisVolatilityLast = MyListOfPriceRangeVolatility.Last
@@ -585,6 +585,8 @@ Namespace MathPlus.Filter
 			Dim ThisVolatilityRegulated As Double
 			Dim ThisVolatilityRegulatedForPreviousCloseToOpen As Double
 			Dim ThisVolatilityForStochasticPrediction As Double
+
+			'normally IsUseFeedbackRegulatedVolatility is false by default
 			If Me.IsUseFeedbackRegulatedVolatility Then
 				'calculate the probability to reach the peak over the specified band
 				'the main stochactic brownian is calculated in this section
@@ -638,19 +640,19 @@ Namespace MathPlus.Filter
 			End If
 			ThisPriceVolatilityHigh = StockOption.StockPricePrediction(
 				ThisRate,
-				MyFilterLPForPrice.FilterLast,
+				MyFilterLowPassForPrice.FilterLast,
 				0,
 				0,
 				ThisVolatilityRegulated,
 				GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA1)
 			ThisPriceVolatilityLow = StockOption.StockPricePrediction(
 				ThisRate,
-				MyFilterLPForPrice.FilterLast,
+				MyFilterLowPassForPrice.FilterLast,
 				0,
 				0,
 				ThisVolatilityRegulated,
 				GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA1)
-			ThisPriceMedian = StockOption.StockPricePredictionMedian(ThisRate, MyFilterLPForPrice.FilterLast, 0, 0, ThisVolatilityRegulated)
+			ThisPriceMedian = StockOption.StockPricePredictionMedian(ThisRate, MyFilterLowPassForPrice.FilterLast, 0, 0, ThisVolatilityRegulated)
 			If Me.Count = 0 Then
 				'initialization
 				'these are predictive value for the next ThisRate sample
@@ -784,6 +786,9 @@ Namespace MathPlus.Filter
 				0.0,
 				ThisValueHigh,
 				ThisValueLow)
+			If Me.Count = 1500 Then
+				I = I
+			End If
 			MyPLLErrorDetectorForPriceStochacticMedianWithGain.Update(
 				ThisVolatilityRegulated,
 				ThisGainPerYear,
@@ -913,9 +918,6 @@ Namespace MathPlus.Filter
 			MyListOfPriceNextDailyLowWithGainOpenToClose.Add(ThisStockPriceLowValueFromOpenToClose)
 			MyListOfPriceNextDailyHighWithGainOpenToClose.Add(ThisStockPriceHighValueFromOpenToClose)
 
-			If Me.Count = 500 Then
-				ThisProbHigh = ThisProbHigh
-			End If
 			ThisProbHigh = 1 - StockOption.StockPricePredictionInverse(
 				ThisRate,
 				Value.Last,
@@ -962,13 +964,20 @@ Namespace MathPlus.Filter
 			'over 20% of the FilterRate period. 
 			'for PriceStochacticMedianWithGain
 			'the price stochastique median calculate the median price needed to bring the stochastic to 50% 
+
+			Dim ThisPriceLast = MyPLLErrorDetectorForPriceStochacticMedianWithGain.ToList.Last
 			ThisProbOfStockMedian = 1 - StockOption.StockPricePredictionInverse(
-				NumberTradingDays:=ThisRate / 5,
+				NumberTradingDays:=ThisRate / 0.5,
 				StockPriceStart:=Value.Last,
 				Gain:=ThisGainPerYear,
 				GainDerivative:=ThisGainPerYearDerivative,
 				Volatility:=ThisVolatilityRegulated,
-				StockPriceEnd:=MyPLLErrorDetectorForPriceStochacticMedianWithGain.ToList.Last)
+				StockPriceEnd:=ThisPriceLast)
+
+			'If Me.Count = 1800 Then
+			'	ThisProbOfStockMedian = ThisProbOfStockMedian
+			'End If
+
 
 			'Dim ThisProbOfStockMedian1 = 1 - StockOption.StockPricePredictionInverse(
 			'	NumberTradingDays:=5,
@@ -980,7 +989,7 @@ Namespace MathPlus.Filter
 
 
 
-			'every thing is based on this. the rest is du fla fla rose
+			'every thing is based on this.
 			'***main stochactic result***
 			MyListOfProbabilityOfStockMedian.Add(ThisProbOfStockMedian)
 			MyFilterVolatilityForPositifNegatif.Filter(Value, IsVolatityHoldToLast:=False)
@@ -1078,7 +1087,7 @@ Namespace MathPlus.Filter
 			For I = 0 To ReportPrices.NumberPoint - 1
 				Value = ReportPrices.GetPriceVolInterface(I)
 				MyListOfValue.Add(Value)
-				MyFilterLPForPrice.Filter(Value.Last)
+				MyFilterLowPassForPrice.Filter(Value.Last)
 				ThisFilterBasedVolatilityTotal = MyFilterVolatilityYangZhangForStatistic.Filter(Value)
 				ThisFilterBasedVolatilityFromPreviousCloseToOpen = MyFilterVolatilityYangZhangForStatistic.ToList(Type:=FilterVolatilityYangZhang.enuVolatilityDailyPeriodType.PreviousCloseToOpen).Last
 				ThisFilterBasedVolatilityFromOpenToClose = MyFilterVolatilityYangZhangForStatistic.ToList(Type:=FilterVolatilityYangZhang.enuVolatilityDailyPeriodType.OpenToClose).Last
@@ -1308,7 +1317,7 @@ Namespace MathPlus.Filter
 				'are egually positive and negative on the stock.
 				'of course you view on the stock is likely different than the average but here the measurement
 				'is a market average based price range.
-				Dim ThisFilterLast As Double = MyFilterLPForPrice.ToList(I)
+				Dim ThisFilterLast As Double = MyFilterLowPassForPrice.ToList(I)
 				ThisPriceVolatilityHigh = StockOption.StockPricePrediction(ThisRate, ThisFilterLast, 0, 0, ThisVolatilityRegulated, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA1)
 				ThisPriceVolatilityLow = StockOption.StockPricePrediction(ThisRate, ThisFilterLast, 0, 0, ThisVolatilityRegulated, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA1)
 				ThisPriceMedian = StockOption.StockPricePredictionMedian(ThisRate, ThisFilterLast, 0, 0, ThisVolatilityRegulated)
@@ -1763,7 +1772,7 @@ Namespace MathPlus.Filter
 #Region "Friend function and properties"
 		Friend ReadOnly Property ToFilterPrice() As IFilter
 			Get
-				Return MyFilterLPForPrice
+				Return MyFilterLowPassForPrice
 			End Get
 		End Property
 
@@ -2200,7 +2209,15 @@ Namespace MathPlus.Filter
 			Return MyListOfPriceBandLow.Last
 		End Function
 
+		Private _IsUseFeedbackRegulatedVolatility As Boolean
 		Public Property IsUseFeedbackRegulatedVolatility As Boolean
+			Get
+				Return _IsUseFeedbackRegulatedVolatility
+			End Get
+			Set(value As Boolean)
+				_IsUseFeedbackRegulatedVolatility = value
+			End Set
+		End Property
 
 		Private IsUseFeedbackRegulatedVolatilityFastAttackEventLocal As Boolean
 		Public Property IsUseFeedbackRegulatedVolatilityFastAttackEvent As Boolean
