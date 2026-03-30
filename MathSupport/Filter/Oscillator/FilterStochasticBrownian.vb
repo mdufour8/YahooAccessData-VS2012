@@ -967,7 +967,7 @@ Namespace MathPlus.Filter
 
 			Dim ThisPriceLast = MyPLLErrorDetectorForPriceStochacticMedianWithGain.ToList.Last
 			ThisProbOfStockMedian = 1 - StockOption.StockPricePredictionInverse(
-				NumberTradingDays:=ThisRate / 0.5,
+				NumberTradingDays:=ThisRate,
 				StockPriceStart:=Value.Last,
 				Gain:=ThisGainPerYear,
 				GainDerivative:=ThisGainPerYearDerivative,
