@@ -123,70 +123,87 @@ Namespace MathPlus.Filter
 		''' <param name="PriceEndLow"></param>
 		''' <remarks></remarks>
 		Public Sub Update(
-                     ByVal Volatility As Double,
-                     ByVal Gain As Double,
-                     ByVal GainDerivative As Double,
-                     ByVal PriceEndHigh As Double,
-                     ByVal PriceEndLow As Double)
+										 ByVal Volatility As Double,
+										 ByVal Gain As Double,
+										 ByVal GainDerivative As Double,
+										 ByVal PriceEndHigh As Double,
+										 ByVal PriceEndLow As Double)
+
 
 
 			Dim ThisVolatility As Double
 			Dim ThisGainPerYear As Double
 			Dim ThisGainPerYearDerivative As Double
+			Dim ThisTimeInYear As Double = MyRate / YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR
+			Dim ThisGain As Double = Gain
+			Dim ThisMu As Double = (ThisGain - Volatility ^ 2 / 2) * ThisTimeInYear
 
+			'ignore the derivative for now since it is not very stable
+			'and not very useful for prediction
+			GainDerivative = 0.0
 			MyVolatility = Volatility
-      MyGain = Gain
-      MyGainDerivative = GainDerivative
-      MyPriceEndHigh = PriceEndHigh
-      MyPriceEndLow = PriceEndLow
+			MyGain = Gain
+			MyGainDerivative = GainDerivative
+			MyPriceEndHigh = PriceEndHigh
+			MyPriceEndLow = PriceEndLow
 
-			MyPriceForMidStochastic = StockOption.StockPricePredictionMedian(
+			'If MyListOfPriceMedianNextDayHigh.Count = 2604 Then
+			'	Gain = Gain
+			'End If
+
+			MyPriceForMidStochastic = StockOption.StockPricePrediction(
 				NumberTradingDays:=MyRate,
 				StockPrice:=Math.Sqrt(MyPriceEndLow * MyPriceEndHigh),
-				Gain:=Gain,
-				GainDerivative:=GainDerivative,
-				Volatility:=Volatility)
+				Gain:=-MyGain,
+				GainDerivative:=0.0,
+				Volatility:=MyVolatility,
+				0.5)
 
+			'this equation with -Mu is not quite right. we need a negative gain not a negative mu, but often it is close enough
+			'since the gain is small and the volatility is not very high. In any case this shortcut is replaced by teh exact formula above
+			'apllied with a negative gain and the median probability of 0.5.
+			'MyPriceForMidStochastic = Math.Sqrt(MyPriceEndLow * MyPriceEndHigh) * Math.Exp(-ThisMu)
+			'MyPriceForMidStochastic = Math.Sqrt(MyPriceEndLow * MyPriceEndHigh)
 			MyFilterPLLForGain.Filter(MyPriceForMidStochastic)
 			ThisVolatility = MyFilterVolatilityForPriceStochasticMedian.Filter(MyPriceForMidStochastic)
-      ThisGainPerYear = MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYear.Last
-      ThisGainPerYearDerivative = MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYearDerivative.Last
+			ThisGainPerYear = MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYear.Last
+			ThisGainPerYearDerivative = MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYearDerivative.Last
 
-      Dim ThisStockPriceHighValue = StockOption.StockPricePrediction(
-        NumberTradingDays:=1,
-        StockPrice:=MyPriceForMidStochastic,
-        Gain:=ThisGainPerYear,
-        GainDerivative:=ThisGainPerYearDerivative,
-        Volatility:=ThisVolatility,
-        Probability:=GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA1)
+			Dim ThisStockPriceHighValue = StockOption.StockPricePrediction(
+				NumberTradingDays:=1,
+				StockPrice:=MyPriceForMidStochastic,
+				Gain:=ThisGainPerYear,
+				GainDerivative:=ThisGainPerYearDerivative,
+				Volatility:=ThisVolatility,
+				Probability:=GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA1)
 
-      Dim ThisStockPriceLowValue = StockOption.StockPricePrediction(
-        NumberTradingDays:=1,
-        StockPrice:=MyPriceForMidStochastic,
-        Gain:=ThisGainPerYear,
-        GainDerivative:=ThisGainPerYearDerivative,
-        Volatility:=ThisVolatility,
-        Probability:=GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA1)
+			Dim ThisStockPriceLowValue = StockOption.StockPricePrediction(
+				NumberTradingDays:=1,
+				StockPrice:=MyPriceForMidStochastic,
+				Gain:=ThisGainPerYear,
+				GainDerivative:=ThisGainPerYearDerivative,
+				Volatility:=ThisVolatility,
+				Probability:=GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA1)
 
-      MyListOfPriceMedianNextDayLow.Add(ThisStockPriceLowValue)
-      MyListOfPriceMedianNextDayHigh.Add(ThisStockPriceHighValue)
-      If IsStochasticProbabilityHisteresis Then
+			MyListOfPriceMedianNextDayLow.Add(ThisStockPriceLowValue)
+			MyListOfPriceMedianNextDayHigh.Add(ThisStockPriceHighValue)
+			If IsStochasticProbabilityHisteresis Then
 				'note IsStochasticProbabilityHisteresis is not normally being use yet
 				MyFilterPLL.Filter(Value:=MyPriceForMidStochastic, FilterPLLDetector:=Me)
 				MyListOfValue.Add(MyFilterPLL.FilterLast)
 			Else
 				MyListOfValue.Add(MyPriceForMidStochastic)
 			End If
-    End Sub
+		End Sub
 
-    ''' <summary>
-    ''' Update some function parameters with teh Gain and GainDerivative fixed to zero
-    ''' </summary>
-    ''' <param name="Volatility"></param>
-    ''' <param name="PriceEndHigh"></param>
-    ''' <param name="PriceEndLow"></param>
-    ''' <remarks></remarks>
-    Public Sub Update(
+		''' <summary>
+		''' Update some function parameters with teh Gain and GainDerivative fixed to zero
+		''' </summary>
+		''' <param name="Volatility"></param>
+		''' <param name="PriceEndHigh"></param>
+		''' <param name="PriceEndLow"></param>
+		''' <remarks></remarks>
+		Public Sub Update(
                      ByVal Volatility As Double,
                      ByVal PriceEndHigh As Double,
                      ByVal PriceEndLow As Double)

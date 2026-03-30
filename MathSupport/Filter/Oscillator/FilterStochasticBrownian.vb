@@ -397,38 +397,46 @@ Namespace MathPlus.Filter
 			Dim IsVolatilityJump As Boolean = False
 			If MyListOfPriceRangeVolatility.Count > 0 Then
 				ThisVolatilityLast = MyListOfPriceRangeVolatility.Last
-				MyPriceNextDailyHighPreviousCloseToOpenSigma3 = OptionValuation.StockOption.StockPricePrediction(
-						NumberTradingDays:=TIME_TO_MARKET_PREVIOUS_CLOSE_TO_OPEN_IN_DAY,
-						StockPrice:=Value.LastPrevious,
-						Gain:=0.0,
-						GainDerivative:=0.0,
-						Volatility:=ThisVolatilityLast,
-						Probability:=GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA3)
-				MyPriceNextDailyLowPreviousCloseToOpenSigma3 = OptionValuation.StockOption.StockPricePrediction(
-						NumberTradingDays:=TIME_TO_MARKET_PREVIOUS_CLOSE_TO_OPEN_IN_DAY,
-						StockPrice:=Value.LastPrevious,
-						Gain:=0.0,
-						GainDerivative:=0.0,
-						Volatility:=ThisVolatilityLast,
-						Probability:=GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA3)
-				If Value.Open > MyPriceNextDailyHighPreviousCloseToOpenSigma3 Then
-					IsVolatilityJump = True
-				ElseIf Value.Open < MyPriceNextDailyLowPreviousCloseToOpenSigma3 Then
-					IsVolatilityJump = True
-				End If
+				'This test try to remove the effect of news on the stock. However it does not seem to work as expected.
+				'For example with the stock  "FSENX" the volatility appear to be reduced by more than 2o% when the IsVolatilityJump is set to true
+				'may be setting the range to 4 or 5 sigma will help but for now better to keep it off the code until properly evaluated for many stock.
+				'If ThisVolatilityLast > 0 Then
+				'	MyPriceNextDailyHighPreviousCloseToOpenSigma3 = OptionValuation.StockOption.StockPricePrediction(
+				'			NumberTradingDays:=TIME_TO_MARKET_PREVIOUS_CLOSE_TO_OPEN_IN_DAY,
+				'			StockPrice:=Value.LastPrevious,
+				'			Gain:=0.0,
+				'			GainDerivative:=0.0,
+				'			Volatility:=ThisVolatilityLast,
+				'			Probability:=GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA3)
+				'	MyPriceNextDailyLowPreviousCloseToOpenSigma3 = OptionValuation.StockOption.StockPricePrediction(
+				'		NumberTradingDays:=TIME_TO_MARKET_PREVIOUS_CLOSE_TO_OPEN_IN_DAY,
+				'		StockPrice:=Value.LastPrevious,
+				'		Gain:=0.0,
+				'		GainDerivative:=0.0,
+				'		Volatility:=ThisVolatilityLast,
+				'		Probability:=GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA3)
+				'	If Value.Open > MyPriceNextDailyHighPreviousCloseToOpenSigma3 Then
+				'		IsVolatilityJump = True
+				'	ElseIf Value.Open < MyPriceNextDailyLowPreviousCloseToOpenSigma3 Then
+				'		IsVolatilityJump = True
+				'	End If
+				'End If
 			End If
-			'#If DEBUG Then
-			'      'use to debug for a specific tag and point
-			'      If Me.Tag = "FB" Then
-			'        If Me.Count = 1843 Then
-			'          ThisFilterBasedVolatilityTotal = MyFilterVolatilityYangZhangForStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
-			'        Else
-			'          ThisFilterBasedVolatilityTotal = MyFilterVolatilityYangZhangForStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
-			'        End If
-			'      Else
-			'        ThisFilterBasedVolatilityTotal = MyFilterVolatilityYangZhangForStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
-			'      End If
-			'#Else
+				'#If DEBUG Then
+				'      'use to debug for a specific tag and point
+				'      If Me.Tag = "FB" Then
+				'        If Me.Count = 1843 Then
+				'          ThisFilterBasedVolatilityTotal = MyFilterVolatilityYangZhangForStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
+				'        Else
+				'          ThisFilterBasedVolatilityTotal = MyFilterVolatilityYangZhangForStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
+				'        End If
+				'      Else
+				'        ThisFilterBasedVolatilityTotal = MyFilterVolatilityYangZhangForStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
+				'      End If
+				'#Else
+				If Me.Count = 1800 Then
+				I = I
+			End If
 			ThisFilterBasedVolatilityTotal = MyFilterVolatilityYangZhangForStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
 			'#End If
 			ThisFilterBasedVolatilityFromPreviousCloseToOpen = MyFilterVolatilityYangZhangForStatistic.ToList(Type:=FilterVolatilityYangZhang.enuVolatilityDailyPeriodType.PreviousCloseToOpen).Last
@@ -934,26 +942,23 @@ Namespace MathPlus.Filter
 				ThisVolatilityRegulated,
 				ThisValueLow)
 
-			'ThisProbHigh = 1 - StockOption.StockPricePredictionInverse(
-			'  10,
-			'  Value.Last,
-			'  ThisGainPerYear,
-			'  ThisGainPerYearDerivative,
-			'  ThisVolatilityRegulated,
-			'  ThisValueHigh)
 
+			ThisProbHighHalfRate = 1 - StockOption.StockPricePredictionInverse(
+				ThisRateHalf,
+				Value.Last,
+				ThisGainPerYear,
+				ThisGainPerYearDerivative,
+				ThisVolatilityRegulated,
+				ThisValueHigh)
 
+			ThisProbLowHalfRate = StockOption.StockPricePredictionInverse(
+				ThisRateHalf,
+				Value.Last,
+				ThisGainPerYear,
+				ThisGainPerYearDerivative,
+				ThisVolatilityRegulated,
+				ThisValueLow)
 
-			'ThisProbLow = StockOption.StockPricePredictionInverse(
-			'  10,
-			'  Value.Last,
-			'  ThisGainPerYear,
-			'  ThisGainPerYearDerivative,
-			'  ThisVolatilityRegulated,
-			'  ThisValueLow)
-
-			ThisProbHighHalfRate = 1 - StockOption.StockPricePredictionInverse(ThisRateHalf, Value.Last, ThisGainPerYear, ThisGainPerYearDerivative, ThisVolatilityRegulated, ThisValueHigh)
-			ThisProbLowHalfRate = StockOption.StockPricePredictionInverse(ThisRateHalf, Value.Last, ThisGainPerYear, ThisGainPerYearDerivative, ThisVolatilityRegulated, ThisValueLow)
 			ThisProbHighHalfRate = ThisProbHigh
 			ThisProbLowHalfRate = ThisProbLow
 
@@ -964,6 +969,9 @@ Namespace MathPlus.Filter
 			'over 20% of the FilterRate period. 
 			'for PriceStochacticMedianWithGain
 			'the price stochastique median calculate the median price needed to bring the stochastic to 50% 
+			If Me.Count = 2604 Then
+				ThisRate = ThisRate
+			End If
 
 			Dim ThisPriceLast = MyPLLErrorDetectorForPriceStochacticMedianWithGain.ToList.Last
 			ThisProbOfStockMedian = 1 - StockOption.StockPricePredictionInverse(

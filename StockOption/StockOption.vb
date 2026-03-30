@@ -1499,8 +1499,6 @@ Namespace OptionValuation
 			Else
 				ThisResult = 0.5
 			End If
-			'Dim ThisMu1 As Double = (-ThisGain - Volatility ^ 2 / 2) * ThisTimeInYear
-			'ThisStockPriceStartAtMedian = StockPriceEnd * Distributions.LogNormal.InvCDF(ThisMu1, ThisSigma, 0.5)
 			Return ThisResult
 		End Function
 
