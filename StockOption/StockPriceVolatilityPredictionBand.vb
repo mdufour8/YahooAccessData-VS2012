@@ -4,14 +4,18 @@ Imports MathNet.Numerics
 
 Namespace OptionValuation
   Public Class StockPriceVolatilityPredictionBand
-    Implements IStockPriceVolatilityPredictionBand
+		Implements IStockPriceVolatilityPredictionBand
 
+		Private Const GAIN_DERIVATIVE_ENABLED As Boolean = False
 		Private Const VOLATILITY_TOTAL_MINIMUM As Double = 0.01
 
 		Private MyVolatilityPredictionBandType As IStockPriceVolatilityPredictionBand.EnuVolatilityPredictionBandType
     Private MyVolatilityDelta As Double
-    Private MyStockPrice As IPriceVol
-    Private MyStockPriceFutur As IPriceVol
+		Private MyStockPrice As IPriceVol
+		'MyStockPriceFutur is the stock price used to compare with the calculated high and low value to determine if the band is exceeded or not.
+		'it allows to use the real data in the futur and actuaslly compare the accuracy of the previosu prediction with the real data. It can possibly be used as a feedback system
+		'to adjust the volatility and other parameters of the model to better fit the real data.
+		Private MyStockPriceFutur As IPriceVol
     Private MyStockPriceLowValue As Double
 		Private MyStockPriceHighValue As Double
 		Private IsStockPriceHighLowValueValid As Boolean
@@ -74,7 +78,10 @@ Namespace OptionValuation
 			MyStockPriceHighValue = Double.MaxValue
 			MyStockPriceLowValue = 0.0
 			MyGain = Gain
-      MyGainDerivative = GainDerivative
+			MyGainDerivative = GainDerivative
+			If GAIN_DERIVATIVE_ENABLED = False Then
+				MyGainDerivative = 0.0
+			End If
 			MyVolatility = Volatility
 			MyProbabilityOfInterval = ProbabilityOfInterval
 			MyProbabilityHigh = 0.5 + ProbabilityOfInterval / 2
@@ -471,53 +478,53 @@ Namespace OptionValuation
       End Get
     End Property
 
-    ''' <summary>
-    ''' Calculate the expected high future value for a time in day
-    ''' </summary>
-    ''' <param name="Index">the time in day</param>
-    ''' <returns></returns>
-    ''' <remarks></remarks>
-    Public Function StockPriceHighPrediction(Index As Double) As Double Implements IStockPriceVolatilityPredictionBand.StockPriceHighPrediction
-      Return StockOption.StockPricePrediction(
-        Index,
-        MyStockPriceStartValue,
-        MyGain,
-        MyGainDerivative,
-        MyVolatilityTotal,
-        MyProbabilityHigh)
-    End Function
+		''' <summary>
+		''' Calculate the expected high future value for a time in day assuming the standard volatility interval SIGMA1 
+		''' </summary>
+		''' <param name="TimeInDay">the time in day</param>
+		''' <returns></returns>
+		''' <remarks></remarks>
+		Public Function StockPriceHighPrediction(TimeInDay As Double) As Double Implements IStockPriceVolatilityPredictionBand.StockPriceHighPrediction
+			Return StockOption.StockPricePrediction(
+				TimeInDay,
+				MyStockPriceStartValue,
+				MyGain,
+				MyGainDerivative,
+				MyVolatilityTotal,
+				MyProbabilityHigh)
+		End Function
 
-    ''' <summary>
-    ''' Calculate the expected low future value for a time in day
-    ''' </summary>
-    ''' <param name="Index">the time in day</param>
-    ''' <returns></returns>
-    ''' <remarks></remarks>
-    Public Function StockPriceLowPrediction(Index As Double) As Double Implements IStockPriceVolatilityPredictionBand.StockPriceLowPrediction
-      Return StockOption.StockPricePrediction(
-        Index,
-        MyStockPriceStartValue,
-        MyGain,
-        MyGainDerivative,
-        MyVolatilityTotal,
-        MyProbabilityLow)
-    End Function
+		''' <summary>
+		''' Calculate the expected low future value for a time in day assuming the standard volatility interval SIGMA1 
+		''' </summary>
+		''' <param name="TimeInDay">the time in day</param>
+		''' <returns></returns>
+		''' <remarks></remarks>
+		Public Function StockPriceLowPrediction(TimeInDay As Double) As Double Implements IStockPriceVolatilityPredictionBand.StockPriceLowPrediction
+			Return StockOption.StockPricePrediction(
+				TimeInDay,
+				MyStockPriceStartValue,
+				MyGain,
+				MyGainDerivative,
+				MyVolatilityTotal,
+				MyProbabilityLow)
+		End Function
 
-    ''' <summary>
-    ''' Return the price level given the Index in day and the probability
-    ''' </summary>
-    ''' <param name="Index">time period in day</param>
-    ''' <param name="Probability"></param>
-    ''' <returns></returns>
-    Public Function StockPricePrediction(Index As Double, Probability As Double) As Double Implements IStockPriceVolatilityPredictionBand.StockPricePrediction
-      Return StockOption.StockPricePrediction(
-        Index,
-        MyStockPriceStartValue,
-        MyGain,
-        MyGainDerivative,
-        MyVolatilityTotal,
-        Probability)
-    End Function
+		''' <summary>
+		''' Return the price level given the Index in day and a given probability
+		''' </summary>
+		''' <param name="TimeInDay">time period in day</param>
+		''' <param name="Probability"></param>
+		''' <returns></returns>
+		Public Function StockPricePrediction(TimeInDay As Double, Probability As Double) As Double Implements IStockPriceVolatilityPredictionBand.StockPricePrediction
+			Return StockOption.StockPricePrediction(
+				TimeInDay,
+				MyStockPriceStartValue,
+				MyGain,
+				MyGainDerivative,
+				MyVolatilityTotal,
+				Probability)
+		End Function
 
 		Public Function Refresh() As Boolean Implements IStockPriceVolatilityPredictionBand.Refresh
 			Return Me.Refresh(VolatilityDelta:=0.0)
@@ -540,10 +547,10 @@ Namespace OptionValuation
     ReadOnly Property VolatilityPredictionBandType As EnuVolatilityPredictionBandType
     ReadOnly Property StockPriceHighValue As Double
     ReadOnly Property StockPriceLowValue As Double
-    Function StockPriceHighPrediction(ByVal Index As Double) As Double
-    Function StockPriceLowPrediction(ByVal Index As Double) As Double
-    Function StockPricePrediction(ByVal Index As Double, ByVal Probability As Double) As Double
-    ReadOnly Property StockPriceHighValueStandard As Double
+		Function StockPriceHighPrediction(ByVal TimeInDay As Double) As Double
+		Function StockPriceLowPrediction(ByVal TimeInDay As Double) As Double
+		Function StockPricePrediction(ByVal TimeInDay As Double, ByVal Probability As Double) As Double
+		ReadOnly Property StockPriceHighValueStandard As Double
     ReadOnly Property StockPriceLowValueStandard As Double
     ReadOnly Property IsStockPriceValueRealEnabled As Boolean
     ReadOnly Property ProbabilityHigh As Double

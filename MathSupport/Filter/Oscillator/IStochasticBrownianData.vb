@@ -131,7 +131,5 @@ Public Interface IStochasticBrownianData
 	ReadOnly Property Count As Integer
 
 	ReadOnly Property Rate As Integer
-
-
 End Interface
 

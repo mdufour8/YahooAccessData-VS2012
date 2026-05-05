@@ -1,5 +1,8 @@
 ﻿Imports YahooAccessData.ExtensionService.Extensions
+Imports YahooAccessData.StockPriceVol
 Public Class PriceVol
+	Implements IEquatable(Of PriceVol)
+
 	Implements IPriceVol
 	Implements IStockPriceVol
 	Implements IPricePivotPoint
@@ -63,7 +66,18 @@ Public Class PriceVol
 		End With
 	End Sub
 
+	Public Sub New(PriceVol As IStockPriceVol)
+		_dataType = DataType
 
+		Me.DateLastTrade = PriceVol.DateDay
+		Me.Open = PriceVol.Open.ToSingleSafe
+		Me.OpenNext = PriceVol.OpenNext.ToSingleSafe
+		Me.Last = PriceVol.Last.ToSingleSafe
+		Me.LastPrevious = PriceVol.LastPrevious.ToSingleSafe
+		Me.High = PriceVol.High.ToSingleSafe
+		Me.Low = PriceVol.Low.ToSingleSafe
+		Me.Volume = PriceVol.Volume
+	End Sub
 	''' <summary>
 	''' Note that IPriceVol is a subset of PriceVol data and not all parameter are updated when using this 
 	''' interface
@@ -121,6 +135,27 @@ Public Class PriceVol
 			_Vol = value.ToIntegerSafe()
 		End Set
 	End Property
+
+	Private _dataType As StockPriceDataType = StockPriceDataType.RawPrice
+
+	Public Function AsIStockPriceVol() As IStockPriceVol
+		Return Me
+	End Function
+
+
+	''' <summary>
+	''' Note PriceVol is always a raw price data and cannot take teh form of a Cumulative Log data
+	''' </summary>
+	''' <returns></returns>
+	Public ReadOnly Property DataType As StockPriceDataType
+		Get
+			Return StockPriceDataType.RawPrice
+		End Get
+	End Property
+
+	Public Sub SetDataType(DataType As StockPriceDataType)
+		_dataType = DataType
+	End Sub
 
 
 	Private _VolPlus As Long
@@ -186,7 +221,7 @@ Public Class PriceVol
 	Public Property SpecialDividendPayoutValue As Single
 
 	Public Overrides Function ToString() As String
-		Return $"{TypeName(Me)},Open:{Me.Open},High:{Me.High},Low:{Me.Low},Last:{Me.Last},OpenNext:{Me.OpenNext},Volume:{Me.Volume},IsNull:{Me.IsNull}"
+		Return $"{TypeName(Me)},Date:{Me.DateLastTrade},LastPrevious:{Me.LastPrevious:F3},Open:{Me.Open:F3},High:{Me.High:F3},Low:{Me.Low:F3},Last:{Me.Last:F3},OpenNext:{Me.OpenNext:F3},Volume:{Me.Volume}"
 	End Function
 
 	Public Function CopyFrom() As PriceVol
@@ -232,6 +267,18 @@ Public Class PriceVol
 #End Region
 
 #Region "Eguality Test"
+	Public Overloads Function Equals(other As PriceVol) As Boolean Implements IEquatable(Of PriceVol).Equals
+		If other Is Nothing Then Return False
+		Return Me.DateLastTrade = other.DateLastTrade AndAlso
+					 Me.Open = other.Open AndAlso
+					 Me.High = other.High AndAlso
+					 Me.Low = other.Low AndAlso
+					 Me.Last = other.Last AndAlso
+					 Me.OpenNext = other.OpenNext AndAlso
+					 Me.LastPrevious = other.LastPrevious AndAlso
+					 Me.Vol = other.Vol AndAlso
+					 Me.Volume = other.Volume
+	End Function
 	Public Overrides Function Equals(obj As Object) As Boolean
 		If obj Is Nothing OrElse Not Me.GetType() Is obj.GetType() Then
 			Return False
@@ -262,7 +309,6 @@ Public Class PriceVol
 		hash = hash * 31 + Volume.GetHashCode()
 		Return hash
 	End Function
-
 
 	' Quick helper: check if two references point to the *same* object
 	Public Overloads Shared Function ReferenceEquals(pv1 As PriceVol, pv2 As PriceVol) As Boolean

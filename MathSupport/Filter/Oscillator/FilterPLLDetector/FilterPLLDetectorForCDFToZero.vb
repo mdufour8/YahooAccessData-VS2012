@@ -119,15 +119,15 @@ Namespace MathPlus.Filter
 		''' <param name="Volatility"></param>
 		''' <param name="Gain"></param>
 		''' <param name="GainDerivative"></param>
-		''' <param name="PriceEndHigh"></param>
-		''' <param name="PriceEndLow"></param>
+		''' <param name="PricePeakHigh">Represent the peak high value over the rate period</param>
+		''' <param name="PricePeakLow">Represent the peak low value over the rate period</param>
 		''' <remarks></remarks>
 		Public Sub Update(
 										 ByVal Volatility As Double,
 										 ByVal Gain As Double,
 										 ByVal GainDerivative As Double,
-										 ByVal PriceEndHigh As Double,
-										 ByVal PriceEndLow As Double)
+										 ByVal PricePeakHigh As Double,
+										 ByVal PricePeakLow As Double)
 
 
 
@@ -144,8 +144,8 @@ Namespace MathPlus.Filter
 			MyVolatility = Volatility
 			MyGain = Gain
 			MyGainDerivative = GainDerivative
-			MyPriceEndHigh = PriceEndHigh
-			MyPriceEndLow = PriceEndLow
+			MyPriceEndHigh = PricePeakHigh
+			MyPriceEndLow = PricePeakLow
 
 			'If MyListOfPriceMedianNextDayHigh.Count = 2604 Then
 			'	Gain = Gain
@@ -200,18 +200,18 @@ Namespace MathPlus.Filter
 		''' Update some function parameters with teh Gain and GainDerivative fixed to zero
 		''' </summary>
 		''' <param name="Volatility"></param>
-		''' <param name="PriceEndHigh"></param>
-		''' <param name="PriceEndLow"></param>
+		''' <param name="PricePeakHigh"></param>
+		''' <param name="PricePeakLow"></param>
 		''' <remarks></remarks>
 		Public Sub Update(
-                     ByVal Volatility As Double,
-                     ByVal PriceEndHigh As Double,
-                     ByVal PriceEndLow As Double)
+										 ByVal Volatility As Double,
+										 ByVal PricePeakHigh As Double,
+										 ByVal PricePeakLow As Double)
 
-      Me.Update(Volatility:=Volatility, Gain:=0, GainDerivative:=0, PriceEndHigh:=PriceEndHigh, PriceEndLow:=PriceEndLow)
-    End Sub
+			Me.Update(Volatility:=Volatility, Gain:=0, GainDerivative:=0, PricePeakHigh:=PricePeakHigh, PricePeakLow:=PricePeakLow)
+		End Sub
 
-    Public ReadOnly Property ToErrorLimit As Double Implements IFilterPLLDetector.ToErrorLimit
+		Public ReadOnly Property ToErrorLimit As Double Implements IFilterPLLDetector.ToErrorLimit
       Get
         Return MyToErrorLimit
       End Get

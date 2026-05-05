@@ -1,7 +1,9 @@
-﻿Imports YahooAccessData.MathPlus.Measure
-Imports YahooAccessData.ExtensionService
-Imports System.IO
+﻿Imports System.IO
+Imports System.Threading.Tasks
 Imports WebEODData
+Imports WebEODData.com
+Imports YahooAccessData.ExtensionService
+Imports YahooAccessData.MathPlus.Measure
 
 Public Class RecordPrices
 #Const IS_SPLIT_LOCAL_ENABLED = False
@@ -39,6 +41,9 @@ Public Class RecordPrices
 	Private MyDictionaryOfStockPriceDataError As Dictionary(Of String, IList(Of IPriceVol))
 	Private MyListOfIPriceVol As List(Of IPriceVol)
 	Private MyListOfPriceVol As List(Of PriceVol)
+	Private MyListOfStockPriceVol As List(Of StockPriceVol)
+	Private MyListOfIStockPriceVol As List(Of IStockPriceVol)
+	Private MyListOfCumulativeLogGain As List(Of StockPriceVol)
 
 #End Region
 #Region "New"
@@ -223,173 +228,86 @@ Public Class RecordPrices
 		Me.New(colData, Date.MinValue, DateStopValue)
 	End Sub
 
-	'''' <summary>
-	'''' 
-	'''' </summary>
-	'''' <param name="Symbol"></param>
-	'''' <param name="colData"></param>
-	'Public Sub New(ByVal Symbol As String, ByRef colData As IEnumerable(Of YahooAccessData.IPriceVol))
-	'	Dim I As Integer = 0
 
-	'	Dim ThisPriceVolLast = colData.Last
-	'	If ThisPriceVolLast Is Stock Then
-	'		Me.Stock = DirectCast(ThisPriceVolLast, Stock)
-	'	End If
-	'	Me.Symbol = Symbol
-	'	If colData.Count = 0 Then
-	'		Me.IsError = True
-	'		Me.ErrorDescription = "Index Out Of Range Exception."
-	'		Throw New IndexOutOfRangeException
-	'	End If
+	''' <summary>
+	''' Create a new RecordPrices object based on the provided record price data. The record price data is expected to contain 
+	''' the necessary information to construct the new price stream scaled to a new price relative value. 
+	''' Useful to compare similar stocks on a same re-price stock value, i.e. by default at 100.0. Gain and Volume data 
+	''' are preserved as the original stream.
+	''' </summary>
+	''' <param name="recordPrices"></param>
+	''' <param name="PriceRelative"></param>
+	Public Sub New(
+		recordPrices As RecordPrices,
+		Optional PriceRelative As Double = 100.0)
 
-	'	ReDim MyPriceVols(0 To colData.Count - 1)
-	'	Me.PriceMin = Single.MaxValue
-	'	Me.PriceMin = Single.MinValue
-	'	Me.IsPriceTarget = False
-	'	Me.IsVol = False
-	'	Me.VolMin = 0
-	'	Me.VolMax = 0
-	'	Me.NumberNullPoint = 0
-	'	Me.NumberNullPointToEnd = 0
-	'	Me.IsError = False
-	'	Me.ErrorDescription = ""
-	'	IsIntraDayLocalEnabled = False
-	'	For Each ThisPriceVol As PriceVol In colData
-	'		MyPriceVols(I) = ThisPriceVol
-	'		With ThisPriceVol
-	'			If .IsIntraDay Then
-	'				IsIntraDayLocalEnabled = True
-	'			End If
-	'			If .Vol > 0 Then
-	'				If .Vol < Me.VolMin Then
-	'					Me.VolMin = .Vol
-	'				End If
-	'				If .Vol > Me.VolMax Then
-	'					Me.VolMax = .Vol
-	'				End If
-	'			End If
-	'			If .High > Me.PriceMax Then
-	'				Me.PriceMax = .High
-	'			End If
-	'			If .Low > Me.PriceMin Then
-	'				Me.PriceMin = .Low
-	'			End If
-	'			If .IsNull Then
-	'				Me.NumberNullPoint += 1
-	'			End If
-	'		End With
-	'		I += 1
-	'	Next
-	'	If Me.VolMin > 0 Then
-	'		Me.IsVol = True
-	'	End If
-	'	Me.IsSplit = False
-	'	Me.DateStart = MyPriceVols(0).DateLastTrade
-	'	Me.DateStop = MyPriceVols(MyPriceVols.Count - 1).DateLastTrade
-	'	Me.NumberPoint = MyPriceVols.Count
-	'	Me.StartPoint = 0
-	'	Me.StopPoint = MyPriceVols.Count - 1
-	'	Me.PriceVolLast = MyPriceVols(MyPriceVols.Count - 1)
-	'End Sub
+		Dim I As Integer = 0
+
+		If recordPrices.NumberPoint = 0 Then
+			Throw New InvalidDataException("The record collection is empty.")
+		End If
+		Me.Stock = recordPrices.Stock
+		If Me.Stock Is Nothing Then
+			Throw New InvalidDataException("The stock information is missing in the record collection.")
+		End If
+		Me.Symbol = Me.Stock.Symbol
+		'reprice the data to the default value
+		MyListOfCumulativeLogGain = recordPrices.ToListOfCumulativeLogGain
+		'with the log gain we can re-price the stream of price data to create the price data stream
+		'based on the price relative value
+		MyListOfStockPriceVol = StockPriceLogGainExtensions.ToCumulativeLogGainInverse(
+				MyListOfCumulativeLogGain,
+				PriceBase:=PriceRelative,
+				PriceBaseIndex:=0)
+
+		Me.DateStart = recordPrices.DateStart
+		Me.DateStop = recordPrices.DateStop
+		Me.IsPriceTarget = recordPrices.IsPriceTarget
+		Me.IsVol = recordPrices.IsVol
+		Me.VolMin = recordPrices.VolMin
+		Me.VolMax = recordPrices.VolMax
+		Me.NumberPoint = recordPrices.NumberPoint
+		Me.NumberNullPoint = recordPrices.NumberNullPoint
+		Me.NumberNullPointToEnd = recordPrices.NumberNullPointToEnd
+		Me.IsSplit = recordPrices.IsSplit
+		Me.StartPoint = recordPrices.StartPoint
+		Me.StopPoint = recordPrices.StopPoint
+
+		Me.IsError = recordPrices.IsError
+		Me.ErrorDescription = recordPrices.ErrorDescription
+		MyListOfIPriceVol = New List(Of IPriceVol)
+		MyListOfPriceVol = New List(Of PriceVol)
+		MyListOfIStockPriceVol = New List(Of IStockPriceVol)
+		ReDim MyPriceVols(0 To MyListOfStockPriceVol.Count - 1)
+		Me.PriceMax = 0.0
+		Me.PriceMin = Single.MaxValue
+		'the min and the max could also be calculated using teh log but this approch
+		'ensure the value include the effet of the transformatione rounding error.
+		For Each ThisPriceVol As IStockPriceVol In MyListOfStockPriceVol
+			With ThisPriceVol
+				If .Last > 0 Then
+					'check the range
+					If .High > Me.PriceMax Then
+						Me.PriceMax = .High
+					End If
+					If .Low > 0 Then
+						If .Low < Me.PriceMin Then
+							Me.PriceMin = .Low
+						End If
+					End If
+				End If
+			End With
+			MyListOfIStockPriceVol.Add(ThisPriceVol)
+			MyPriceVols(I) = New PriceVol(ThisPriceVol)
+			MyListOfPriceVol.Add(MyPriceVols(I))
+			MyListOfIPriceVol.Add(MyPriceVols(I))
+			I += 1
+		Next
+		Me.PriceVolLast.IsIntraDay = recordPrices.PriceVolLast.IsIntraDay
+	End Sub
+
 #End Region
 #Region "Public Shared Function"
-	''' <summary>
-	''' Create a new PriceVol array with time inversed data.
-	''' To mark the time inversion the original date of the data is not affected. Only
-	''' the open and last value in the structure sequence order is swapped to reflect the time reversal.
-	''' </summary>
-	''' <param name="PriceVol"></param>
-	''' <returns></returns>
-	''' <remarks>This can be usuful for special purpose function such as genetic optimization for symetry</remarks>
-	Public Shared Function TransformTimeInverse(ByRef PriceVol() As PriceVol) As PriceVol()
-		Dim ThisPriceVol(0 To PriceVol.Length - 1) As PriceVol
-		Dim I As Integer
-		Dim J As Integer
-
-		J = PriceVol.Length - 1
-		For I = 0 To PriceVol.Length - 1
-			ThisPriceVol(J) = PriceVol(I)
-			With ThisPriceVol(J)
-				.Open = .Last
-				.Last = PriceVol(I).Open
-				.OpenNext = .LastPrevious
-				.LastPrevious = PriceVol(I).OpenNext
-				.LastWeighted = CalculateLastWeighted(ThisPriceVol(J).AsIPriceVol)
-				.Range = CalculateTrueRange(ThisPriceVol(J).AsIPriceVol)
-			End With
-			J = J - 1
-		Next
-		Return ThisPriceVol
-	End Function
-
-	''' <summary>
-	''' Create a new array with time inversed data and scaled data.
-	''' </summary>
-	''' <param name="Value"></param>
-	''' <param name="ScaleGain">
-	''' The multiplication factor
-	''' </param>
-	''' <param name="ScaleOffset">
-	''' The offset factor</param>
-	''' <returns></returns>
-	''' <remarks></remarks>
-	Public Shared Function TransformTimeInverse(ByRef Value() As Double, ByVal ScaleGain As Double, ByVal ScaleOffset As Double) As Double()
-		Dim ThisValue(0 To Value.Length - 1) As Double
-		Dim I As Integer
-		Dim J As Integer
-
-		J = Value.Length - 1
-		For I = 0 To Value.Length - 1
-			ThisValue(J) = ScaleGain * Value(I) + ScaleOffset
-			J = J - 1
-		Next
-		Return ThisValue
-	End Function
-
-	''' <summary>
-	''' Create a new array with time inversed data with no scaling
-	''' </summary>
-	''' <param name="Value"></param>
-	''' <returns></returns>
-	''' <remarks></remarks>
-	Public Shared Function TransformTimeInverse(ByRef Value() As Double) As Double()
-		Return RecordPrices.TransformTimeInverse(Value, 1, 0)
-	End Function
-
-	''' <summary>
-	''' Move the price last value while keeping all the other price value in the same range
-	''' </summary>
-	''' <param name="PriceVol">The PriceVol structure to be updated</param>
-	''' <param name="PriceLast">The new price last to update</param>
-	''' <remarks>
-	''' This function return a new PriceVol structure and does not affect the original one. 
-	''' It can be use for filtering while preserving the data price range
-	''' </remarks>
-	Public Shared Function TransformMovePriceVolLast(ByVal PriceVol As PriceVol, ByVal PriceLast As Single) As PriceVol
-		With PriceVol
-			.Open = PriceLast + (.Open - .Last)
-			.High = PriceLast + (.High - .Last)
-			.Low = PriceLast + (.Low - .Last)
-			.Last = PriceLast
-			.FilterLast = PriceLast
-		End With
-		PriceVol.LastWeighted = RecordPrices.CalculateLastWeighted(PriceVol.AsIPriceVol)
-		Return PriceVol
-	End Function
-
-	Public Shared Function TransformShiftPriceVolLast(ByVal PriceVol As PriceVol, ByVal PriceLast As Double) As PriceVol
-		Dim ThisPriceLast As Single = CSng(PriceLast)
-		With PriceVol
-			.Open = ThisPriceLast + (.Open - .Last)
-			.High = ThisPriceLast + (.High - .Last)
-			.Low = ThisPriceLast + (.Low - .Last)
-			.Last = ThisPriceLast
-			.FilterLast = ThisPriceLast
-		End With
-		PriceVol.LastWeighted = RecordPrices.CalculateLastWeighted(PriceVol.AsIPriceVol)
-		Return PriceVol
-	End Function
-
 	Public Shared Function ToListOfPriceVolLast(ByRef PriceVolData() As PriceVol) As List(Of Double)
 		If PriceVolData Is Nothing Then Return New List(Of Double)
 		Return PriceVolData.Select(Function(pv) CDbl(pv.Last)).ToList()
@@ -649,7 +567,7 @@ Public Class RecordPrices
 		Me.StopPoint = -1
 		If ThisListOfRecordQuoteValue.Count = 0 Then
 			Me.IsNull = True
-			'in that case initialize the pricevol with null v`alues
+			'in that case initialize the pricevol with null values
 			Dim ThisDateStop As Date = Me.DateStart
 			Do
 				MyListOfIPriceVol.Add(New PriceVol(0) With {.IsNull = True, .DateLastTrade = ThisDateStop})
@@ -673,13 +591,10 @@ Public Class RecordPrices
 			Me.VolMax = 0
 			Me.VolMin = 0
 			Me.IsPriceTarget = False
-
-
-
 			Return
 		Else
 			'initialize the range variable before we start the data processing
-			Me.PriceMax = 0
+			Me.PriceMax = 0.0
 			Me.PriceMin = Single.MaxValue
 			Me.PriceMinTarget = Me.PriceMin
 			Me.PriceMaxTarget = Me.PriceMax
@@ -689,10 +604,9 @@ Public Class RecordPrices
 		End If
 		'adjust the data
 		ThisListOfPriceVols.Clear()
-		Me.StartPoint = -1
-
 		'synchronize the start with the actual data
 		Dim ThisPriceVol As PriceVol
+		Dim ThisPriceVolLast As PriceVol = Nothing
 		ThisDateCurrent = Me.DateStart
 		MyListOfIPriceVol.Clear()
 		'collect to be on a valid weekly working day
@@ -707,10 +621,10 @@ Public Class RecordPrices
 				MyListOfIPriceVol.Last.OpenNext = ThisPriceVol.Open
 			End If
 			MyListOfIPriceVol.Add(ThisPriceVol)
+			ThisPriceVolLast = ThisPriceVol
 			ThisDateCurrent = ThisDateCurrent.AddDays(1)
 			ThisDateCurrent = If(ThisDateCurrent.DayOfWeek = DayOfWeek.Saturday, ThisDateCurrent.AddDays(2), ThisDateCurrent)
 		Loop
-		Me.StartPoint = MyListOfIPriceVol.Count - 1
 		Dim ThisRecordQuoteValueLast = ThisListOfRecordQuoteValue.Last
 		Dim ThisRecordQuoteValuePrevious = ThisRecordQuoteValueFirst
 		For Each ThisRecordQuoteValue In ThisListOfRecordQuoteValue
@@ -734,6 +648,7 @@ Public Class RecordPrices
 					MyListOfIPriceVol.Last.OpenNext = ThisPriceVol.Open
 				End If
 				MyListOfIPriceVol.Add(ThisPriceVol)
+				ThisPriceVolLast = ThisPriceVol
 				ThisDateCurrent = ThisDateCurrent.AddDays(1)
 				ThisDateCurrent = If(ThisDateCurrent.DayOfWeek = DayOfWeek.Saturday, ThisDateCurrent.AddDays(2), ThisDateCurrent)
 			Loop
@@ -741,14 +656,46 @@ Public Class RecordPrices
 			If MyListOfIPriceVol.Count > 0 Then
 				MyListOfIPriceVol.Last.OpenNext = ThisPriceVol.Open
 			End If
-			MyListOfIPriceVol.Add(ThisPriceVol)
 			If ThisPriceVol.Volume > 0 Then
 				Me.IsVol = True
 			End If
+			MyListOfIPriceVol.Add(ThisPriceVol)
+
 			ThisDateCurrent = ThisDateCurrent.AddDays(1)
 			ThisDateCurrent = If(ThisDateCurrent.DayOfWeek = DayOfWeek.Saturday, ThisDateCurrent.AddDays(2), ThisDateCurrent)
 			ThisRecordQuoteValuePrevious = ThisRecordQuoteValue
 		Next
+		MyListOfStockPriceVol = New List(Of StockPriceVol)
+		MyListOfIStockPriceVol = New List(Of IStockPriceVol)
+		MyListOfCumulativeLogGain = New List(Of StockPriceVol)
+		'set the default value for that condition
+		If MyListOfIPriceVol.Count > 0 Then
+			Me.StartPoint = 0
+			Me.StopPoint = MyListOfIPriceVol.Count - 1
+		Else
+			Me.StartPoint = -1
+			Me.StopPoint = -1
+		End If
+		For Each PriceVolItem In MyListOfIPriceVol
+			Dim ThisStockPriceVol = New StockPriceVol(PriceVolItem)
+			MyListOfIStockPriceVol.Add(ThisStockPriceVol)
+			MyListOfStockPriceVol.Add(ThisStockPriceVol)
+		Next
+		MyListOfCumulativeLogGain = StockPriceLogGainExtensions.ToCumulativeLogGain(MyListOfStockPriceVol)
+
+		'validation test
+		'Dim ThisListOfCumulativeLogGainInverse = StockPriceLogGainExtensions.ToCumulativeLogGainInverse(
+		'	MyListOfCumulativeLogGain,
+		'	PriceBase:=MyListOfStockPriceVol(0).Last,
+		'	PriceBaseIndex:=0)
+
+		'Dim ThisItemLast = MyListOfStockPriceVol.Last
+		'For Each ThisItem In MyListOfStockPriceVol.Zip(ThisListOfCumulativeLogGainInverse, Function(stock1 As StockPriceVol, stock2 As StockPriceVol) (stock1, stock2))
+		'	If ThisItem.stock1.Equals(ThisItem.stock2, decimalPlaces:=10) = False Then
+		'		ThisItem = ThisItem
+		'	End If
+		'Next
+
 		Me.StopPoint = MyListOfIPriceVol.Count - 1
 		Me.NumberPoint = MyListOfIPriceVol.Count
 		If Me.NumberNullPoint = Me.NumberPoint Then
@@ -1152,6 +1099,7 @@ Public Class RecordPrices
 				.DividendYield = 100 * .DividendShare / .Last
 			End If
 			.RecordQuoteValue = RecordQuote
+			.OpenNext = .Last 'by default, will be updated in the next loop if the next record is not null
 		End With
 		Return ThisPriceVol
 	End Function
@@ -1284,46 +1232,11 @@ Public Class RecordPrices
 	End Function
 
 	Public Function ToListOfStockPriceVol() As List(Of IStockPriceVol)
-		Dim ThisList = New List(Of IStockPriceVol)
-		For I = 0 To Me.NumberPoint - 1
-			ThisList.Add(New StockPriceVol(MyPriceVols(I)))
-		Next
-		Return ThisList
+		Return MyListOfIStockPriceVol
 	End Function
 
-	Public Function ToListOfStockPriceVolGain() As List(Of IStockPriceVol)
-		Dim ThisList = New List(Of IStockPriceVol)
-		For I = 0 To Me.NumberPoint - 1
-			ThisList.Add(New StockPriceVol(MyPriceVols(I)))
-		Next
-		Return ThisList
-	End Function
-
-	Public Function ToListOfPriceGainLog() As List(Of IPriceVol)
-		Dim ThisList = New List(Of IPriceVol)
-
-		'take the reference as the first price
-		Dim ThisPriceRef As Double = Me.PriceVols(0).Last
-		Dim ThisPriceRefOffset As Double = 100.0
-		'prevent the problem that will occur if the price is zero
-		'take a reference of 100.0. In a way this is a similar aproach to simulating a bond issued a a value of 100.0
-		'with the price that can vary mostly on the interest rate	or the incertainty and financial stability of the issuer.
-		'In this case since it is a stock the influence to the interest rate is not direct but the incertainty and financial
-		'stability and the revenue growth are a major concern
-
-		'Dim ThisPriceVolGain As IPriceVolGain
-		For Each PriceVol In MyListOfIPriceVol
-
-
-
-		Next
-
-
-		For I = 0 To Me.NumberPoint - 1
-
-			ThisList.Add(New StockPriceVol(MyPriceVols(I)))
-		Next
-		Return ThisList
+	Public Function ToListOfCumulativeLogGain() As List(Of StockPriceVol)
+		Return MyListOfCumulativeLogGain
 	End Function
 
 	Public Function ToListOfPriceVol() As List(Of IPriceVol)
@@ -1498,10 +1411,10 @@ Public Class RecordPrices
 	Private StockDividendSinglePayoutIndex() As Integer 'note not public for now
 	Private IsStockDividendSinglePayout As Boolean    'note not public for now
 	Public IsSplit As Boolean
-	Public PriceMin As Single
-	Public PriceMax As Single
-	Public PriceMinTarget As Single
-	Public PriceMaxTarget As Single
+	Public PriceMin As Double
+	Public PriceMax As Double
+	Public PriceMinTarget As Double
+	Public PriceMaxTarget As Double
 	Public IsPriceTarget As Boolean
 	Public PriceToEarningTarget As Double
 	Public IsVol As Boolean

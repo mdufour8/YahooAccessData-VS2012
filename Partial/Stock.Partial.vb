@@ -74,6 +74,7 @@ Partial Public Class Stock
 			End If
 		End With
 		_RecordPrices = Nothing
+		_RecordPricesNormalized = Nothing
 	End Sub
 
 
@@ -124,6 +125,7 @@ Partial Public Class Stock
 			MyListHeaderInfo = ListOfHeader()
 		End If
 		_RecordPrices = Nothing
+		_RecordPricesNormalized = Nothing
 		Me.IsSplitEnabled = True
 	End Sub
 
@@ -137,6 +139,7 @@ Partial Public Class Stock
 			End If
 		End With
 		_RecordPrices = Nothing
+		_RecordPricesNormalized = Nothing
 	End Sub
 
 	Public Sub New(ByRef Parent As Report, ByRef Stream As Stream, Optional ByVal IsRecordVirtual As Boolean = False)
@@ -161,6 +164,7 @@ Partial Public Class Stock
 			.Report.Stocks.Add(Me)
 		End With
 		_RecordPrices = Nothing
+		_RecordPricesNormalized = Nothing
 	End Sub
 
 	Public Sub New(
@@ -188,6 +192,7 @@ Partial Public Class Stock
 			End If
 		End With
 		_RecordPrices = Nothing
+		_RecordPricesNormalized = Nothing
 	End Sub
 
 	Public Sub New(ByVal Symbol As String, ByVal Name As String)
@@ -3100,6 +3105,8 @@ Partial Public Class Stock
 
 	Private _RecordPrices As RecordPrices
 
+	Private _RecordPricesNormalized As RecordPrices
+
 	''' <summary>
 	''' Returns the prices for various calculations. The user need to set it values 
 	''' otherwise it return nothing. Note that this is not persisted in the database
@@ -3114,11 +3121,24 @@ Partial Public Class Stock
 	End Property
 
 	''' <summary>
+	''' Rebasing/Indexing Normalized: In finance or data analysis, datasets are often normalized to 100, where the starting value equals 100, 
+	''' and subsequent values show percentage increases or decreases from that starting point.
+	''' </summary>
+	''' <returns>The RecordPrices dataset normalized to 100 </returns>
+	Public ReadOnly Property GetRecordsPricesNormalized() As RecordPrices
+		Get
+			Return _RecordPricesNormalized
+		End Get
+	End Property
+
+	''' <summary>
 	''' Can be use as a temporary holder of the prices for various calculations
 	''' </summary>
 	''' <param name="Value"></param>
 	Public Sub SetRecordsPrices(Value As RecordPrices)
 		_RecordPrices = Value
+		'normalise teh value to 100 for the first value and store it in the _RecordPricesNormalized
+		_RecordPricesNormalized = New RecordPrices(_RecordPrices, PriceRelative:=100.0)
 	End Sub
 
 	Public ReadOnly Property SectorName As String

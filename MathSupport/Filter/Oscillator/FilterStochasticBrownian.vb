@@ -72,6 +72,10 @@ Namespace MathPlus.Filter
 		Private MyFilterLPForStochasticFromPriceVolatilityHigh As IFilter
 		Private MyFilterLPForStochasticFromPriceVolatilityLow As IFilter
 		Private MyListOfVolatilityRegulatedFromPreviousCloseToCloseWithGain As IList(Of Double)
+		Private MyListOfVolatilityRegulatedFromPreviousCloseToCloseWithGainWeekly As IList(Of Double)
+		Private MyListOfVolatilityRegulatedFromPreviousCloseToCloseWithGainMonthly As IList(Of Double)
+
+
 		Private MyListForVolatilityRegulatedPreviousCloseToOpenWithGain As IList(Of Double)
 		Private MyListForVolatilityRegulatedFromOpenToCloseWithGain As IList(Of Double)
 		Private MyListForVolatilityRegulatedNoGainFromOpenToClose As IList(Of Double)
@@ -88,6 +92,7 @@ Namespace MathPlus.Filter
 		Private MyFilterPLLForGain As FilterLowPassPLL
 		Private MyFilterPLLForGainPrediction As FilterLowPassPLL
 
+		Private MyListOfPriceVolatilityPredictionBand_CloseToCloseWithGain As List(Of IStockPriceVolatilityPredictionBand)
 		Private MyListOfPriceNextDailyHigh As IList(Of Double)
 		Private MyListOfPriceNextDailyLow As IList(Of Double)
 		Private MyListOfPriceNextDailyHighWithGain As IList(Of Double)
@@ -179,12 +184,12 @@ Namespace MathPlus.Filter
 
 			MyRateForVolatility = FilterVolatilityRate
 			If FilterPeakRate > 0 Then
-				MyMeasurePeakValueRange = New MeasurePeakValueRange(FilterPeakRate, Me.IsFilterPeak)
-				MyMeasurePeakValueRangeUsingNoPeakFilter = New MeasurePeakValueRange(FilterRate:=FilterPeakRate, IsFilterPeakEnabled:=False)
+				MyMeasurePeakValueRange = New MeasurePeakValueRange(WindowSize:=FilterPeakRate, Me.IsFilterPeak)
+				MyMeasurePeakValueRangeUsingNoPeakFilter = New MeasurePeakValueRange(WindowSize:=FilterPeakRate, IsFilterPeakEnabled:=False)
 			Else
 				'this is the normal default operation 
 				MyMeasurePeakValueRange = New MeasurePeakValueRange(FilterRate, Me.IsFilterPeak)
-				MyMeasurePeakValueRangeUsingNoPeakFilter = New MeasurePeakValueRange(FilterRate:=FilterRate, IsFilterPeakEnabled:=False)
+				MyMeasurePeakValueRangeUsingNoPeakFilter = New MeasurePeakValueRange(WindowSize:=FilterRate, IsFilterPeakEnabled:=False)
 			End If
 
 			MyListOfPeakValueGainPrediction = New List(Of Double)
@@ -228,6 +233,8 @@ Namespace MathPlus.Filter
 			MyPLLErrorDetectorForPriceStochacticMedianWithGainPredictionLow = New FilterPLLDetectorForCDFToZero(FilterRate, ToCountLimit:=20, ToErrorLimit:=0.0001)
 			MyPLLErrorDetectorForPriceStochacticMedianWithGainNoFilter = New FilterPLLDetectorForCDFToZero(FilterRate, ToCountLimit:=20, ToErrorLimit:=0.0001)
 			MyPLLErrorDetectorForPriceStochacticMedianWithGainPredictionNoFilter = New FilterPLLDetectorForCDFToZero(FilterRate, ToCountLimit:=20, ToErrorLimit:=0.0001)
+			MyListOfPriceVolatilityPredictionBand_CloseToCloseWithGain = New List(Of IStockPriceVolatilityPredictionBand)
+
 
 			MyPLLErrorDetectorForVolatilityPredictionFromPreviousCloseToCloseWithGain = New FilterPLLDetectorForVolatilitySigma(
 				FilterRate,
@@ -240,6 +247,9 @@ Namespace MathPlus.Filter
 
 
 			MyListOfVolatilityRegulatedFromPreviousCloseToCloseWithGain = New List(Of Double)
+			MyListOfVolatilityRegulatedFromPreviousCloseToCloseWithGainWeekly = New List(Of Double)
+			MyListOfVolatilityRegulatedFromPreviousCloseToCloseWithGainMonthly = New List(Of Double)
+
 			MyListForVolatilityRegulatedPreviousCloseToOpenWithGain = New List(Of Double)
 			MyListForVolatilityRegulatedFromOpenToCloseWithGain = New List(Of Double)
 			MyListForVolatilityRegulatedNoGainFromOpenToClose = New List(Of Double)
@@ -389,8 +399,6 @@ Namespace MathPlus.Filter
 			End If
 			MyListOfValue.Add(Value)
 			MyFilterLowPassForPrice.Filter(Value.Last)
-			Dim MyPriceNextDailyHighPreviousCloseToOpenSigma3 As Double
-			Dim MyPriceNextDailyLowPreviousCloseToOpenSigma3 As Double
 			Dim ThisVolatilityLast As Double = 0.0
 
 			'check for a volatility jump due to news or other events
@@ -422,19 +430,19 @@ Namespace MathPlus.Filter
 				'	End If
 				'End If
 			End If
-				'#If DEBUG Then
-				'      'use to debug for a specific tag and point
-				'      If Me.Tag = "FB" Then
-				'        If Me.Count = 1843 Then
-				'          ThisFilterBasedVolatilityTotal = MyFilterVolatilityYangZhangForStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
-				'        Else
-				'          ThisFilterBasedVolatilityTotal = MyFilterVolatilityYangZhangForStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
-				'        End If
-				'      Else
-				'        ThisFilterBasedVolatilityTotal = MyFilterVolatilityYangZhangForStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
-				'      End If
-				'#Else
-				If Me.Count = 1800 Then
+			'#If DEBUG Then
+			'      'use to debug for a specific tag and point
+			'      If Me.Tag = "FB" Then
+			'        If Me.Count = 1843 Then
+			'          ThisFilterBasedVolatilityTotal = MyFilterVolatilityYangZhangForStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
+			'        Else
+			'          ThisFilterBasedVolatilityTotal = MyFilterVolatilityYangZhangForStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
+			'        End If
+			'      Else
+			'        ThisFilterBasedVolatilityTotal = MyFilterVolatilityYangZhangForStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
+			'      End If
+			'#Else
+			If Me.Count = 500 Then
 				I = I
 			End If
 			ThisFilterBasedVolatilityTotal = MyFilterVolatilityYangZhangForStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
@@ -489,7 +497,7 @@ Namespace MathPlus.Filter
 			'create the object that adjust the volatility based the the latest 
 			'variation of probability of excess for a given probability threshold
 			'this is the object for 1 day prediction not taking into account the gain variation of the signal
-			Dim ThisVolatilityPredictionFromPreviousCloseToCloseNoGain = New StockPriceVolatilityPredictionBand(
+			Dim ThisPricePredictionFromPreviousCloseToCloseNoGain = New StockPriceVolatilityPredictionBand(
 				NumberTradingDays:=1,
 				StockPrice:=Value,
 				StockPriceStartValue:=Value.Last,
@@ -505,7 +513,7 @@ Namespace MathPlus.Filter
 				I = I
 			End If
 			'same but including the gain 
-			Dim ThisVolatilityPredictionFromPreviousCloseToCloseWithGain = New StockPriceVolatilityPredictionBand(
+			Dim ThisPricePredictionFromPreviousCloseToCloseWithGain = New StockPriceVolatilityPredictionBand(
 				NumberTradingDays:=1,
 				StockPrice:=Value,
 				StockPriceStartValue:=Value.Last,
@@ -516,7 +524,38 @@ Namespace MathPlus.Filter
 					.VolatilityMaximum = ThisFilterBasedVolatilityFromLastPointTrailing,
 					.IsVolatilityMaximumEnabled = True}
 
-			ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.Refresh(0.0)
+
+			'we stote that value so that we can offer the possibilty to calculate any price prediction value from the close to close
+			'volatility with gain for ant TimeInDay and probability of interval threshold.
+			'The access to that function will be availiable via the interface function IStockPriceVolatilityPredictionBand.StockPricePrediction(TimeInDay As Double, Probability As Double)
+			MyListOfPriceVolatilityPredictionBand_CloseToCloseWithGain.Add(ThisPricePredictionFromPreviousCloseToCloseWithGain)
+
+			Dim ThisPricePredictionFromPreviousCloseToCloseWithGainWeekly = New StockPriceVolatilityPredictionBand(
+				NumberTradingDays:=5,
+				StockPrice:=Value,
+				StockPriceStartValue:=Value.Last,
+				Gain:=ThisGainPerYear,
+				GainDerivative:=ThisGainPerYearDerivative,
+				Volatility:=ThisFilterBasedVolatilityTotal,
+				ProbabilityOfInterval:=GAUSSIAN_PROBABILITY_SIGMA1) With {
+					.VolatilityMaximum = ThisFilterBasedVolatilityFromLastPointTrailing,
+					.IsVolatilityMaximumEnabled = True}
+
+			Dim ThisPricePredictionFromPreviousCloseToCloseWithGainMonthly = New StockPriceVolatilityPredictionBand(
+				NumberTradingDays:=20,
+				StockPrice:=Value,
+				StockPriceStartValue:=Value.Last,
+				Gain:=ThisGainPerYear,
+				GainDerivative:=ThisGainPerYearDerivative,
+				Volatility:=ThisFilterBasedVolatilityTotal,
+				ProbabilityOfInterval:=GAUSSIAN_PROBABILITY_SIGMA1) With {
+					.VolatilityMaximum = ThisFilterBasedVolatilityFromLastPointTrailing,
+					.IsVolatilityMaximumEnabled = True}
+
+			ThisPricePredictionFromPreviousCloseToCloseWithGain.Refresh()
+			ThisPricePredictionFromPreviousCloseToCloseWithGainWeekly.Refresh()
+			ThisPricePredictionFromPreviousCloseToCloseWithGainMonthly.Refresh()
+
 
 			'this one is based on the previous close to open price volatility with no gain
 			Dim ThisVolatilityPredictionPreviousCloseToOpenNoGain = New StockPriceVolatilityPredictionBand(
@@ -531,7 +570,7 @@ Namespace MathPlus.Filter
 					.VolatilityMaximum = ThisFilterBasedVolatilityFromLastPointTrailing,
 					.IsVolatilityMaximumEnabled = True}
 
-			ThisVolatilityPredictionPreviousCloseToOpenNoGain.Refresh(0.0)
+			ThisVolatilityPredictionPreviousCloseToOpenNoGain.Refresh(VolatilityDelta:=0.0)
 
 			'this one is based on the previous close to open price volatility but with gain
 			Dim ThisVolatilityPredictionPreviousCloseToOpenWithGain = New StockPriceVolatilityPredictionBand(
@@ -556,12 +595,15 @@ Namespace MathPlus.Filter
 			'to make that clear .Update on the object should return the input object when called (to do later)
 
 			''Previous Close to close volatility with gain
-			'MyPLLErrorDetectorForVolatilityPredictionFromPreviousCloseToCloseWithGain.Update(ThisVolatilityPredictionFromPreviousCloseToCloseWithGain)
-			''ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.Refresh(0.0)
+			'MyPLLErrorDetectorForVolatilityPredictionFromPreviousCloseToCloseWithGain.Update(ThisPricePredictionFromPreviousCloseToCloseWithGain)
+			''ThisPricePredictionFromPreviousCloseToCloseWithGain.Refresh(0.0)
 			''save the result in a list
-			MyListOfVolatilityRegulatedFromPreviousCloseToCloseWithGain.Add(ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.VolatilityTotal)
-			''filter the result for prediction purpose
-			MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain.Filter(ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.VolatilityTotal)
+
+			'note we do not use anymore thw call to MyPLLErrorDetectorForVolatilityPredictionFromPreviousCloseToCloseWithGain.Update
+			'and in that case the returned VolatilityTotal is the same than the variable ThisFilterBasedVolatilityTotal
+			MyListOfVolatilityRegulatedFromPreviousCloseToCloseWithGain.Add(ThisPricePredictionFromPreviousCloseToCloseWithGain.VolatilityTotal)
+			'filter the result for prediction purpose
+			MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain.Filter(ThisPricePredictionFromPreviousCloseToCloseWithGain.VolatilityTotal)
 
 			''previous close to open
 			'MyPLLErrorDetectorForVolatilityPredictionFromPreviousCloseToOpenWithGain.Update(ThisVolatilityPredictionPreviousCloseToOpenWithGain)
@@ -574,20 +616,20 @@ Namespace MathPlus.Filter
 			'close to close total volatility and the previous close to open and open to close volatility:
 			' (Volatility Total)^2 = (Volatility Previous Close To Open)^2 + (Volatility From Open To Close)^2
 			'this approach is much faster than using the PLL error volatility correction method above
-			'If ThisVolatilityPredictionPreviousCloseToOpenWithGain.VolatilityTotal > ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.VolatilityTotal Then
+			'If ThisVolatilityPredictionPreviousCloseToOpenWithGain.VolatilityTotal > ThisPricePredictionFromPreviousCloseToCloseWithGain.VolatilityTotal Then
 			'  'this is not possible assume no volatility from open to close
 			'  Debugger.Break()
 			'  MyListForVolatilityRegulatedFromOpenToCloseWithGain.Add(0.0)
 			'Else
-			'  MyListForVolatilityRegulatedFromOpenToCloseWithGain.Add(Math.Sqrt((ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.VolatilityTotal ^ 2) - (ThisVolatilityPredictionPreviousCloseToOpenWithGain.VolatilityTotal ^ 2)))
+			'  MyListForVolatilityRegulatedFromOpenToCloseWithGain.Add(Math.Sqrt((ThisPricePredictionFromPreviousCloseToCloseWithGain.VolatilityTotal ^ 2) - (ThisVolatilityPredictionPreviousCloseToOpenWithGain.VolatilityTotal ^ 2)))
 			'End If
 			'again to save processing time assume tha volatility correction for the no gain is the same than with gain
-			ThisVolatilityRegulatedFromOpenToCloseWithGain = ThisFilterBasedVolatilityRatioFromOpenToClose * ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.VolatilityTotal
+			ThisVolatilityRegulatedFromOpenToCloseWithGain = ThisFilterBasedVolatilityRatioFromOpenToClose * ThisPricePredictionFromPreviousCloseToCloseWithGain.VolatilityTotal
 			MyListForVolatilityRegulatedFromOpenToCloseWithGain.Add(ThisVolatilityRegulatedFromOpenToCloseWithGain)
-			'If Me.Count = 900 Then
-			'  I = I
-			'End If
-			ThisVolatilityPredictionFromPreviousCloseToCloseNoGain.Refresh(ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.VolatilityDelta)
+			If Me.Count = 500 Then
+				I = I
+			End If
+			ThisPricePredictionFromPreviousCloseToCloseNoGain.Refresh()
 
 			'now we have all the different volatility and can start estimating the different corresponding price range
 			Dim ThisVolatilityRegulated As Double
@@ -599,7 +641,7 @@ Namespace MathPlus.Filter
 				'calculate the probability to reach the peak over the specified band
 				'the main stochactic brownian is calculated in this section
 				'many of the other calculation are test evaluation that may be removed in the future
-				ThisVolatilityRegulated = ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.VolatilityTotal
+				ThisVolatilityRegulated = ThisPricePredictionFromPreviousCloseToCloseWithGain.VolatilityTotal
 				ThisVolatilityForStochasticPrediction = MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain.ToList.Last
 			Else
 				ThisVolatilityRegulated = ThisFilterBasedVolatilityTotal
@@ -620,14 +662,14 @@ Namespace MathPlus.Filter
 			Dim ThisMeasurementPeakForGainPeakPredictionEstimateLow As IPeakValueRange
 			With MyMeasurePeakValueRange
 				ThisMeasurementPeakForGainPeakPredictionEstimate = .FilterPredictionEstimate(
-					ValueLow:=ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.StockPriceLowValue,
-					ValueHigh:=ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.StockPriceHighValue)
+					ValueLow:=ThisPricePredictionFromPreviousCloseToCloseWithGain.StockPriceLowValue,
+					ValueHigh:=ThisPricePredictionFromPreviousCloseToCloseWithGain.StockPriceHighValue)
 				ThisMeasurementPeakForGainPeakPredictionEstimateHigh = .FilterPredictionEstimate(
-					ValueLow:=ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.StockPriceHighValue,
-					ValueHigh:=ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.StockPriceHighValue)
+					ValueLow:=ThisPricePredictionFromPreviousCloseToCloseWithGain.StockPriceHighValue,
+					ValueHigh:=ThisPricePredictionFromPreviousCloseToCloseWithGain.StockPriceHighValue)
 				ThisMeasurementPeakForGainPeakPredictionEstimateLow = .FilterPredictionEstimate(
-					ValueLow:=ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.StockPriceLowValue,
-					ValueHigh:=ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.StockPriceLowValue)
+					ValueLow:=ThisPricePredictionFromPreviousCloseToCloseWithGain.StockPriceLowValue,
+					ValueHigh:=ThisPricePredictionFromPreviousCloseToCloseWithGain.StockPriceLowValue)
 			End With
 
 			ThisValueLowPrediction = ThisMeasurementPeakForGainPeakPredictionEstimate.Low
@@ -683,42 +725,42 @@ Namespace MathPlus.Filter
 			'note: does not appear to be very useful but need to be checked again
 			MyFilterLPForProbabilityFromBandVolatility.Filter(ThisProbHighFromVolatilityBand / (ThisProbHighFromVolatilityBand + ThisProbLowFromVolatilityBand))
 			If Me.IsUseFeedbackRegulatedVolatility Then
-				With ThisVolatilityPredictionFromPreviousCloseToCloseNoGain
+				With ThisPricePredictionFromPreviousCloseToCloseNoGain
 					ThisPriceNextDailyHigh = .StockPriceHighValue
 					ThisPriceNextDailyLow = .StockPriceLowValue
-					ThisPriceNextDailyHighNoGainAtSigma2 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
-					ThisPriceNextDailyHighNoGainAtSigma3 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA3)
-					ThisPriceNextDailyLowNoGainAtSigma2 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA2)
-					ThisPriceNextDailyLowNoGainAtSigma3 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA3)
+					ThisPriceNextDailyHighNoGainAtSigma2 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
+					ThisPriceNextDailyHighNoGainAtSigma3 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA3)
+					ThisPriceNextDailyLowNoGainAtSigma2 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA2)
+					ThisPriceNextDailyLowNoGainAtSigma3 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA3)
 				End With
-				With ThisVolatilityPredictionFromPreviousCloseToCloseWithGain
+				With ThisPricePredictionFromPreviousCloseToCloseWithGain
 					ThisPriceNextDailyHighWithGain = .StockPriceHighValue
 					ThisPriceNextDailyLowWithGain = .StockPriceLowValue
-					ThisPriceNextDailyHighWithGainK2 = .StockPriceHighPrediction(Index:=2.0)
-					ThisPriceNextDailyLowWithGainK2 = .StockPriceLowPrediction(Index:=2.0)
-					ThisPriceNextDailyHighWithGainAtSigma2 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
-					ThisPriceNextDailyHighWithGainAtSigma3 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA3)
-					ThisPriceNextDailyLowWithGainAtSigma2 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA2)
-					ThisPriceNextDailyLowWithGainAtSigma3 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA3)
+					ThisPriceNextDailyHighWithGainK2 = .StockPriceHighPrediction(TimeInDay:=2.0)
+					ThisPriceNextDailyLowWithGainK2 = .StockPriceLowPrediction(TimeInDay:=2.0)
+					ThisPriceNextDailyHighWithGainAtSigma2 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
+					ThisPriceNextDailyHighWithGainAtSigma3 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA3)
+					ThisPriceNextDailyLowWithGainAtSigma2 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA2)
+					ThisPriceNextDailyLowWithGainAtSigma3 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA3)
 				End With
 			Else
-				With ThisVolatilityPredictionFromPreviousCloseToCloseNoGain
+				With ThisPricePredictionFromPreviousCloseToCloseNoGain
 					ThisPriceNextDailyHigh = .StockPriceHighValueStandard
 					ThisPriceNextDailyLow = .StockPriceLowValueStandard
-					ThisPriceNextDailyHighNoGainAtSigma2 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
-					ThisPriceNextDailyHighNoGainAtSigma3 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA3)
-					ThisPriceNextDailyLowNoGainAtSigma2 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA2)
-					ThisPriceNextDailyLowNoGainAtSigma3 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA3)
+					ThisPriceNextDailyHighNoGainAtSigma2 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
+					ThisPriceNextDailyHighNoGainAtSigma3 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA3)
+					ThisPriceNextDailyLowNoGainAtSigma2 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA2)
+					ThisPriceNextDailyLowNoGainAtSigma3 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA3)
 				End With
-				With ThisVolatilityPredictionFromPreviousCloseToCloseWithGain
+				With ThisPricePredictionFromPreviousCloseToCloseWithGain
 					ThisPriceNextDailyHighWithGain = .StockPriceHighValueStandard
 					ThisPriceNextDailyLowWithGain = .StockPriceLowValueStandard
-					ThisPriceNextDailyHighWithGainK2 = .StockPriceHighPrediction(Index:=2.0)
-					ThisPriceNextDailyLowWithGainK2 = .StockPriceLowPrediction(Index:=2.0)
-					ThisPriceNextDailyHighWithGainAtSigma2 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
-					ThisPriceNextDailyHighWithGainAtSigma3 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA3)
-					ThisPriceNextDailyLowWithGainAtSigma2 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA2)
-					ThisPriceNextDailyLowWithGainAtSigma3 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA3)
+					ThisPriceNextDailyHighWithGainK2 = .StockPriceHighPrediction(TimeInDay:=2.0)
+					ThisPriceNextDailyLowWithGainK2 = .StockPriceLowPrediction(TimeInDay:=2.0)
+					ThisPriceNextDailyHighWithGainAtSigma2 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
+					ThisPriceNextDailyHighWithGainAtSigma3 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA3)
+					ThisPriceNextDailyLowWithGainAtSigma2 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA2)
+					ThisPriceNextDailyLowWithGainAtSigma3 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA3)
 				End With
 			End If
 
@@ -730,10 +772,10 @@ Namespace MathPlus.Filter
 			'  Value.Last,
 			'  ThisGainPerYear,
 			'  ThisGainPerYearDerivative,
-			'  ThisVolatilityPredictionFromPreviousCloseToCloseNoGain.VolatilityTotal,
+			'  ThisPricePredictionFromPreviousCloseToCloseNoGain.VolatilityTotal,
 			'  GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
 
-			'ThisPriceNextDailyHighPreviousCloseToOpenWithGain = ThisVolatilityPredictionFromPreviousCloseToCloseWithGain.StockPricePrediction(1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
+			'ThisPriceNextDailyHighPreviousCloseToOpenWithGain = ThisPricePredictionFromPreviousCloseToCloseWithGain.StockPricePrediction(1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
 			'End If
 			ThisPriceNextDailyHighPreviousCloseToOpenWithGain = StockOption.StockPricePrediction(
 				TIME_TO_MARKET_PREVIOUS_CLOSE_TO_OPEN_IN_DAY,
@@ -776,24 +818,25 @@ Namespace MathPlus.Filter
 			End If
 
 			'~~~~~~~~~~~~~~~~~~~~~~~~
+			'this is old and not valid anymore
 			'Calculate the price median that is needed to bring the Stochastic to 50%
 			'this value is found using a second order PLL filter tracking the price that bring the Stochastic to 50%
 			'for this we provide the filter with a special phase detector that contain the equation that return zero at the 50% stochactic
 			'this method converge iterativly rapidly toward the price value for the 50% stochastic
 			'update the phase detector with the latest parameters
 			'we need two one with the gain and the other one without
+
 			'run the filter with the special phase detector
 			'ThisPricePeakMedian is the starting search point since it is not generally to far from the searched solution
 			'the filter contain the price value that bring the 50% stochastic
 			'Note: this is a very important price threshold value that can be used to help start or terminate a trade
 			'the value that include the gain seem to be the most usuful to enter or leave a trade.
-
 			MyPLLErrorDetectorForPriceStochacticMedian.Update(
 				ThisVolatilityRegulated,
 				0.0,
 				0.0,
-				ThisValueHigh,
-				ThisValueLow)
+				PricePeakHigh:=ThisValueHigh,
+				PricePeakLow:=ThisValueLow)
 			If Me.Count = 1500 Then
 				I = I
 			End If
@@ -801,42 +844,42 @@ Namespace MathPlus.Filter
 				ThisVolatilityRegulated,
 				ThisGainPerYear,
 				ThisGainPerYearDerivative,
-				ThisValueHigh,
-				ThisValueLow)
+				PricePeakHigh:=ThisValueHigh,
+				PricePeakLow:=ThisValueLow)
 			MyPLLErrorDetectorForPriceStochacticMedianWithGainPrediction.Update(
 				ThisVolatilityRegulated,
 				ThisGainPerYear,
 				ThisGainPerYearDerivative,
-				ThisValueHighPrediction,
-				ThisValueLowPrediction)
+				PricePeakHigh:=ThisValueHighPrediction,
+				PricePeakLow:=ThisValueLowPrediction)
 
 			MyPLLErrorDetectorForPriceStochacticMedianWithGainNoFilter.Update(
 				ThisVolatilityRegulated,
 				ThisGainPerYear,
 				ThisGainPerYearDerivative,
-				ThisMeasurementPeakForGainPeakPrediction.High,
-				ThisMeasurementPeakForGainPeakPrediction.Low)
+				PricePeakHigh:=ThisMeasurementPeakForGainPeakPrediction.High,
+				PricePeakLow:=ThisMeasurementPeakForGainPeakPrediction.Low)
 
 			MyPLLErrorDetectorForPriceStochacticMedianWithGainPredictionNoFilter.Update(
 				ThisVolatilityRegulated,
 				ThisGainPerYear,
 				ThisGainPerYearDerivative,
-				ThisMeasurementPeakForGainPeakPredictionEstimate.High,
-				ThisMeasurementPeakForGainPeakPredictionEstimate.Low)
+				PricePeakHigh:=ThisMeasurementPeakForGainPeakPredictionEstimate.High,
+				PricePeakLow:=ThisMeasurementPeakForGainPeakPredictionEstimate.Low)
 
 			MyPLLErrorDetectorForPriceStochacticMedianWithGainPredictionHigh.Update(
 				ThisVolatilityRegulated,
 				ThisGainPerYear,
 				ThisGainPerYearDerivative,
-				ThisMeasurementPeakForGainPeakPredictionEstimateHigh.High,
-				ThisMeasurementPeakForGainPeakPredictionEstimateHigh.Low)
+				PricePeakHigh:=ThisMeasurementPeakForGainPeakPredictionEstimateHigh.High,
+				PricePeakLow:=ThisMeasurementPeakForGainPeakPredictionEstimateHigh.Low)
 
 			MyPLLErrorDetectorForPriceStochacticMedianWithGainPredictionLow.Update(
 				ThisVolatilityRegulated,
 				ThisGainPerYear,
 				ThisGainPerYearDerivative,
-				ThisMeasurementPeakForGainPeakPredictionEstimateLow.High,
-				ThisMeasurementPeakForGainPeakPredictionEstimateLow.Low)
+				PricePeakHigh:=ThisMeasurementPeakForGainPeakPredictionEstimateLow.High,
+				PricePeakLow:=ThisMeasurementPeakForGainPeakPredictionEstimateLow.Low)
 
 
 			Dim ThisFilterPredictionGainYearly As Double = MathPlus.General.NUMBER_WORKDAY_PER_YEAR * MathPlus.Measure.Measure.GainLog(
@@ -882,21 +925,37 @@ Namespace MathPlus.Filter
 				ThisProbHigh = ThisProbHigh
 			End If
 			If Me.Count > 0 Then
+				'use to meaure the measure the excess rate over the price range predicted by the volatility prediction band
+				'this is done just before we add new value to the list of predicted price range to be sure that the excess rate
+				'is measure against the correct predicted price range
 				MyStatisticRangeOfExcess.Run(Value, MyListOfPriceNextDailyLowWithGain.Last, MyListOfPriceNextDailyHighWithGain.Last)
 			Else
 				'initialization
 				'these are predictive value for the next sample 
-				'one extra value is added just at the beginning to shift the samples by 1 day toward it prediction
-				MyListOfPriceNextDailyHigh.Add(ThisPriceNextDailyHigh)
+				'one extra value is added just at the beginning to shift the samples by 1 day or more toward it prediction location in time
+				'next daily high and low at sigma1 no gain
 				MyListOfPriceNextDailyLow.Add(ThisPriceNextDailyLow)
-				MyListOfPriceNextDailyHighWithGain.Add(ThisPriceNextDailyHighWithGain)
+				MyListOfPriceNextDailyHigh.Add(ThisPriceNextDailyHigh)
+
+				'next daily high and low at sigma1 with gain
 				MyListOfPriceNextDailyLowWithGain.Add(ThisPriceNextDailyLowWithGain)
+				MyListOfPriceNextDailyHighWithGain.Add(ThisPriceNextDailyHighWithGain)
+
+				'same but with sigma 2 and 3 band
 				MyListOfPriceNextDailyLowWithGainAtSigma2.Add(ThisPriceNextDailyLowWithGainAtSigma2)
-				MyListOfPriceNextDailyLowWithGainAtSigma3.Add(ThisPriceNextDailyLowWithGainAtSigma3)
 				MyListOfPriceNextDailyHighWithGainAtSigma2.Add(ThisPriceNextDailyHighWithGainAtSigma2)
+
+				MyListOfPriceNextDailyLowWithGainAtSigma3.Add(ThisPriceNextDailyLowWithGainAtSigma3)
 				MyListOfPriceNextDailyHighWithGainAtSigma3.Add(ThisPriceNextDailyHighWithGainAtSigma3)
-				MyListOfPriceNextDailyHighWithGainK2.Add(ThisPriceNextDailyHighWithGainK2)
+
+				'now this si for day 2 prediction
+				'the data should be move by two day to be use corrcetly as prediction
+				'but the user interface need to be updaed to be able to select the prediction day and not only the rate period
+				'may change this later but for now leave the data at +1 day shift 
 				MyListOfPriceNextDailyLowWithGainK2.Add(ThisPriceNextDailyLowWithGainK2)
+				MyListOfPriceNextDailyHighWithGainK2.Add(ThisPriceNextDailyHighWithGainK2)
+
+				'same thing but for the previous close to open prediction
 				MyListOfPriceNextDailyHighWithGainPreviousCloseToOpen.Add(ThisPriceNextDailyHighPreviousCloseToOpenWithGain)
 				MyListOfPriceNextDailyLowWithGainPreviousCloseToOpen.Add(ThisPriceNextDailyLowPreviousCloseToOpenWithGain)
 				'and initilize the queue use to measure the excess rate
@@ -1353,39 +1412,39 @@ Namespace MathPlus.Filter
 					With ThisVolatilityPredictionFromPreviousCloseToCloseNoGain
 						ThisPriceNextDailyHigh = .StockPriceHighValue
 						ThisPriceNextDailyLow = .StockPriceLowValue
-						ThisPriceNextDailyHighNoGainAtSigma2 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
-						ThisPriceNextDailyHighNoGainAtSigma3 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA3)
-						ThisPriceNextDailyLowNoGainAtSigma2 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA2)
-						ThisPriceNextDailyLowNoGainAtSigma3 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA3)
+						ThisPriceNextDailyHighNoGainAtSigma2 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
+						ThisPriceNextDailyHighNoGainAtSigma3 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA3)
+						ThisPriceNextDailyLowNoGainAtSigma2 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA2)
+						ThisPriceNextDailyLowNoGainAtSigma3 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA3)
 					End With
 					With ThisVolatilityPredictionFromPreviousCloseToCloseWithGain
 						ThisPriceNextDailyHighWithGain = .StockPriceHighValue
 						ThisPriceNextDailyLowWithGain = .StockPriceLowValue
-						ThisPriceNextDailyHighWithGainK2 = .StockPriceHighPrediction(Index:=2.0)
-						ThisPriceNextDailyLowWithGainK2 = .StockPriceLowPrediction(Index:=2.0)
-						ThisPriceNextDailyHighWithGainAtSigma2 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
-						ThisPriceNextDailyHighWithGainAtSigma3 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA3)
-						ThisPriceNextDailyLowWithGainAtSigma2 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA2)
-						ThisPriceNextDailyLowWithGainAtSigma3 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA3)
+						ThisPriceNextDailyHighWithGainK2 = .StockPriceHighPrediction(TimeInDay:=2.0)
+						ThisPriceNextDailyLowWithGainK2 = .StockPriceLowPrediction(TimeInDay:=2.0)
+						ThisPriceNextDailyHighWithGainAtSigma2 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
+						ThisPriceNextDailyHighWithGainAtSigma3 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA3)
+						ThisPriceNextDailyLowWithGainAtSigma2 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA2)
+						ThisPriceNextDailyLowWithGainAtSigma3 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA3)
 					End With
 				Else
 					With ThisVolatilityPredictionFromPreviousCloseToCloseNoGain
 						ThisPriceNextDailyHigh = .StockPriceHighValueStandard
 						ThisPriceNextDailyLow = .StockPriceLowValueStandard
-						ThisPriceNextDailyHighNoGainAtSigma2 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
-						ThisPriceNextDailyHighNoGainAtSigma3 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA3)
-						ThisPriceNextDailyLowNoGainAtSigma2 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA2)
-						ThisPriceNextDailyLowNoGainAtSigma3 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA3)
+						ThisPriceNextDailyHighNoGainAtSigma2 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
+						ThisPriceNextDailyHighNoGainAtSigma3 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA3)
+						ThisPriceNextDailyLowNoGainAtSigma2 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA2)
+						ThisPriceNextDailyLowNoGainAtSigma3 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA3)
 					End With
 					With ThisVolatilityPredictionFromPreviousCloseToCloseWithGain
 						ThisPriceNextDailyHighWithGain = .StockPriceHighValueStandard
 						ThisPriceNextDailyLowWithGain = .StockPriceLowValueStandard
-						ThisPriceNextDailyHighWithGainK2 = .StockPriceHighPrediction(Index:=2.0)
-						ThisPriceNextDailyLowWithGainK2 = .StockPriceLowPrediction(Index:=2.0)
-						ThisPriceNextDailyHighWithGainAtSigma2 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
-						ThisPriceNextDailyHighWithGainAtSigma3 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA3)
-						ThisPriceNextDailyLowWithGainAtSigma2 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA2)
-						ThisPriceNextDailyLowWithGainAtSigma3 = .StockPricePrediction(Index:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA3)
+						ThisPriceNextDailyHighWithGainK2 = .StockPriceHighPrediction(TimeInDay:=2.0)
+						ThisPriceNextDailyLowWithGainK2 = .StockPriceLowPrediction(TimeInDay:=2.0)
+						ThisPriceNextDailyHighWithGainAtSigma2 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA2)
+						ThisPriceNextDailyHighWithGainAtSigma3 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_PLUS_SIGMA3)
+						ThisPriceNextDailyLowWithGainAtSigma2 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA2)
+						ThisPriceNextDailyLowWithGainAtSigma3 = .StockPricePrediction(TimeInDay:=1.0, GAUSSIAN_PROBABILITY_MEAN_MINUS_SIGMA3)
 					End With
 				End If
 				'ThisFilterBasedVolatilityFromPreviousCloseToOpen = MyListOfPriceRangeVolatilityFromPreviousCloseToOpenRatio(I) * MyStockPriceVolatilityPredictionBandWithGain(I).VolatilityTotal
@@ -1848,7 +1907,9 @@ Namespace MathPlus.Filter
 
 			If IsUseParallelBlock Then
 				' Offload to background thread
-				Return Await Task.Run(Function() FilterAsync1(ReportPrices))
+				'we do not use anymore the backgrounc thread from FilterAsync1, too hard to debug and subject to unidentified problem
+				'Return Await Task.Run(Function() FilterAsync1(ReportPrices))
+				Return Await Task.Run(Function() FilterSync(ReportPrices))
 			Else
 				' Run directly without blocking or parallelization
 				Return FilterSync(ReportPrices)
@@ -1890,122 +1951,119 @@ Namespace MathPlus.Filter
 			Return Await Task.Run(Function() FilterSync(ReportPrices))
 		End Function
 
+		'Private Async Function FilterAsync1(ByVal ReportPrices As YahooAccessData.RecordPrices) As Task(Of Boolean)
+		'	Dim ThisListOfPLLErrorDetectorWithGain As List(Of FilterPLLDetectorForVolatilitySigmaAsync)
+		'	Dim ThisListOfPLLErrorDetectorWithGainPreviousCloseToOpen As List(Of FilterPLLDetectorForVolatilitySigmaAsync)
+		'	Dim ThisNumberOfPointPerThread As Integer
+		'	Dim ThisNumberOfPointPerThreadToAdd As Integer
+		'	Dim MyTasksForWaitUpdateAll As List(Of Task(Of Boolean))
+		'	Dim ThisStartPoint, ThisStopPoint As Integer
+		'	Dim ThisNumberPoint As Integer = ReportPrices.NumberPoint
+		'	Dim ThisFilterPLLDetectorForVolatilitySigmaAsync As FilterPLLDetectorForVolatilitySigmaAsync
+		'	Dim ThisFilterPLLDetectorForVolatilitySigmaCloseToOpenAsync As FilterPLLDetectorForVolatilitySigmaAsync
+		'	Dim I As Integer
 
 
+		'	Throw New NotImplementedException
+		'	'adjust the the number of threading based on the number of points
+		'	If ThisNumberPoint > MyProcessorCount Then
+		'		ThisNumberOfPointPerThread = ThisNumberPoint \ MyProcessorCount
+		'		ThisNumberOfPointPerThreadToAdd = ThisNumberPoint Mod MyProcessorCount
+		'	Else
+		'		'do not thread with small number of point
+		'		ThisNumberOfPointPerThread = ThisNumberPoint
+		'		ThisNumberOfPointPerThreadToAdd = 0
+		'	End If
+		'	'this first section is fast preparation calculation and is not threaded
+		'	Me.FilterLocalPart1(ReportPrices)
+		'	'ThisListOfPLLErrorDetector = New List(Of FilterPLLDetectorForVolatilitySigmaAsync)
+		'	ThisListOfPLLErrorDetectorWithGain = New List(Of FilterPLLDetectorForVolatilitySigmaAsync)
+		'	ThisListOfPLLErrorDetectorWithGainPreviousCloseToOpen = New List(Of FilterPLLDetectorForVolatilitySigmaAsync)
+		'	ThisStartPoint = 0
 
-		Private Async Function FilterAsync1(ByVal ReportPrices As YahooAccessData.RecordPrices) As Task(Of Boolean)
-			Dim ThisListOfPLLErrorDetectorWithGain As List(Of FilterPLLDetectorForVolatilitySigmaAsync)
-			Dim ThisListOfPLLErrorDetectorWithGainPreviousCloseToOpen As List(Of FilterPLLDetectorForVolatilitySigmaAsync)
-			Dim ThisNumberOfPointPerThread As Integer
-			Dim ThisNumberOfPointPerThreadToAdd As Integer
-			Dim MyTasksForWaitUpdateAll As List(Of Task(Of Boolean))
-			Dim ThisStartPoint, ThisStopPoint As Integer
-			Dim ThisNumberPoint As Integer = ReportPrices.NumberPoint
-			Dim ThisFilterPLLDetectorForVolatilitySigmaAsync As FilterPLLDetectorForVolatilitySigmaAsync
-			Dim ThisFilterPLLDetectorForVolatilitySigmaCloseToOpenAsync As FilterPLLDetectorForVolatilitySigmaAsync
-			Dim I As Integer
+		'	Do
+		'		ThisStopPoint = ThisStartPoint + (ThisNumberOfPointPerThread - 1)
+		'		If ThisNumberOfPointPerThreadToAdd > 0 Then
+		'			ThisStopPoint = ThisStopPoint + 1
+		'			ThisNumberOfPointPerThreadToAdd = ThisNumberOfPointPerThreadToAdd - 1
+		'		End If
 
+		'		ThisFilterPLLDetectorForVolatilitySigmaAsync = New FilterPLLDetectorForVolatilitySigmaAsync(
+		'				MyStockPriceVolatilityPredictionBandWithGain,
+		'				StartPoint:=ThisStartPoint,
+		'				StopPoint:=ThisStopPoint,
+		'				Rate:=Me.Rate,
+		'				ToCountLimit:=FILTER_PLL_DETECTOR_COUNT_LIMIT,
+		'				ToErrorLimit:=FILTER_PLL_DETECTOR_ERROR_LIMIT) With {.Tag = Me.Tag, .IsUseFeedbackRegulatedVolatilityFastAttackEvent = Me.IsUseFeedbackRegulatedVolatilityFastAttackEventLocal}
 
-			Throw New NotImplementedException
-			'adjust the the number of threading based on the number of points
-			If ThisNumberPoint > MyProcessorCount Then
-				ThisNumberOfPointPerThread = ThisNumberPoint \ MyProcessorCount
-				ThisNumberOfPointPerThreadToAdd = ThisNumberPoint Mod MyProcessorCount
-			Else
-				'do not thread with small number of point
-				ThisNumberOfPointPerThread = ThisNumberPoint
-				ThisNumberOfPointPerThreadToAdd = 0
-			End If
-			'this first section is fast preparation calculation and is not threaded
-			Me.FilterLocalPart1(ReportPrices)
-			'ThisListOfPLLErrorDetector = New List(Of FilterPLLDetectorForVolatilitySigmaAsync)
-			ThisListOfPLLErrorDetectorWithGain = New List(Of FilterPLLDetectorForVolatilitySigmaAsync)
-			ThisListOfPLLErrorDetectorWithGainPreviousCloseToOpen = New List(Of FilterPLLDetectorForVolatilitySigmaAsync)
-			ThisStartPoint = 0
-
-			Do
-				ThisStopPoint = ThisStartPoint + (ThisNumberOfPointPerThread - 1)
-				If ThisNumberOfPointPerThreadToAdd > 0 Then
-					ThisStopPoint = ThisStopPoint + 1
-					ThisNumberOfPointPerThreadToAdd = ThisNumberOfPointPerThreadToAdd - 1
-				End If
-
-				ThisFilterPLLDetectorForVolatilitySigmaAsync = New FilterPLLDetectorForVolatilitySigmaAsync(
-						MyStockPriceVolatilityPredictionBandWithGain,
-						StartPoint:=ThisStartPoint,
-						StopPoint:=ThisStopPoint,
-						Rate:=Me.Rate,
-						ToCountLimit:=FILTER_PLL_DETECTOR_COUNT_LIMIT,
-						ToErrorLimit:=FILTER_PLL_DETECTOR_ERROR_LIMIT) With {.Tag = Me.Tag, .IsUseFeedbackRegulatedVolatilityFastAttackEvent = Me.IsUseFeedbackRegulatedVolatilityFastAttackEventLocal}
-
-				ThisFilterPLLDetectorForVolatilitySigmaCloseToOpenAsync = New FilterPLLDetectorForVolatilitySigmaAsync(
-						MyStockPriceVolatilityPredictionBandWithGainCloseToOpen,
-						StartPoint:=ThisStartPoint,
-						StopPoint:=ThisStopPoint,
-						Rate:=Me.Rate,
-						ToCountLimit:=FILTER_PLL_DETECTOR_COUNT_LIMIT,
-						ToErrorLimit:=FILTER_PLL_DETECTOR_ERROR_LIMIT) With {.Tag = Me.Tag, .IsUseFeedbackRegulatedVolatilityFastAttackEvent = Me.IsUseFeedbackRegulatedVolatilityFastAttackEventLocal}
+		'		ThisFilterPLLDetectorForVolatilitySigmaCloseToOpenAsync = New FilterPLLDetectorForVolatilitySigmaAsync(
+		'				MyStockPriceVolatilityPredictionBandWithGainCloseToOpen,
+		'				StartPoint:=ThisStartPoint,
+		'				StopPoint:=ThisStopPoint,
+		'				Rate:=Me.Rate,
+		'				ToCountLimit:=FILTER_PLL_DETECTOR_COUNT_LIMIT,
+		'				ToErrorLimit:=FILTER_PLL_DETECTOR_ERROR_LIMIT) With {.Tag = Me.Tag, .IsUseFeedbackRegulatedVolatilityFastAttackEvent = Me.IsUseFeedbackRegulatedVolatilityFastAttackEventLocal}
 
 
-				ThisListOfPLLErrorDetectorWithGain.Add(ThisFilterPLLDetectorForVolatilitySigmaAsync)
-				ThisListOfPLLErrorDetectorWithGainPreviousCloseToOpen.Add(ThisFilterPLLDetectorForVolatilitySigmaCloseToOpenAsync)
+		'		ThisListOfPLLErrorDetectorWithGain.Add(ThisFilterPLLDetectorForVolatilitySigmaAsync)
+		'		ThisListOfPLLErrorDetectorWithGainPreviousCloseToOpen.Add(ThisFilterPLLDetectorForVolatilitySigmaCloseToOpenAsync)
 
-				'update the startpoint
-				ThisStartPoint = ThisStartPoint + (ThisStopPoint - ThisStartPoint) + 1
-				'Exit Do
-			Loop Until ThisStartPoint = ThisNumberPoint
-			MyTasksForWaitUpdateAll = New List(Of Task(Of Boolean))
-			For Each ThisPLLErrorDetector In ThisListOfPLLErrorDetectorWithGain
-				'run all in parallel
-				MyTasksForWaitUpdateAll.Add(ThisPLLErrorDetector.UpdateAsync)
-				'run them one after the other for debugging
-				'Await ThisPLLErrorDetector.UpdateAsync
-			Next
-			For Each ThisPLLErrorDetector In ThisListOfPLLErrorDetectorWithGainPreviousCloseToOpen
-				'run all in parallel
-				MyTasksForWaitUpdateAll.Add(ThisPLLErrorDetector.UpdateAsync)
-				'run them one after the other for debugging
-				'Await ThisPLLErrorDetector.UpdateAsync
-			Next
-			Dim ThisTaskWaitAll = Task.WhenAll(MyTasksForWaitUpdateAll)
-			Await ThisTaskWaitAll
+		'		'update the startpoint
+		'		ThisStartPoint = ThisStartPoint + (ThisStopPoint - ThisStartPoint) + 1
+		'		'Exit Do
+		'	Loop Until ThisStartPoint = ThisNumberPoint
+		'	MyTasksForWaitUpdateAll = New List(Of Task(Of Boolean))
+		'	For Each ThisPLLErrorDetector In ThisListOfPLLErrorDetectorWithGain
+		'		'run all in parallel
+		'		MyTasksForWaitUpdateAll.Add(ThisPLLErrorDetector.UpdateAsync)
+		'		'run them one after the other for debugging
+		'		'Await ThisPLLErrorDetector.UpdateAsync
+		'	Next
+		'	For Each ThisPLLErrorDetector In ThisListOfPLLErrorDetectorWithGainPreviousCloseToOpen
+		'		'run all in parallel
+		'		MyTasksForWaitUpdateAll.Add(ThisPLLErrorDetector.UpdateAsync)
+		'		'run them one after the other for debugging
+		'		'Await ThisPLLErrorDetector.UpdateAsync
+		'	Next
+		'	Dim ThisTaskWaitAll = Task.WhenAll(MyTasksForWaitUpdateAll)
+		'	Await ThisTaskWaitAll
 
-			'pack all the result data together
-			'add the first element in the prediction list before we start
-			MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain.ToList.Add(ThisListOfPLLErrorDetectorWithGain.First.ToList.First)
-			MyListForVolatilityRegulatedPreviousCloseToOpenWithGain.Add(ThisListOfPLLErrorDetectorWithGainPreviousCloseToOpen.First.ToList.First)
-			For Each ThisPLLErrorDetector In ThisListOfPLLErrorDetectorWithGain
-				For Each ThisPLLVolatilityResult In ThisPLLErrorDetector.ToList
-					MyListOfVolatilityRegulatedFromPreviousCloseToCloseWithGain.Add(ThisPLLVolatilityResult)
-					MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain.Filter(ThisPLLVolatilityResult)
-				Next
-				'For Each ThisPLLVolatilityResult In ThisPLLErrorDetector.ToListOfProbabilityOfExcess
-				'  MyListOfProbabilityDailySigmaExcess.Add(ThisPLLVolatilityResult)
-				'Next
-				'For Each ThisPLLVolatilityResult In ThisPLLErrorDetector.ToListOfProbabilityOfExcess
-				'  MyListForVolatilityDetectorBalance.Add(ThisPLLVolatilityResult)
-				'Next
-			Next
-			For Each ThisPLLErrorDetector In ThisListOfPLLErrorDetectorWithGainPreviousCloseToOpen
-				For Each ThisPLLVolatilityResult In ThisPLLErrorDetector.ToList
-					MyListForVolatilityRegulatedPreviousCloseToOpenWithGain.Add(ThisPLLVolatilityResult)
-				Next
-			Next
-			Dim ThisVolatilityTotal As Double
-			Dim ThisVolatilityPreviousCloseToOpen As Double
-			For I = 0 To MyListOfVolatilityRegulatedFromPreviousCloseToCloseWithGain.Count - 1
-				ThisVolatilityTotal = MyListOfVolatilityRegulatedFromPreviousCloseToCloseWithGain(I)
-				ThisVolatilityPreviousCloseToOpen = MyListForVolatilityRegulatedPreviousCloseToOpenWithGain(I)
-				If ThisVolatilityPreviousCloseToOpen > ThisVolatilityTotal Then
-					MyListForVolatilityRegulatedFromOpenToCloseWithGain.Add(0.0)
-				Else
-					MyListForVolatilityRegulatedFromOpenToCloseWithGain.Add(Math.Sqrt((ThisVolatilityTotal ^ 2) - (ThisVolatilityPreviousCloseToOpen ^ 2)))
-				End If
-			Next
-			'the last section is fast and not threaded
-			Me.FilterLocalPart2(ReportPrices)
-			Return True
-		End Function
+		'	'pack all the result data together
+		'	'add the first element in the prediction list before we start
+		'	MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain.ToList.Add(ThisListOfPLLErrorDetectorWithGain.First.ToList.First)
+		'	MyListForVolatilityRegulatedPreviousCloseToOpenWithGain.Add(ThisListOfPLLErrorDetectorWithGainPreviousCloseToOpen.First.ToList.First)
+		'	For Each ThisPLLErrorDetector In ThisListOfPLLErrorDetectorWithGain
+		'		For Each ThisPLLVolatilityResult In ThisPLLErrorDetector.ToList
+		'			MyListOfVolatilityRegulatedFromPreviousCloseToCloseWithGain.Add(ThisPLLVolatilityResult)
+		'			MyFilterPLLForVolatilityRegulatedFromPreviousCloseToCloseWithGain.Filter(ThisPLLVolatilityResult)
+		'		Next
+		'		'For Each ThisPLLVolatilityResult In ThisPLLErrorDetector.ToListOfProbabilityOfExcess
+		'		'  MyListOfProbabilityDailySigmaExcess.Add(ThisPLLVolatilityResult)
+		'		'Next
+		'		'For Each ThisPLLVolatilityResult In ThisPLLErrorDetector.ToListOfProbabilityOfExcess
+		'		'  MyListForVolatilityDetectorBalance.Add(ThisPLLVolatilityResult)
+		'		'Next
+		'	Next
+		'	For Each ThisPLLErrorDetector In ThisListOfPLLErrorDetectorWithGainPreviousCloseToOpen
+		'		For Each ThisPLLVolatilityResult In ThisPLLErrorDetector.ToList
+		'			MyListForVolatilityRegulatedPreviousCloseToOpenWithGain.Add(ThisPLLVolatilityResult)
+		'		Next
+		'	Next
+		'	Dim ThisVolatilityTotal As Double
+		'	Dim ThisVolatilityPreviousCloseToOpen As Double
+		'	For I = 0 To MyListOfVolatilityRegulatedFromPreviousCloseToCloseWithGain.Count - 1
+		'		ThisVolatilityTotal = MyListOfVolatilityRegulatedFromPreviousCloseToCloseWithGain(I)
+		'		ThisVolatilityPreviousCloseToOpen = MyListForVolatilityRegulatedPreviousCloseToOpenWithGain(I)
+		'		If ThisVolatilityPreviousCloseToOpen > ThisVolatilityTotal Then
+		'			MyListForVolatilityRegulatedFromOpenToCloseWithGain.Add(0.0)
+		'		Else
+		'			MyListForVolatilityRegulatedFromOpenToCloseWithGain.Add(Math.Sqrt((ThisVolatilityTotal ^ 2) - (ThisVolatilityPreviousCloseToOpen ^ 2)))
+		'		End If
+		'	Next
+		'	'the last section is fast and not threaded
+		'	Me.FilterLocalPart2(ReportPrices)
+		'	Return True
+		'End Function
 
 		Private Function Filter(ByRef Value As IPriceVol, ValueExpectedMin As Double, ValueExpectedMax As Double) As Double Implements IStochastic.Filter
 			Throw New NotImplementedException()
