@@ -1,9 +1,8 @@
 ﻿Imports System.IO
-Imports System.Threading.Tasks
 Imports WebEODData
-Imports WebEODData.com
 Imports YahooAccessData.ExtensionService
-Imports YahooAccessData.MathPlus.Measure
+Imports YahooAccessData.MathPlus.Filter
+Imports YahooAccessData.MathPlus
 
 Public Class RecordPrices
 #Const IS_SPLIT_LOCAL_ENABLED = False
@@ -25,6 +24,31 @@ Public Class RecordPrices
 	Private Const SPLIT_LOG_LIMIT_FOR_CHECK_LOW As Double = -0.35667494393873239 'limit of 30%
 	Private Const PRICE_SPLIT_CHECK_TO_FUTURE_DAY_POSITION As Integer = 200
 	Private Const FILTER_HOLD_FROM_ZERO As Integer = 5
+	'Note we divide by 3 to be more robust to outlier and to take into account the fact that the volatility
+	'is not constant over the year and that we want to be more reactive to change in volatility. Also we use
+	'the exponetial filtering technique since 99% of the filter energy or step variation should be settled
+	'is the period contained in 3x the bandwidth. This is a common rule of thumb in signal processing for exponential
+	'moving averages, where the effective window size is often considered to be around 3 times the time constant
+	'(or bandwidth) of the filter. By using a period of 252/3, we are effectively giving more weight to recent data
+	'and allowing the filter to adapt more quickly to changes in volatility, while still capturing a significant portion
+	'of the historical data within the year. 
+	'While WeakReference could use the definition above, to be more consistent with the standard 30 day definition 
+	'use 22 day for the period.
+	'
+	'Explanation as follow:
+	'Why 21 Days is the StandardCalendar Alignment: A year has roughly 252 trading days. Dividing this by 12 months gives
+	'exactly 21 days per month.Industry Benchmarks: Most institutional platforms (like Bloomberg or Market Chameleon) use a 21-day "lookback"
+	'for their 1-month historical volatility (HV) metrics.Sample Size: This period provides enough data points to be
+	'statistically relevant without being so long that it dilutes recent, "current" market moves.
+	'How to Calculate 30-Day VolatilityTo get an accurate result for QQQM or any other stock, follow these standard steps:
+	'Collect Prices: Gather the closing prices for the last 22 trading days (you need 22 days to get 21 day-to-day returns).
+	'Calculate Daily Returns: Find the percentage change (or log return) for each of those 21 periods.
+
+	Private Const FILTER_VOLATILITY_YZ_YEARLY_PERIOD As Integer = NUMBER_TRADINGDAY_PER_MONTH + 1   '
+	'22 days for the volatility filter to be more reactive to change in volatility and to capture the seasonality effect of the month
+
+
+
 
 	Private MyPriceVolLast As PriceVol
 	Private MyPriceVols() As PriceVol
@@ -44,6 +68,9 @@ Public Class RecordPrices
 	Private MyListOfStockPriceVol As List(Of StockPriceVol)
 	Private MyListOfIStockPriceVol As List(Of IStockPriceVol)
 	Private MyListOfCumulativeLogGain As List(Of StockPriceVol)
+	Private MyFilterVolatilityYZYearly As FilterVolatilityYangZhang
+	Private MyListOfSharpeRatio As List(Of Double)
+	Private MyListOfSharpeGaussianProbability As List(Of Double)
 
 #End Region
 #Region "New"
@@ -60,6 +87,10 @@ Public Class RecordPrices
 		ByRef colData As IEnumerable(Of YahooAccessData.RecordQuoteValue),
 		ByVal DateStartValue As Date,
 		ByVal DateStopValue As Date)
+
+		MyFilterVolatilityYZYearly = New FilterVolatilityYangZhang(
+			FilterRate:=FILTER_VOLATILITY_YZ_YEARLY_PERIOD,
+			StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
 
 		MyFilterForEarningsShare = New FilterHoldFromZero(FILTER_HOLD_FROM_ZERO)
 		MyFilterForEPSEstimateCurrentYear = New FilterHoldFromZero(FILTER_HOLD_FROM_ZERO)
@@ -231,15 +262,16 @@ Public Class RecordPrices
 
 	''' <summary>
 	''' Create a new RecordPrices object based on the provided record price data. The record price data is expected to contain 
-	''' the necessary information to construct the new price stream scaled to a new price relative value. 
+	''' the necessary information to construct the new price stream scaled to a new price normalized value. 
 	''' Useful to compare similar stocks on a same re-price stock value, i.e. by default at 100.0. Gain and Volume data 
 	''' are preserved as the original stream.
 	''' </summary>
 	''' <param name="recordPrices"></param>
-	''' <param name="PriceRelative"></param>
+	''' <param name="PriceNormalized"></param>
 	Public Sub New(
 		recordPrices As RecordPrices,
-		Optional PriceRelative As Double = 100.0)
+		Optional PriceNormalized As Double = 100.0,
+		Optional Index As Integer = 0)
 
 		Dim I As Integer = 0
 
@@ -250,6 +282,10 @@ Public Class RecordPrices
 		If Me.Stock Is Nothing Then
 			Throw New InvalidDataException("The stock information is missing in the record collection.")
 		End If
+		MyFilterVolatilityYZYearly = New FilterVolatilityYangZhang(
+			FilterRate:=FILTER_VOLATILITY_YZ_YEARLY_PERIOD,
+			StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
+
 		Me.Symbol = Me.Stock.Symbol
 		'reprice the data to the default value
 		MyListOfCumulativeLogGain = recordPrices.ToListOfCumulativeLogGain
@@ -257,8 +293,8 @@ Public Class RecordPrices
 		'based on the price relative value
 		MyListOfStockPriceVol = StockPriceLogGainExtensions.ToCumulativeLogGainInverse(
 				MyListOfCumulativeLogGain,
-				PriceBase:=PriceRelative,
-				PriceBaseIndex:=0)
+				PriceNormalized:=PriceNormalized,
+				Index:=Index)
 
 		Me.DateStart = recordPrices.DateStart
 		Me.DateStop = recordPrices.DateStop
@@ -278,9 +314,12 @@ Public Class RecordPrices
 		MyListOfIPriceVol = New List(Of IPriceVol)
 		MyListOfPriceVol = New List(Of PriceVol)
 		MyListOfIStockPriceVol = New List(Of IStockPriceVol)
+		MyListOfSharpeRatio = New List(Of Double)
+		MyListOfSharpeGaussianProbability = New List(Of Double)
 		ReDim MyPriceVols(0 To MyListOfStockPriceVol.Count - 1)
 		Me.PriceMax = 0.0
 		Me.PriceMin = Single.MaxValue
+		Dim GainDeltaYearly As Double
 		'the min and the max could also be calculated using teh log but this approch
 		'ensure the value include the effet of the transformatione rounding error.
 		For Each ThisPriceVol As IStockPriceVol In MyListOfStockPriceVol
@@ -301,6 +340,19 @@ Public Class RecordPrices
 			MyPriceVols(I) = New PriceVol(ThisPriceVol)
 			MyListOfPriceVol.Add(MyPriceVols(I))
 			MyListOfIPriceVol.Add(MyPriceVols(I))
+			MyFilterVolatilityYZYearly.Filter(MyPriceVols(I))
+			GainDeltaYearly = MyListOfCumulativeLogGain(I).Last - MyListOfCumulativeLogGain(Math.Max(0, I - NUMBER_TRADINGDAY_PER_YEAR)).Last
+			If MyFilterVolatilityYZYearly.FilterLast > 0 Then
+				MyListOfSharpeRatio.Add(GainDeltaYearly / MyFilterVolatilityYZYearly.FilterLast)
+			Else
+				'should we not return the last sharpe ratio instead of 0?
+				'It is a possibility but it may be better to return 0 to indicate that there is no risk-adjusted return
+				'when volatility is zero or negative, rather than returning the last Sharpe ratio which may not be relevant in this context.
+				'may adjust this in the future to return the last sharpe ratio if it is relevant and not too old but for now we will return 0
+				'to indicate that there is no risk-adjusted return.
+				MyListOfSharpeRatio.Add(0.0)
+			End If
+			MyListOfSharpeGaussianProbability.Add(Probability.GaussianCDF(MyListOfSharpeRatio.Last))
 			I += 1
 		Next
 		Me.PriceVolLast.IsIntraDay = recordPrices.PriceVolLast.IsIntraDay
@@ -676,12 +728,6 @@ Public Class RecordPrices
 			Me.StartPoint = -1
 			Me.StopPoint = -1
 		End If
-		For Each PriceVolItem In MyListOfIPriceVol
-			Dim ThisStockPriceVol = New StockPriceVol(PriceVolItem)
-			MyListOfIStockPriceVol.Add(ThisStockPriceVol)
-			MyListOfStockPriceVol.Add(ThisStockPriceVol)
-		Next
-		MyListOfCumulativeLogGain = StockPriceLogGainExtensions.ToCumulativeLogGain(MyListOfStockPriceVol)
 
 		'validation test
 		'Dim ThisListOfCumulativeLogGainInverse = StockPriceLogGainExtensions.ToCumulativeLogGainInverse(
@@ -713,9 +759,36 @@ Public Class RecordPrices
 		'note that there is a name change here 
 		ReDim MyPriceVols(0 To Me.NumberPoint - 1)
 		For Each ThisItemIndexed In MyListOfIPriceVol.WithIndex
+			Dim ThisStockPriceVol = New StockPriceVol(DirectCast(ThisItemIndexed.Item, PriceVol))
 			MyPriceVols(ThisItemIndexed.Index) = DirectCast(ThisItemIndexed.Item, PriceVol)
+			MyListOfIStockPriceVol.Add(ThisStockPriceVol)
+			MyListOfStockPriceVol.Add(ThisStockPriceVol)
+			MyFilterVolatilityYZYearly.Filter(MyPriceVols(ThisItemIndexed.Index))
 		Next
 		MyPriceVols(Me.NumberPoint - 1).IsIntraDay = IsLiveUpdate
+		MyListOfCumulativeLogGain = StockPriceLogGainExtensions.ToCumulativeLogGain(MyListOfStockPriceVol)
+		MyListOfSharpeRatio = New List(Of Double)
+		Dim GainDeltaYearly As Double
+		'another loop to calculate the sharpe ration from the gain and the volatility 
+		For Each ThisVolItems In MyFilterVolatilityYZYearly.ToList.WithIndex
+			GainDeltaYearly =
+				MyListOfCumulativeLogGain(ThisVolItems.Index).Last -
+				MyListOfCumulativeLogGain(Math.Max(0, ThisVolItems.Index - NUMBER_TRADINGDAY_PER_YEAR)).Last
+			'ThisVolItems.Item is the volatility value for the current day and GainDeltaYearly is the yearly gain for the current iterated item.
+			'The Sharpe ratio is calculated as the ratio of the gain to the volatility, which is a common way to measure risk-adjusted return.
+			'If the volatility is greater than zero, we add the calculated Sharpe ratio to the list; otherwise, we add zero to avoid division by zero
+			'and indicate that there is no risk-adjusted return.
+			If ThisVolItems.Item > 0 Then
+				MyListOfSharpeRatio.Add(GainDeltaYearly / ThisVolItems.Item)
+			Else
+				'should we not return the last sharpe ratio instead of 0?
+				'It is a possibility but it may be better to return 0 to indicate that there is no risk-adjusted return
+				'when volatility is zero or negative, rather than returning the last Sharpe ratio which may not be relevant in this context.
+				'may adjust this in the future to return the last sharpe ratio if it is relevant and not too old but for now we will return 0
+				'to indicate that there is no risk-adjusted return.
+				MyListOfSharpeRatio.Add(0.0)
+			End If
+		Next
 	End Sub
 
 	Private Sub ProcessSplitAdjustForIntraDay(ByRef PriceVolIntraDay() As PriceVol, ByRef PriceVol As PriceVol)
@@ -1241,6 +1314,23 @@ Public Class RecordPrices
 
 	Public Function ToListOfPriceVol() As List(Of IPriceVol)
 		Return MyListOfIPriceVol
+	End Function
+
+	Public Function ToListOfPriceVolLast() As List(Of Double)
+		If MyListOfStockPriceVol Is Nothing Then Return New List(Of Double)
+		Return MyListOfStockPriceVol.Select(Function(pv) CDbl(pv.Last / 100.0)).ToList()
+	End Function
+
+	Public Function ToListOfVolatilityYearly() As IList(Of Double)
+		Return MyFilterVolatilityYZYearly.ToList
+	End Function
+
+	Public Function ToListOfSharpeRatio() As List(Of Double)
+		Return MyListOfSharpeRatio
+	End Function
+
+	Public Function ToListOfSharpeGaussianprobability() As List(Of Double)
+		Return MyListOfSharpeGaussianProbability
 	End Function
 
 	Public Function ToListOfPriceVolIndexed() As IEnumerable(Of (Index As Integer, Item As IPriceVol))

@@ -11,279 +11,264 @@ Namespace MathPlus.Filter
 
     Private MyFilterValueLast As Double
 
-    ''' <summary>
-    ''' Calculate the standard yearly volatility using a monthly windows
-    ''' </summary>
-    ''' <remarks></remarks>
-    Public Sub New()
-      Me.New(
-        MeasurementMethod:=IStockOption.enuVolatilityMeasurementMethod.Standard,
-        VolatilityType:=IStockOption.enuVolatilityStandardYearlyType.Monthly,
-        NumberOfDayToExpiration:=0,
-        ListOfVolatilityRegulated:=Nothing)
-    End Sub
+		'Public Sub New()
+		'  Me.New(
+		'    MeasurementMethod:=IStockOption.enuVolatilityMeasurementMethod.Standard,
+		'    VolatilityType:=IStockOption.enuVolatilityStandardYearlyType.Monthly,
+		'    FilterRate:=0,
+		'    ListOfVolatilityRegulated:=Nothing)
+		'End Sub
 
-    Public Sub New(
-      ByVal MeasurementMethod As IStockOption.enuVolatilityMeasurementMethod,
-      ByVal VolatilityType As IStockOption.enuVolatilityStandardYearlyType)
+		'Public Sub New(
+		'  ByVal MeasurementMethod As IStockOption.enuVolatilityMeasurementMethod,
+		'  ByVal VolatilityType As IStockOption.enuVolatilityStandardYearlyType)
 
-      Me.New(
-        MeasurementMethod:=MeasurementMethod,
-        VolatilityType:=VolatilityType,
-        NumberOfDayToExpiration:=0,
-        ListOfVolatilityRegulated:=Nothing)
-    End Sub
+		'  Me.New(
+		'    MeasurementMethod:=MeasurementMethod,
+		'    VolatilityType:=VolatilityType,
+		'    FilterRate:=0,
+		'    ListOfVolatilityRegulated:=Nothing)
+		'End Sub
 
-    Public Sub New(
-      ByVal MeasurementMethod As IStockOption.enuVolatilityMeasurementMethod,
-      ByVal VolatilityType As IStockOption.enuVolatilityStandardYearlyType,
-      ByVal NumberOfDayToExpiration As Integer)
+		Public Sub New(
+			ByVal MeasurementMethod As IStockOption.enuVolatilityMeasurementMethod,
+			ByVal VolatilityType As IStockOption.enuVolatilityStandardYearlyType,
+			ByVal FilterRate As Integer,
+			ByVal ListOfVolatilityRegulated As IList(Of Double))
 
-      Me.New(
-        MeasurementMethod,
-        VolatilityType,
-        NumberOfDayToExpiration,
-        ListOfVolatilityRegulated:=Nothing)
-    End Sub
-    Public Sub New(
-      ByVal MeasurementMethod As IStockOption.enuVolatilityMeasurementMethod,
-      ByVal VolatilityType As IStockOption.enuVolatilityStandardYearlyType,
-      ByVal NumberOfDayToExpiration As Integer,
-      ByVal ListOfVolatilityRegulated As IList(Of Double))
+			Dim ThisListOfFilter As IList(Of IFilter) = New List(Of IFilter)
+			MyFilterVolatilityMerged = New List(Of Double)
+			MyMeasurementMethod = MeasurementMethod
+			MyListOfVolatilityRegulated = ListOfVolatilityRegulated
 
-      Dim ThisListOfFilter As IList(Of IFilter) = New List(Of IFilter)
-      MyFilterVolatilityMerged = New List(Of Double)
-      MyMeasurementMethod = MeasurementMethod
-      MyListOfVolatilityRegulated = ListOfVolatilityRegulated
+			If MyMeasurementMethod = IStockOption.enuVolatilityMeasurementMethod.YangZhangExpRegulated Then
+				'special volatility provide by the user
+				If MyListOfVolatilityRegulated Is Nothing Then
+					Throw New InvalidOperationException("The YangZhangExpRegulated volatility provided input is not valid...")
+				End If
+				'ignore the rest here we already have the volatility calculated
+				Return
+			End If
+			Select Case VolatilityType
+				Case IStockOption.enuVolatilityStandardYearlyType.Daily10
+					Select Case MeasurementMethod
+						Case IStockOption.enuVolatilityMeasurementMethod.Standard
+							ThisListOfFilter.Add(New FilterVolatility(10, FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
+							ThisListOfFilter.Add(New FilterVolatility(10, FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(10, FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(10, FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
+							ThisListOfFilter.Add(New FilterVolatility(10, FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(10, FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
+							ThisListOfFilter.Add(New FilterVolatility(10, FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(10, FilterVolatility.enuVolatilityStatisticType.Exponential))
+					End Select
+				Case IStockOption.enuVolatilityStandardYearlyType.Daily15
+					Select Case MeasurementMethod
+						Case IStockOption.enuVolatilityMeasurementMethod.Standard
+							ThisListOfFilter.Add(New FilterVolatility(15, FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
+							ThisListOfFilter.Add(New FilterVolatility(15, FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(15, FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(15, FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
+							ThisListOfFilter.Add(New FilterVolatility(15, FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(15, FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
+							ThisListOfFilter.Add(New FilterVolatility(15, FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(15, FilterVolatility.enuVolatilityStatisticType.Exponential))
+					End Select
+				Case IStockOption.enuVolatilityStandardYearlyType.Monthly
+					Select Case MeasurementMethod
+						Case IStockOption.enuVolatilityMeasurementMethod.Standard
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+					End Select
+				Case IStockOption.enuVolatilityStandardYearlyType.BiMonthly
+					Select Case MeasurementMethod
+						Case IStockOption.enuVolatilityMeasurementMethod.Standard
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiMonthly), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiMonthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiMonthly), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiMonthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiMonthly), FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiMonthly), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiMonthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiMonthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+					End Select
+				Case IStockOption.enuVolatilityStandardYearlyType.Quaterly
+					Select Case MeasurementMethod
+						Case IStockOption.enuVolatilityMeasurementMethod.Standard
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Quaterly), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Quaterly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Quaterly), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Quaterly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Quaterly), FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Quaterly), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Quaterly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Quaterly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+					End Select
+				Case IStockOption.enuVolatilityStandardYearlyType.BiAnnual
+					Select Case MeasurementMethod
+						Case IStockOption.enuVolatilityMeasurementMethod.Standard
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiAnnual), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiAnnual), FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiAnnual), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiAnnual), FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiAnnual), FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiAnnual), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiAnnual), FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiAnnual), FilterVolatility.enuVolatilityStatisticType.Exponential))
+					End Select
+				Case IStockOption.enuVolatilityStandardYearlyType.Yearly
+					Select Case MeasurementMethod
+						Case IStockOption.enuVolatilityMeasurementMethod.Standard
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+					End Select
+				Case IStockOption.enuVolatilityStandardYearlyType.YearlyDaily10
+					Select Case MeasurementMethod
+						Case IStockOption.enuVolatilityMeasurementMethod.Standard
+							ThisListOfFilter.Add(New FilterVolatility(10, FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
+							ThisListOfFilter.Add(New FilterVolatility(10, FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(10, FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(10, FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
+							ThisListOfFilter.Add(New FilterVolatility(10, FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(10, FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
+							ThisListOfFilter.Add(New FilterVolatility(10, FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(10, FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+					End Select
+				Case IStockOption.enuVolatilityStandardYearlyType.YearlyDaily15
+					Select Case MeasurementMethod
+						Case IStockOption.enuVolatilityMeasurementMethod.Standard
+							ThisListOfFilter.Add(New FilterVolatility(15, FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
+							ThisListOfFilter.Add(New FilterVolatility(15, FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(15, FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(15, FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
+							ThisListOfFilter.Add(New FilterVolatility(15, FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(15, FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
+							ThisListOfFilter.Add(New FilterVolatility(15, FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(15, FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+					End Select
+				Case IStockOption.enuVolatilityStandardYearlyType.YearlyMonthly
+					Select Case MeasurementMethod
+						Case IStockOption.enuVolatilityMeasurementMethod.Standard
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
+					End Select
+				Case IStockOption.enuVolatilityStandardYearlyType.ToExpiration
+					If FilterRate <= 0 Then
+						Throw New System.ArgumentOutOfRangeException("FilterRate must be greater than zero...")
+					End If
+					Select Case MeasurementMethod
+						Case IStockOption.enuVolatilityMeasurementMethod.Standard
+							ThisListOfFilter.Add(New FilterVolatility(FilterRate, FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
+							ThisListOfFilter.Add(New FilterVolatility(FilterRate, FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(FilterRate, FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(FilterRate, FilterVolatility.enuVolatilityStatisticType.Exponential))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
+							ThisListOfFilter.Add(New FilterVolatility(FilterRate, FilterVolatility.enuVolatilityStatisticType.Standard))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(FilterRate, FilterVolatility.enuVolatilityStatisticType.Standard))
+						Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
+							ThisListOfFilter.Add(New FilterVolatility(FilterRate, FilterVolatility.enuVolatilityStatisticType.Exponential))
+							ThisListOfFilter.Add(New FilterVolatilityYangZhang(FilterRate, FilterVolatility.enuVolatilityStatisticType.Exponential))
+					End Select
+			End Select
+			MyLocalFilterVolatilityForList = New FilterVolatilityForList(ThisListOfFilter)
+		End Sub
 
-      If MyMeasurementMethod = IStockOption.enuVolatilityMeasurementMethod.YangZhangExpRegulated Then
-        'special volatility provide by the user
-        If MyListOfVolatilityRegulated Is Nothing Then
-          Throw New InvalidOperationException("The YangZhangExpRegulated volatility provided input is not valid...")
-        End If
-        'ignore the rest here we already have the volatility calculated
-        Return
-      End If
-      Select Case VolatilityType
-        Case IStockOption.enuVolatilityStandardYearlyType.Daily10
-          Select Case MeasurementMethod
-            Case IStockOption.enuVolatilityMeasurementMethod.Standard
-              ThisListOfFilter.Add(New FilterVolatility(10, FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
-              ThisListOfFilter.Add(New FilterVolatility(10, FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(10, FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(10, FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
-              ThisListOfFilter.Add(New FilterVolatility(10, FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(10, FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
-              ThisListOfFilter.Add(New FilterVolatility(10, FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(10, FilterVolatility.enuVolatilityStatisticType.Exponential))
-          End Select
-        Case IStockOption.enuVolatilityStandardYearlyType.Daily15
-          Select Case MeasurementMethod
-            Case IStockOption.enuVolatilityMeasurementMethod.Standard
-              ThisListOfFilter.Add(New FilterVolatility(15, FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
-              ThisListOfFilter.Add(New FilterVolatility(15, FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(15, FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(15, FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
-              ThisListOfFilter.Add(New FilterVolatility(15, FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(15, FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
-              ThisListOfFilter.Add(New FilterVolatility(15, FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(15, FilterVolatility.enuVolatilityStatisticType.Exponential))
-          End Select
-        Case IStockOption.enuVolatilityStandardYearlyType.Monthly
-          Select Case MeasurementMethod
-            Case IStockOption.enuVolatilityMeasurementMethod.Standard
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-          End Select
-        Case IStockOption.enuVolatilityStandardYearlyType.BiMonthly
-          Select Case MeasurementMethod
-            Case IStockOption.enuVolatilityMeasurementMethod.Standard
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiMonthly), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiMonthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiMonthly), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiMonthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiMonthly), FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiMonthly), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiMonthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiMonthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-          End Select
-        Case IStockOption.enuVolatilityStandardYearlyType.Quaterly
-          Select Case MeasurementMethod
-            Case IStockOption.enuVolatilityMeasurementMethod.Standard
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Quaterly), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Quaterly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Quaterly), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Quaterly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Quaterly), FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Quaterly), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Quaterly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Quaterly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-          End Select
-        Case IStockOption.enuVolatilityStandardYearlyType.BiAnnual
-          Select Case MeasurementMethod
-            Case IStockOption.enuVolatilityMeasurementMethod.Standard
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiAnnual), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiAnnual), FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiAnnual), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiAnnual), FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiAnnual), FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiAnnual), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiAnnual), FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.BiAnnual), FilterVolatility.enuVolatilityStatisticType.Exponential))
-          End Select
-        Case IStockOption.enuVolatilityStandardYearlyType.Yearly
-          Select Case MeasurementMethod
-            Case IStockOption.enuVolatilityMeasurementMethod.Standard
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-          End Select
-        Case IStockOption.enuVolatilityStandardYearlyType.YearlyDaily10
-          Select Case MeasurementMethod
-            Case IStockOption.enuVolatilityMeasurementMethod.Standard
-              ThisListOfFilter.Add(New FilterVolatility(10, FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
-              ThisListOfFilter.Add(New FilterVolatility(10, FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(10, FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(10, FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
-              ThisListOfFilter.Add(New FilterVolatility(10, FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(10, FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
-              ThisListOfFilter.Add(New FilterVolatility(10, FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(10, FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-          End Select
-        Case IStockOption.enuVolatilityStandardYearlyType.YearlyDaily15
-          Select Case MeasurementMethod
-            Case IStockOption.enuVolatilityMeasurementMethod.Standard
-              ThisListOfFilter.Add(New FilterVolatility(15, FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
-              ThisListOfFilter.Add(New FilterVolatility(15, FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(15, FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(15, FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
-              ThisListOfFilter.Add(New FilterVolatility(15, FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(15, FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
-              ThisListOfFilter.Add(New FilterVolatility(15, FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(15, FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-          End Select
-        Case IStockOption.enuVolatilityStandardYearlyType.YearlyMonthly
-          Select Case MeasurementMethod
-            Case IStockOption.enuVolatilityMeasurementMethod.Standard
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatility(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Monthly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(StockOption.VolatilityFilterRate(IStockOption.enuVolatilityStandardYearlyType.Yearly), FilterVolatility.enuVolatilityStatisticType.Exponential))
-          End Select
-        Case IStockOption.enuVolatilityStandardYearlyType.ToExpiration
-          If NumberOfDayToExpiration <= 0 Then
-            Throw New System.ArgumentOutOfRangeException("NumberOfDayToExpiration must be greater than zero...")
-          End If
-          Select Case MeasurementMethod
-            Case IStockOption.enuVolatilityMeasurementMethod.Standard
-              ThisListOfFilter.Add(New FilterVolatility(NumberOfDayToExpiration, FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardExp
-              ThisListOfFilter.Add(New FilterVolatility(NumberOfDayToExpiration, FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhang
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(NumberOfDayToExpiration, FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.YangZhangExp
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(NumberOfDayToExpiration, FilterVolatility.enuVolatilityStatisticType.Exponential))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMerged
-              ThisListOfFilter.Add(New FilterVolatility(NumberOfDayToExpiration, FilterVolatility.enuVolatilityStatisticType.Standard))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(NumberOfDayToExpiration, FilterVolatility.enuVolatilityStatisticType.Standard))
-            Case IStockOption.enuVolatilityMeasurementMethod.StandardYangZhangMergedExp
-              ThisListOfFilter.Add(New FilterVolatility(NumberOfDayToExpiration, FilterVolatility.enuVolatilityStatisticType.Exponential))
-              ThisListOfFilter.Add(New FilterVolatilityYangZhang(NumberOfDayToExpiration, FilterVolatility.enuVolatilityStatisticType.Exponential))
-          End Select
-      End Select
-      MyLocalFilterVolatilityForList = New FilterVolatilityForList(ThisListOfFilter)
-    End Sub
-
-    Public ReadOnly Property Count As Integer Implements IFilter.Count
+		Public ReadOnly Property Count As Integer Implements IFilter.Count
       Get
         Return MyFilterVolatilityMerged.Count
       End Get

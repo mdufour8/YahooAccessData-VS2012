@@ -442,9 +442,9 @@ Namespace MathPlus.Filter
 			'        ThisFilterBasedVolatilityTotal = MyFilterVolatilityYangZhangForStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
 			'      End If
 			'#Else
-			If Me.Count = 500 Then
-				I = I
-			End If
+			'If Me.Count = 500 Then
+			'	I = I
+			'End If
 			ThisFilterBasedVolatilityTotal = MyFilterVolatilityYangZhangForStatistic.Filter(Value, IsVolatityHoldToLast:=IsVolatilityJump)
 			'#End If
 			ThisFilterBasedVolatilityFromPreviousCloseToOpen = MyFilterVolatilityYangZhangForStatistic.ToList(Type:=FilterVolatilityYangZhang.enuVolatilityDailyPeriodType.PreviousCloseToOpen).Last
@@ -2484,7 +2484,7 @@ Namespace MathPlus.Filter
 				Case IStochastic.enuStochasticType.RangeVolatilityRegulatedFromPreviousCloseToOpen
 					Return MyListForVolatilityRegulatedPreviousCloseToOpenWithGain
 				Case IStochastic.enuStochasticType.RangeVolatilityFromOpenToClose
-					Return MyListForVolatilityRegulatedFromOpenToCloseWithGain
+					Return MyFilterVolatilityYangZhangForStatistic.ToList(Type:=FilterVolatilityYangZhang.enuVolatilityDailyPeriodType.OpenToClose)
 				Case IStochastic.enuStochasticType.ProbabilityFromBandVolatility
 					Return MyFilterLPForProbabilityFromBandVolatility.ToList
 				Case IStochastic.enuStochasticType.TimeProbabilityOfPriceVolatility
@@ -2995,7 +2995,7 @@ Namespace MathPlus.Filter
 
 		Private ReadOnly Property IStochasticBrownianData_RangeVolatilityFromOpenToClose As IList(Of Double) Implements IStochasticBrownianData.RangeVolatilityFromOpenToClose
 			Get
-				Return MyListForVolatilityRegulatedFromOpenToCloseWithGain
+				Return MyFilterVolatilityYangZhangForStatistic.ToList(Type:=FilterVolatilityYangZhang.enuVolatilityDailyPeriodType.OpenToClose)
 			End Get
 		End Property
 
@@ -3354,9 +3354,13 @@ Namespace MathPlus.Filter
 			End Get
 		End Property
 
+		''' <summary>
+		''' Returns the default stochastic list (Price Probability Median) 
+		''' </summary>
+		''' <returns></returns>
 		Private ReadOnly Property IStochasticBrownianData_ToList As IList(Of Double) Implements IStochasticBrownianData.ToList
 			Get
-				Return ToList
+				Return MyListOfProbabilityOfStockMedian
 			End Get
 		End Property
 

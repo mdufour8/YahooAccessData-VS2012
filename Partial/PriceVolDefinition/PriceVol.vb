@@ -144,18 +144,20 @@ Public Class PriceVol
 
 
 	''' <summary>
-	''' Note PriceVol is always a raw price data and cannot take teh form of a Cumulative Log data
+	''' Note PriceVol is always a raw price data and cannot take the form of a Cumulative Log data
 	''' </summary>
 	''' <returns></returns>
-	Public ReadOnly Property DataType As StockPriceDataType
+	Public Property DataType As StockPriceDataType
 		Get
 			Return StockPriceDataType.RawPrice
 		End Get
+		Set(value As StockPriceDataType)
+		End Set
 	End Property
 
-	Public Sub SetDataType(DataType As StockPriceDataType)
-		_dataType = DataType
-	End Sub
+	'Public Sub SetDataType(DataType As StockPriceDataType)
+	'	_dataType = DataType
+	'End Sub
 
 
 	Private _VolPlus As Long
@@ -429,29 +431,29 @@ Public Class PriceVol
 		End With
 	End Function
 
-	Public Sub Clear(ByRef PriceVol As PriceVol)
-		With Me
-			.Open = 0.0
-			.OpenNext = 0.0
-			.LastPrevious = 0.0
-			.High = 0.0
-			'it can be shown that 
-			.DividendYield = 0.0
-			.Last = 0.0
-			.Low = 0.0
-			.Vol = 0
-			.OneyrTargetPrice = 0.0
-			.OneyrTargetEarning = 0.0
-			.OneyrTargetEarningGrow = 0.0
-			.FiveyrTargetEarningGrow = 0.0
-			.Range = 0.0
-			.DividendShare = 0.0
-			.EarningsShare = 0.0
-			.EPSEstimateCurrentYear = 0.0
-			.EPSEstimateNextQuarter = 0.0
-			.EPSEstimateNextYear = 0.0
-		End With
-	End Sub
+	'Public Sub Clear(ByRef PriceVol As PriceVol)
+	'	With Me
+	'		.Open = 0.0
+	'		.OpenNext = 0.0
+	'		.LastPrevious = 0.0
+	'		.High = 0.0
+	'		'it can be shown that 
+	'		.DividendYield = 0.0
+	'		.Last = 0.0
+	'		.Low = 0.0
+	'		.Vol = 0
+	'		.OneyrTargetPrice = 0.0
+	'		.OneyrTargetEarning = 0.0
+	'		.OneyrTargetEarningGrow = 0.0
+	'		.FiveyrTargetEarningGrow = 0.0
+	'		.Range = 0.0
+	'		.DividendShare = 0.0
+	'		.EarningsShare = 0.0
+	'		.EPSEstimateCurrentYear = 0.0
+	'		.EPSEstimateNextQuarter = 0.0
+	'		.EPSEstimateNextYear = 0.0
+	'	End With
+	'End Sub
 	Public Sub Add(ByRef PriceVol As PriceVol)
 		Dim Temp As Single
 		Dim ThisVolAdd As Long

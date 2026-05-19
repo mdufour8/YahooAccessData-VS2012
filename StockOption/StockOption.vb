@@ -14,7 +14,7 @@ Namespace OptionValuation
 		Public Const NUMBER_TRADINGDAY_PER_YEAR As Integer = 252
 		Public Const NUMBER_TRADINGDAY_PER_MONTH As Integer = NUMBER_TRADINGDAY_PER_YEAR \ 12
 		Public Const NUMBER_SECOND_PER_DAY As Integer = 24 * 3600
-		Public Const VOLATILITY_DAILY_TO_YEARLY_RATIO As Double = MathPlus.STATISTICAL_SIGMA_DAILY_TO_YEARLY_RATIO
+		Public Const VOLATILITY_DAILY_TO_YEARLY_RATIO As Double = MathPlus.VOLATILITY_DAILY_TO_YEARLY_RATIO
 
 		Private MyDividendPaymentPeriodType As IStockOption.enuDividendPaymentPeriodType
     Private MySymbol As String
@@ -944,34 +944,41 @@ Namespace OptionValuation
       End Select
     End Function
 
-    Public Shared Function VolatilityFilterRate(ByVal DateStart As Date, ByVal DateOfExpiration As Date, VolatilityStandardYearlyType As IStockOption.enuVolatilityStandardYearlyType) As Integer
-      Select Case VolatilityStandardYearlyType
-        Case IStockOption.enuVolatilityStandardYearlyType.BiAnnual
-          Return YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR \ 2
-        Case IStockOption.enuVolatilityStandardYearlyType.Monthly
-          Return YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR \ 12
-        Case IStockOption.enuVolatilityStandardYearlyType.BiMonthly
-          Return YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR \ 6
-        Case IStockOption.enuVolatilityStandardYearlyType.Daily10
-          Return 10
-        Case IStockOption.enuVolatilityStandardYearlyType.Daily15
-          Return 15
-        Case IStockOption.enuVolatilityStandardYearlyType.Quaterly
-          Return YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR \ 4
-        Case IStockOption.enuVolatilityStandardYearlyType.Yearly
-          Return YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR
-        Case IStockOption.enuVolatilityStandardYearlyType.ToExpiration
-          Dim ThisNumberOfDayToExpiration As Integer = CInt(TimeToExpiration(DateStart, DateOfExpiration, IStockOption.enuTimeToExpirationScale.TradingDay))
-          If ThisNumberOfDayToExpiration < YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR \ 12 Then
-            ThisNumberOfDayToExpiration = YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR \ 12
-          End If
-          Return ThisNumberOfDayToExpiration
-        Case Else
-          Return YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR
-      End Select
-    End Function
+		''' <summary>
+		''' Return the number of trading days used to filter the volatility
+		''' </summary>
+		''' <param name="DateStart"></param>
+		''' <param name="DateOfExpiration"></param>
+		''' <param name="VolatilityStandardYearlyType"></param>
+		''' <returns></returns>
+		Public Shared Function VolatilityFilterRate(ByVal DateStart As Date, ByVal DateOfExpiration As Date, VolatilityStandardYearlyType As IStockOption.enuVolatilityStandardYearlyType) As Integer
+			Select Case VolatilityStandardYearlyType
+				Case IStockOption.enuVolatilityStandardYearlyType.BiAnnual
+					Return YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR \ 2
+				Case IStockOption.enuVolatilityStandardYearlyType.Monthly
+					Return YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR \ 12
+				Case IStockOption.enuVolatilityStandardYearlyType.BiMonthly
+					Return YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR \ 6
+				Case IStockOption.enuVolatilityStandardYearlyType.Daily10
+					Return 10
+				Case IStockOption.enuVolatilityStandardYearlyType.Daily15
+					Return 15
+				Case IStockOption.enuVolatilityStandardYearlyType.Quaterly
+					Return YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR \ 4
+				Case IStockOption.enuVolatilityStandardYearlyType.Yearly
+					Return YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR
+				Case IStockOption.enuVolatilityStandardYearlyType.ToExpiration
+					Dim ThisNumberOfDayToExpiration As Integer = CInt(TimeToExpiration(DateStart, DateOfExpiration, IStockOption.enuTimeToExpirationScale.TradingDay))
+					'If ThisNumberOfDayToExpiration < YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR \ 12 Then
+					'  ThisNumberOfDayToExpiration = YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR \ 12
+					'End If
+					Return ThisNumberOfDayToExpiration
+				Case Else
+					Return YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR
+			End Select
+		End Function
 
-    Public Property RateDividend As Double Implements IStockOption.RateDividend
+		Public Property RateDividend As Double Implements IStockOption.RateDividend
       Get
         Return MyDividend
       End Get

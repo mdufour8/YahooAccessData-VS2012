@@ -263,8 +263,8 @@ Namespace OptionValuation
 				'take the average of the error of the high and low probabilty of excess and adjust the volatility of the lognormal to reflect
 				'the measured excess probability
 				'this give us a better estimate of the volatility and the risk assciated with the stock price estimate in the day.
-				ThisVolatilityDeltaHigh = MathPlus.General.STATISTICAL_SIGMA_DAILY_TO_YEARLY_RATIO * (ThisValueExpHigh - ThisValueHigh)
-				ThisVolatilityDeltaLow = MathPlus.General.STATISTICAL_SIGMA_DAILY_TO_YEARLY_RATIO * (ThisValueLow - ThisValueExpLow)
+				ThisVolatilityDeltaHigh = MathPlus.General.VOLATILITY_DAILY_TO_YEARLY_RATIO * (ThisValueExpHigh - ThisValueHigh)
+				ThisVolatilityDeltaLow = MathPlus.General.VOLATILITY_DAILY_TO_YEARLY_RATIO * (ThisValueLow - ThisValueExpLow)
 
 				'second order filter to quickly bring the volatility to the right level	as far a excess stock price probability is concerned
 				'this fast tracking filter help the smooth the variation in the measured probability of excess 
@@ -279,7 +279,7 @@ Namespace OptionValuation
 					MyProbabilityOfThresholdExcessHigh = .ProbabilityOfThresholdExcessHigh
 					MyProbabilityOfThresholdExcessLow = .MyProbabilityOfThresholdExcessLow
 				End With
-				MyVolatilityEstimate = (MathPlus.General.STATISTICAL_SIGMA_DAILY_TO_YEARLY_RATIO * MyStatisticalOfStockPriceGain.FilterLast.StandardDeviation) + MyVolatilitySumOfError
+				MyVolatilityEstimate = (MathPlus.General.VOLATILITY_DAILY_TO_YEARLY_RATIO * MyStatisticalOfStockPriceGain.FilterLast.StandardDeviation) + MyVolatilitySumOfError
 				'Trace.WriteLine($"MyProbabilityOfThresholdExcess: {MyProbabilityOfThresholdExcess}, VolatilityDeltaLow: {MyVolatilityDeltaLow},VolatilityDeltaHigh: {MyVolatilityDeltaHigh}")
 				'Test code for speed evaluation
 				'Dim ThisStopWatch As New Stopwatch
@@ -311,7 +311,7 @@ Namespace OptionValuation
 				End If
 				MyStatisticalOfProbOfExcesDeltaHighLow.Filter(0.0)
 				_StockPriceLast = StockPrice
-				MyVolatilityEstimate = MathPlus.General.STATISTICAL_SIGMA_DAILY_TO_YEARLY_RATIO * MyStatisticalOfStockPriceGain.FilterLast.StandardDeviation
+				MyVolatilityEstimate = MathPlus.General.VOLATILITY_DAILY_TO_YEARLY_RATIO * MyStatisticalOfStockPriceGain.FilterLast.StandardDeviation
 				'do not reduce the volatility below the measured volatility
 			End If
 			Return MyVolatilityEstimate

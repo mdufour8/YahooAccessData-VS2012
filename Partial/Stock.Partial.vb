@@ -3132,13 +3132,42 @@ Partial Public Class Stock
 	End Property
 
 	''' <summary>
-	''' Can be use as a temporary holder of the prices for various calculations
+	''' Set the value of the RecordPrices and from this value also generate a normalized 
+	''' value usually normalized a t a value of 100. The user can also specify the date of normalisation but this date must be
+	''' within the date range of the RecordPrices dataset. If the normalisation date 
+	''' is not specified then the first value of the RecordPrices dataset will be used as the current 
+	''' date of normalisation. 
 	''' </summary>
 	''' <param name="Value"></param>
-	Public Sub SetRecordsPrices(Value As RecordPrices)
+	''' <param name="PriceNormalized"></param>
+	''' <param name="DateOfNormalisation"></param>
+	Public Sub SetRecordsPrices(
+		Value As RecordPrices,
+		Optional PriceNormalized As Double = 100.0,
+		Optional DateOfNormalisation As Date = Nothing)
+
+		If Value Is Nothing Then
+			Throw New InvalidDataException("The value of the RecordPrices cannot be null.")
+			Return
+		End If
+		If DateOfNormalisation <> Nothing Then
+			If DateOfNormalisation < Value.DateStart Or DateOfNormalisation > Value.DateStop Then
+				Throw New ArgumentOutOfRangeException("The date of normalisation must be within the date range of the RecordPrices dataset.")
+				Return
+			Else
+				'set the index value for the date of normalisation
+			End If
+		Else
+			DateOfNormalisation = Value.DateStart
+		End If
+		Dim Index As Integer = Value.ToIndex(DateOfNormalisation)
 		_RecordPrices = Value
-		'normalise teh value to 100 for the first value and store it in the _RecordPricesNormalized
-		_RecordPricesNormalized = New RecordPrices(_RecordPrices, PriceRelative:=100.0)
+
+		'normalise the value to 100 for the first value and store it in the _RecordPricesNormalized
+		_RecordPricesNormalized = New RecordPrices(
+			_RecordPrices,
+			PriceNormalized:=PriceNormalized,
+			Index:=Index)
 	End Sub
 
 	Public ReadOnly Property SectorName As String

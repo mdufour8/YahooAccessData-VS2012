@@ -16,15 +16,12 @@ Public Class StockPriceVol
 		Me.DateDay = Now.Date
 	End Sub
 
-
-	Public Sub New(PriceVol As IPriceVol)
-		Me.New(DirectCast(PriceVol, IStockPriceVol), StockPriceDataType.RawPrice)
-	End Sub
-
-	Public Sub New(PriceVol As IStockPriceVol, Optional DataType As StockPriceDataType = StockPriceDataType.RawPrice)
-		_dataType = DataType
-
-		Me.DateDay = PriceVol.DateDay
+	Public Sub New(PriceVol As PriceVol)
+		If PriceVol Is Nothing Then
+			Throw New ArgumentNullException(NameOf(PriceVol))
+		End If
+		Me.DataType = PriceVol.DataType
+		Me.DateDay = PriceVol.DateLastTrade
 		Me.Open = PriceVol.Open
 		Me.OpenNext = PriceVol.OpenNext
 		Me.Last = PriceVol.Last
@@ -34,16 +31,41 @@ Public Class StockPriceVol
 		Me.Volume = PriceVol.Volume
 	End Sub
 
-	Public ReadOnly Property DataType As StockPriceDataType
+	''' <summary>
+	''' Copy constructor: creates a new StockPriceVol with the same values as the given one.
+	''' </summary>
+	''' <param name="StockPriceVol"></param>
+	Public Sub New(StockPriceVol As StockPriceVol)
+		If StockPriceVol Is Nothing Then
+			Throw New ArgumentNullException(NameOf(StockPriceVol))
+		End If
+		Me.DataType = StockPriceVol.DataType
+		Me.DateDay = StockPriceVol.DateDay
+		Me.Open = StockPriceVol.Open
+		Me.OpenNext = StockPriceVol.OpenNext
+		Me.Last = StockPriceVol.Last
+		Me.LastPrevious = StockPriceVol.LastPrevious
+		Me.High = StockPriceVol.High
+		Me.Low = StockPriceVol.Low
+		Me.Volume = StockPriceVol.Volume
+	End Sub
+
+	''' <summary>
+	''' Creates a new StockPriceVol with the same values as this instance.
+	''' </summary>
+	''' <returns></returns>
+	Public Function CopyFrom() As StockPriceVol
+		Return New StockPriceVol(Me)
+	End Function
+
+	Public Property DataType As StockPriceDataType
 		Get
 			Return _dataType
 		End Get
+		Set(value As StockPriceDataType)
+			_dataType = value
+		End Set
 	End Property
-
-	Public Sub SetDataType(DataType As StockPriceDataType)
-		_dataType = DataType
-	End Sub
-
 
 	Public Property DateDay As Date Implements IStockPriceVol.DateDay
 	Public Property Open As Double Implements IStockPriceVol.Open

@@ -995,7 +995,6 @@ Public Class ListScaled
 
 		' Get the absolute range (the range of values you're scaling from)
 		Dim absoluteRange As Double = MaxValueInitial - MinValueInitial
-		Dim normalizedValue As Double
 		' Check if the absoluteRange is 0 (to avoid division by zero)
 		If absoluteRange <> 0 Then
 			' Loop through the list and scale each value

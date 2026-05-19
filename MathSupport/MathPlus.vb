@@ -92,14 +92,14 @@ Namespace MathPlus
 			Next
 		End Sub
 
-		<Extension>
-		Public Sub VectorCorrelationDivide(ByVal ValueSource As IList(Of Double), ByVal Value As Double, ByVal Mean As Double)
-			Dim I As Integer
+		'<Extension>
+		'Public Sub VectorCorrelationDivide(ByVal ValueSource As IList(Of Double), ByVal Value As Double, ByVal Mean As Double)
+		'	Dim I As Integer
 
-			For I = 0 To ValueSource.Count - 1
-				ValueSource(I) = ((ValueSource(I) - Mean) / Value) + Mean
-			Next
-		End Sub
+		'	For I = 0 To ValueSource.Count - 1
+		'		ValueSource(I) = ((ValueSource(I) - Mean) / Value) + Mean
+		'	Next
+		'End Sub
 
 		<Extension>
 		Public Sub VectorMultiply(ByVal ValueSource As IList(Of Double), ByVal Value As Double)
@@ -125,7 +125,7 @@ Namespace MathPlus
 		Public Const NUMBER_TRADINGDAY_PER_YEAR As Integer = 252
 		Public Const NUMBER_TRADINGDAY_PER_MONTH As Integer = NUMBER_TRADINGDAY_PER_YEAR \ 12
 		Public Const NUMBER_SECOND_PER_DAY As Integer = 24 * 3600
-		Public Const STATISTICAL_SIGMA_DAILY_TO_YEARLY_RATIO As Double = 15.874507866387544   'Math.Sqrt(NUMBER_TRADINGDAY_PER_YEAR)
+		Public Const VOLATILITY_DAILY_TO_YEARLY_RATIO As Double = 15.874507866387544   'Math.Sqrt(NUMBER_TRADINGDAY_PER_YEAR)
 
 #Region "Friend Local function"
 		''' <summary>

@@ -257,7 +257,9 @@
     <Compile Include="MathSupport\Filter\Statistic\StatisticWIndows.vb" />
     <Compile Include="MathSupport\Filter\Volatility\FilterVolatility.vb" />
     <Compile Include="MathSupport\Filter\Volatility\FilterVolatilityYangZhang.vb" />
+    <Compile Include="MathSupport\Filter\Volatility\FilterVolatilityYZ.vb" />
     <Compile Include="MathSupport\Filter\Volatility\IVolatilityParameters.vb" />
+    <Compile Include="MathSupport\Filter\Volatility\IVolatilityResult.vb" />
     <Compile Include="MathSupport\Filter\Volatility\VolatilityEstimator\IStockPriceDuplex.vb" />
     <Compile Include="MathSupport\Filter\Volatility\VolatilityEstimator\IStockPriceVolatilityEstimateData.vb" />
     <Compile Include="MathSupport\Filter\Volatility\VolatilityEstimator\StockPriceDuplex.vb" />

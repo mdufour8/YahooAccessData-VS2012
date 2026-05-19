@@ -18,11 +18,4 @@
 	ReadOnly Property GainLogVRSTotalOpenToHighLow As Double
 
 	ReadOnly Property GainLogVRSTotalMeanForOpenToHighLow As Double
-
-
-
-
-
-
-
 End Interface
