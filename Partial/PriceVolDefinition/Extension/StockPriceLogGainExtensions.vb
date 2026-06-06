@@ -314,8 +314,8 @@ Public Module StockPriceLogGainExtensions
 		Dim DataResult As New List(Of StockPriceVol)(DataSource1.Count)
 
 		For Each SourceItems In DataSource1.Zip(DataSource2, Function(s1, s2) (s1, s2))
-			'we could check for teh time stamp but the operational requirement for teh array garantee thta teh data data date are aligned corrcetly.
-			'for that reason the test is superflous but we can keep it just in case to catch any potential data issue, and it is not too costly
+			'we could check for teh time stamp but the operational requirement for teh array guarantee that teh data data date are aligned corrcetly.
+			'for that reason the test is superfluous but we can keep it just in case to catch any potential data issue, and it is not too costly
 			'since we are already iterating through the data.
 			'check that the timestamps of both data sources match for the current bar, otherwise we cannot add them together
 			If SourceItems.s1.DateDay <> SourceItems.s2.DateDay Then
@@ -401,15 +401,15 @@ Public Module StockPriceLogGainExtensions
 	''' <param name="source2"></param>
 	''' <returns></returns>
 	<Extension>
-	Public Function ToCumulativeLogGainSubstract(
+	Public Function ToCumulativeLogGainSubtract(
 			source1 As IEnumerable(Of StockPriceVol),
 			source2 As IEnumerable(Of StockPriceVol)) As List(Of StockPriceVol)
 
 
-		'for maintenace it might be easier to just call the add function with the negative value,
+		'for maintenance it might be easier to just call the add function with the negative value,
 		'but we prefer here to keep the code to avoid having to create a new list with the negative value of source2,
 		'which would be an unnecessary copy and could be costly if the data is large.
-		'By keeping the code here we can directly substract the values without having to create a new list,
+		'By keeping the code here we can directly subtract the values without having to create a new list,
 		'which is more efficient and avoids unnecessary memory allocation.
 
 		' IMPORTANT:
@@ -443,7 +443,7 @@ Public Module StockPriceLogGainExtensions
 
 		For Each SourceItems In DataSource1.Zip(DataSource2, Function(s1, s2) (s1, s2))
 			'we could check for teh time stamp but the operational requirement for teh array garantee thta teh data data date are aligned corrcetly.
-			'for that reason the test is superflous but we can keep it just in case to catch any potential data issue, and it is not too costly
+			'for that reason the test is superfluous but we can keep it just in case to catch any potential data issue, and it is not too costly
 			'since we are already iterating through the data.
 			'check that the timestamps of both data sources match for the current bar, otherwise we cannot add them together
 			If SourceItems.s1.DateDay <> SourceItems.s2.DateDay Then
@@ -459,9 +459,9 @@ Public Module StockPriceLogGainExtensions
 				.Last = .Last - SourceItems.s2.Last
 				.OpenNext = .OpenNext - SourceItems.s2.OpenNext
 				.LastPrevious = .LastPrevious - SourceItems.s2.LastPrevious
-				'ìt make no sense to substract volume and since negative volume for stock even in log gain is not reasonably acceptable
-				'because it woukd have no meaning
-				'in this case we keep adding volume after all teh volume represent more the number of contract invole here
+				'ìt make no sense to subtract volume and since negative volume for stock even in log gain is not reasonably acceptable
+				'because it would have no meaning
+				'in this case we keep adding volume after all th volume represent more the number of contract invole here
 				.Volume = .Volume + SourceItems.s2.Volume
 				DataResult.Add(ThisDataResultItem)
 			End With
@@ -470,7 +470,7 @@ Public Module StockPriceLogGainExtensions
 	End Function
 
 	<Extension>
-	Public Function ToCumulativeLogGainSubstract(
+	Public Function ToCumulativeLogGainSubtract(
 			source1 As IEnumerable(Of StockPriceVol),
 			source2 As Double) As List(Of StockPriceVol)
 
@@ -568,7 +568,7 @@ Public Module StockPriceLogGainExtensions
 
 		For Each SourceItems In DataSource1.Zip(DataSource2, Function(s1, s2) (s1, s2))
 			'we could check for teh time stamp but the operational requirement for teh array garantee thta teh data data date are aligned corrcetly.
-			'for that reason the test is superflous but we can keep it just in case to catch any potential data issue, and it is not too costly
+			'for that reason the test is superfluous but we can keep it just in case to catch any potential data issue, and it is not too costly
 			'since we are already iterating through the data.
 			'check that the timestamps of both data sources match for the current bar, otherwise we cannot add them together
 			If SourceItems.s1.DateDay <> SourceItems.s2.DateDay Then

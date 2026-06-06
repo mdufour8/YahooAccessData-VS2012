@@ -36,17 +36,18 @@ Public Class BondRate1
   Private _DateStart As Date
   Private _DateStop As Date
   Private MyException As Exception
-  Private _Records As ICollection(Of BondRateRecord) = New LinkedHashSet(Of BondRateRecord, Date)
-  Private Shared MyListHeaderInfo As List(Of HeaderInfo)
+	Private _Records As ICollection(Of BondRateRecord)
+	Private Shared MyListHeaderInfo As List(Of HeaderInfo)
   'Private Shared MyCompareByName As CompareByName(Of BondRate1)
 #End Region
 #Region "New"
   Public Sub New()
-    With Me
-      .DateStart = Now
-      .DateStop = Me.DateStart
-    End With
-    If MyListHeaderInfo Is Nothing And LIST_OF_HEADER_FILE_ENABLED Then
+		_Records = New LinkedHashSet(Of BondRateRecord, Date)
+		With Me
+			.DateStart = Now
+			.DateStop = Me.DateStart
+		End With
+		If MyListHeaderInfo Is Nothing And LIST_OF_HEADER_FILE_ENABLED Then
       Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.json"
       MyListHeaderInfo = FileHeaderRead(ThisFile, ListOfHeader, Me.Exception)
     Else

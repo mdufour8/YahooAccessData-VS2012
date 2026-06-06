@@ -81,36 +81,55 @@ Partial Public Class Industry
     Me.New("")
   End Sub
 
-  Friend Function CopyDeep(ByRef Parent As Report, Optional ByVal IsIgnoreID As Boolean = False) As Industry
-    Dim ThisIndustry As Industry
+	Public Function CopyLocal(Optional Report As Report = Nothing) As Industry
+		Dim ThisIndustry As Industry
 
-    ThisIndustry = New YahooAccessData.Industry
-    With ThisIndustry
-      If IsIgnoreID = False Then .ID = Me.ID
-      .Name = Me.Name
-      .DataSourceID = Me.DataSourceID
-      .Report = Parent
-      .ReportID = .Report.ID
-      .Report.Industries.Add(ThisIndustry)
-      .Sector = .Report.Sectors.ToSearch.Find(Me.Sector.KeyValue)
-      If .Sector Is Nothing Then
-        .Exception = New Exception("Invalid sector...", .Exception)
-        Return Nothing
-      Else
-        .SectorID = .Sector.ID
-        .Sector.Industries.Add(ThisIndustry)
-      End If
-    End With
-    Return ThisIndustry
-  End Function
+		ThisIndustry = New YahooAccessData.Industry
+		'make it a bit simpler here since we are copying within the same report,
+		'so we do not need to worry about the sector and Industry report reference
+		'In any case these structure are not use right now and are not critical for
+		'the main purpose of this project, so we can always come back and add more details if needed
+		With ThisIndustry
+			.ID = Me.ID
+			.Name = Me.Name
+			.DataSourceID = Me.DataSourceID
+			.Report = Report
+			.ReportID = If(Report?.ID, 0)
+			.Report?.Industries.Add(ThisIndustry)
+		End With
+		Return ThisIndustry
+	End Function
 
-  ''' <summary>
-  ''' If an exception occurs, the exception object will be stored here. If no exception occurs, this property is null/Nothing.
-  ''' </summary>
-  ''' <value></value>
-  ''' <returns></returns>
-  ''' <remarks></remarks>
-  Public Property Exception() As Exception
+	Friend Function CopyDeep(ByRef Parent As Report, Optional ByVal IsIgnoreID As Boolean = False) As Industry
+		Dim ThisIndustry As Industry
+
+		ThisIndustry = New YahooAccessData.Industry
+		With ThisIndustry
+			If IsIgnoreID = False Then .ID = Me.ID
+			.Name = Me.Name
+			.DataSourceID = Me.DataSourceID
+			.Report = Parent
+			.ReportID = .Report.ID
+			.Report.Industries.Add(ThisIndustry)
+			.Sector = .Report.Sectors.ToSearch.Find(Me.Sector?.KeyValue)
+			If .Sector Is Nothing Then
+				.Exception = New Exception("Invalid sector...", .Exception)
+				Return Nothing
+			Else
+				.SectorID = .Sector.ID
+				.Sector.Industries.Add(ThisIndustry)
+			End If
+		End With
+		Return ThisIndustry
+	End Function
+
+	''' <summary>
+	''' If an exception occurs, the exception object will be stored here. If no exception occurs, this property is null/Nothing.
+	''' </summary>
+	''' <value></value>
+	''' <returns></returns>
+	''' <remarks></remarks>
+	Public Property Exception() As Exception
     Get
       Return MyException
     End Get

@@ -1,14 +1,16 @@
 ﻿#Region "Imports"
 'Imports System
 'Imports System.Collections.Generic
-Imports YahooAccessData.ExtensionService
 Imports System.IO
+Imports System.Threading
 Imports System.Threading.Tasks
-Imports YahooAccessData.ExtensionService.Extensions
+Imports Newtonsoft.Json.Linq
+Imports SharedContracts
 Imports StockViewInterface
 Imports WebEODData
-Imports System.Threading
-Imports SharedContracts
+Imports YahooAccessData.ExtensionService
+Imports YahooAccessData.ExtensionService.Extensions
+
 
 #End Region
 
@@ -73,6 +75,8 @@ Partial Public Class Stock
 				.Report.Stocks.Add(Me)
 			End If
 		End With
+		IsGeneratedStock = False
+		GenerateBuild = ""
 		_RecordPrices = Nothing
 		_RecordPricesNormalized = Nothing
 	End Sub
@@ -124,6 +128,8 @@ Partial Public Class Stock
 		Else
 			MyListHeaderInfo = ListOfHeader()
 		End If
+		IsGeneratedStock = False
+		GenerateBuild = ""
 		_RecordPrices = Nothing
 		_RecordPricesNormalized = Nothing
 		Me.IsSplitEnabled = True
@@ -138,6 +144,8 @@ Partial Public Class Stock
 				.Report.Stocks.Add(Me)
 			End If
 		End With
+		IsGeneratedStock = False
+		GenerateBuild = ""
 		_RecordPrices = Nothing
 		_RecordPricesNormalized = Nothing
 	End Sub
@@ -165,6 +173,8 @@ Partial Public Class Stock
 		End With
 		_RecordPrices = Nothing
 		_RecordPricesNormalized = Nothing
+		IsGeneratedStock = False
+		GenerateBuild = ""
 	End Sub
 
 	Public Sub New(
@@ -193,6 +203,8 @@ Partial Public Class Stock
 		End With
 		_RecordPrices = Nothing
 		_RecordPricesNormalized = Nothing
+		IsGeneratedStock = False
+		GenerateBuild = ""
 	End Sub
 
 	Public Sub New(ByVal Symbol As String, ByVal Name As String)
@@ -685,6 +697,42 @@ Partial Public Class Stock
 		End If
 	End Sub
 
+	Public Function CopyLocal(Symbol As String, Optional Report As Report = Nothing) As Stock
+		Dim ThisStock As New Stock(Symbol, Me.Name, Me.Exchange)
+		With ThisStock
+			.IsOption = Me.IsOption
+			.DateStart = Me.DateStart
+			.DateStop = Me.DateStop
+			.IsSymbolError = Me.IsSymbolError
+			.RankGain = Me.RankGain
+			.ErrorDescription = Me.ErrorDescription
+			.Report = Report
+			.Report?.Stocks.Add(ThisStock)
+			If Me.Sector IsNot Nothing Then
+				.Sector = Me.Sector.CopyLocal(.Report)
+			End If
+			If .Sector Is Nothing Then
+				.Exception = New Exception("Invalid sector...", .Exception)
+			Else
+				.SectorID = .Sector.ID
+				.Sector.Stocks.Add(ThisStock)
+			End If
+			If Me.Industry IsNot Nothing Then
+				.Industry = Me.Industry.CopyLocal(.Report)
+			End If
+			If .Industry Is Nothing Then
+				.Exception = New Exception("Invalid industry...", .Exception)
+			Else
+				.IndustryID = .Industry.ID
+				.Industry.Stocks.Add(ThisStock)
+			End If
+		End With
+		'also copy the actual local RecordPrices if they exist
+		'_RecordPrices contain the stock price data stream
+		ThisStock.SetRecordsPrices(_RecordPrices)
+		Return ThisStock
+	End Function
+
 	Friend Function CopyDeep(ByRef Report As Report, Optional ByVal IsIgnoreID As Boolean = False) As Stock
 		Dim ReportToAdd = Report
 		Dim StockSource = Me
@@ -739,6 +787,8 @@ Partial Public Class Stock
 			StockSource.SplitFactors.CopyDeep(ThisStock, IsIgnoreID)
 			'ThisStopWatch.Stop()
 		End With
+		'also copy the actual local RecordPrices if they exist
+		ThisStock.SetRecordsPrices(_RecordPrices)
 		Return ThisStock
 	End Function
 
@@ -2295,7 +2345,7 @@ Partial Public Class Stock
 	End Function
 
 	Public Function ToStingOfData() As String() Implements IFormatData.ToStingOfData
-		Return Extensions.ToStingOfData(Of Stock)(Me)
+		Return YahooAccessData.ExtensionService.Extensions.ToStingOfData(Of Stock)(Me)
 	End Function
 
 	Public Function ToListOfHeader() As List(Of HeaderInfo) Implements IFormatData.ToListOfHeader
@@ -3102,10 +3152,13 @@ Partial Public Class Stock
 	Public Property Exchange As String
 	Public Property ErrorDescription As String
 	Public Property IsInternational As Boolean
+	Public Property IsGeneratedStock As Boolean
+	Public Property GenerateBuild As String
+	Public Property BuildOriginator As String
 
 	Private _RecordPrices As RecordPrices
-
 	Private _RecordPricesNormalized As RecordPrices
+	'Private _StockMarketMath As IStockMarketMath
 
 	''' <summary>
 	''' Returns the prices for various calculations. The user need to set it values 
@@ -3125,49 +3178,45 @@ Partial Public Class Stock
 	''' and subsequent values show percentage increases or decreases from that starting point.
 	''' </summary>
 	''' <returns>The RecordPrices dataset normalized to 100 </returns>
-	Public ReadOnly Property GetRecordsPricesNormalized() As RecordPrices
-		Get
-			Return _RecordPricesNormalized
-		End Get
-	End Property
+	Public Function GetRecordsPricesNormalized(
+		Optional PriceNormalized As Double = 100.0,
+		Optional DateOfNormalizations As Date = Nothing) As RecordPrices
+
+		If _RecordPrices Is Nothing Then
+			Throw New InvalidDataException("The value of the RecordPrices cannot be null.")
+			Return Nothing
+		End If
+		If DateOfNormalizations <> Nothing Then
+			If DateOfNormalizations < _RecordPrices.DateStart Or DateOfNormalizations > _RecordPrices.DateStop Then
+				Throw New ArgumentOutOfRangeException("The date of normalization must be within the date range of the RecordPrices dataset.")
+				Return Nothing
+			End If
+		Else
+			DateOfNormalizations = _RecordPrices.DateStart
+		End If
+		Dim Index As Integer = _RecordPrices.ToIndex(DateOfNormalizations)
+		Dim ThisListOfStockPriceVol = _RecordPrices.ToListOfStockPriceVol
+		Dim ThisListOfStockPriceVolNormalized = StockPriceLogGainExtensions.ToCumulativeLogGainInverse(
+			_RecordPrices.ToListOfCumulativeLogGain,
+			PriceNormalized:=100.0,
+			Index:=Index)
+
+		_RecordPricesNormalized = New RecordPrices(Stock:=_RecordPrices.Stock, ThisListOfStockPriceVolNormalized.AsEnumerable)
+		Return _RecordPricesNormalized
+	End Function
 
 	''' <summary>
 	''' Set the value of the RecordPrices and from this value also generate a normalized 
 	''' value usually normalized a t a value of 100. The user can also specify the date of normalisation but this date must be
 	''' within the date range of the RecordPrices dataset. If the normalisation date 
 	''' is not specified then the first value of the RecordPrices dataset will be used as the current 
-	''' date of normalisation. 
+	''' date of normalization. 
 	''' </summary>
 	''' <param name="Value"></param>
-	''' <param name="PriceNormalized"></param>
-	''' <param name="DateOfNormalisation"></param>
-	Public Sub SetRecordsPrices(
-		Value As RecordPrices,
-		Optional PriceNormalized As Double = 100.0,
-		Optional DateOfNormalisation As Date = Nothing)
-
-		If Value Is Nothing Then
-			Throw New InvalidDataException("The value of the RecordPrices cannot be null.")
-			Return
-		End If
-		If DateOfNormalisation <> Nothing Then
-			If DateOfNormalisation < Value.DateStart Or DateOfNormalisation > Value.DateStop Then
-				Throw New ArgumentOutOfRangeException("The date of normalisation must be within the date range of the RecordPrices dataset.")
-				Return
-			Else
-				'set the index value for the date of normalisation
-			End If
-		Else
-			DateOfNormalisation = Value.DateStart
-		End If
-		Dim Index As Integer = Value.ToIndex(DateOfNormalisation)
+	Public Sub SetRecordsPrices(Value As RecordPrices)
+		'create the two record prices for the original and the normalized values
 		_RecordPrices = Value
-
-		'normalise the value to 100 for the first value and store it in the _RecordPricesNormalized
-		_RecordPricesNormalized = New RecordPrices(
-			_RecordPrices,
-			PriceNormalized:=PriceNormalized,
-			Index:=Index)
+		_RecordPricesNormalized = Nothing
 	End Sub
 
 	Public ReadOnly Property SectorName As String

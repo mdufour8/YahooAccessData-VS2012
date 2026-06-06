@@ -50,14 +50,6 @@ Public Class StockPriceVol
 		Me.Volume = StockPriceVol.Volume
 	End Sub
 
-	''' <summary>
-	''' Creates a new StockPriceVol with the same values as this instance.
-	''' </summary>
-	''' <returns></returns>
-	Public Function CopyFrom() As StockPriceVol
-		Return New StockPriceVol(Me)
-	End Function
-
 	Public Property DataType As StockPriceDataType
 		Get
 			Return _dataType
@@ -318,6 +310,31 @@ Public Class StockPriceVol
 			Me.Volume = value
 		End Set
 	End Property
+
+#Region "Factory Methods"
+	''' <summary>
+	''' Creates a new StockPriceVol from the local instance.
+	''' </summary>
+	''' <returns>Return a copy of the current class instance.</returns>
+	Public Function CopyFrom() As StockPriceVol
+		Return New StockPriceVol(Me)
+	End Function
+
+	Private _IsIntraDay As Boolean
+	''' <summary>
+	''' Indicate that the price vol data is an intraday data update and the day has not yet finished trading
+	''' Mainly use at lower level to indicate that this is an intraday price quotation
+	''' </summary>
+	''' <returns></returns>
+	Public Property IsIntraDay As Boolean
+		Get
+			Return _IsIntraDay
+		End Get
+		Set(value As Boolean)
+			_IsIntraDay = value
+		End Set
+	End Property
+#End Region
 End Class
 
 Public Interface IStockPriceVol

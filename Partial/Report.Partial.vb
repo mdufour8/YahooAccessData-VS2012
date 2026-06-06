@@ -1,96 +1,98 @@
 ﻿#Region "Imports"
 'Imports System
 'Imports System.Collections.Generic
-Imports WebEODData
 Imports System.Collections.Concurrent
-'Imports System.Runtime.CompilerServices
-Imports System.Threading.Tasks
-Imports System.Threading
+Imports System.Data.Linq
+Imports System.IO
 Imports System.Net
 Imports System.Runtime.Serialization.Formatters.Binary
-Imports System.IO
 Imports System.Text
-Imports YahooAccessData.ExtensionService
+Imports System.Threading
+'Imports System.Runtime.CompilerServices
+Imports System.Threading.Tasks
 '  Imports System.Reflection
 Imports Ionic.Zip
+Imports WebEODData
+Imports YahooAccessData.ExtensionService
+
 #End Region
 
 <Serializable()>
 Partial Public Class Report
-  Implements IDisposable
-  Implements IEquatable(Of Report)
-  Implements IRegisterKey(Of Date)
-  Implements IComparable(Of Report)
-  Implements IMemoryStream
-  Implements IFormatData
-  Implements IDateRange
-  Implements IDateUpdate
-  Implements IMessageInfoEvents
-  Implements ISystemEvent(Of BondRate)
-  Implements ISystemEvent(Of BondRate1)
-  Implements ISystemEvent(Of SplitFactorFuture)
-  Implements IRecordControlInfo
-  Implements IStockRecordEvent
+	Implements IDisposable
+	Implements IEquatable(Of Report)
+	Implements IRegisterKey(Of Date)
+	Implements IComparable(Of Report)
+	Implements IMemoryStream
+	Implements IFormatData
+	Implements IDateRange
+	Implements IDateUpdate
+	Implements IMessageInfoEvents
+	Implements ISystemEvent(Of BondRate)
+	Implements ISystemEvent(Of BondRate1)
+	Implements ISystemEvent(Of SplitFactorFuture)
+	Implements IRecordControlInfo
+	Implements IStockRecordEvent
 
 #Region "Main"
-  Public Enum enuTimeFormat
-    Sample     'default raw data
-    Daily
-    Weekly
-  End Enum
+	Public Enum enuTimeFormat
+		Sample     'default raw data
+		Daily
+		Weekly
+	End Enum
 
-  Private MyException As Exception
-  Private Shared MyListHeaderInfo As List(Of HeaderInfo)
-  Private colVb As Microsoft.VisualBasic.Collection
-  Private MyFillDataRate As Double
-  Private MyStream As Stream = Nothing
-  'Private MyStreamBinaryReader As BinaryReader
-  Private MyFileType As IMemoryStream.enuFileType = IMemoryStream.enuFileType.Standard
-  Private IsFileAccessReadOnly As Boolean
-  Private _IsFileOpen As Boolean
-  Private MyFileName As String
-  Private MyDateRangeStart As Date?
-  Private MyDateRangeStop As Date?
-  Private MyDictionaryOfStockRecordLoaded As Dictionary(Of String, String)
-  Private MyStockRecordQueue As Queue(Of String)
-  Private MyStockRecordQueueCount As Integer
-  Private MySyncLockForRecordLoading As Object = New Object
-  Private MyTaskOfLoadCache As Task(Of Boolean)
-  Private MyConcurrentQueue As ConcurrentQueue(Of String)
-  Private MyCancellationTokenSource As New Threading.CancellationTokenSource()
-  Private MySymbolRecordLoading As String
-  Private IsRecordLoading As Boolean
-  Private IsRecordCancel As Boolean
-  Private MyLoadToCacheLatestTick As Integer
-  Private _IsFileReadEndOfDayEnabled As Boolean
-  Private MyWebDataSource As WebEODData.IWebEODHistoricalData
-  'Private MyDictionaryOfStockSymbol As Dictionary(Of String, List(Of IStockSymbol))
+	Private MyException As Exception
+	Private Shared MyListHeaderInfo As List(Of HeaderInfo)
+	Private colVb As Microsoft.VisualBasic.Collection
+	Private MyFillDataRate As Double
+	Private MyStream As Stream = Nothing
+	'Private MyStreamBinaryReader As BinaryReader
+	Private MyFileType As IMemoryStream.enuFileType = IMemoryStream.enuFileType.Standard
+	Private IsFileAccessReadOnly As Boolean
+	Private _IsFileOpen As Boolean
+	Private MyFileName As String
+	Private MyDateRangeStart As Date?
+	Private MyDateRangeStop As Date?
+	Private MyDictionaryOfStockRecordLoaded As Dictionary(Of String, String)
+	Private MyStockRecordQueue As Queue(Of String)
+	Private MyStockRecordQueueCount As Integer
+	Private MySyncLockForRecordLoading As Object = New Object
+	Private MyTaskOfLoadCache As Task(Of Boolean)
+	Private MyConcurrentQueue As ConcurrentQueue(Of String)
+	Private MyCancellationTokenSource As New Threading.CancellationTokenSource()
+	Private MySymbolRecordLoading As String
+	Private IsRecordLoading As Boolean
+	Private IsRecordCancel As Boolean
+	Private MyLoadToCacheLatestTick As Integer
+	Private _IsFileReadEndOfDayEnabled As Boolean
+	Private MyWebDataSource As WebEODData.IWebEODHistoricalData
+	'Private MyDictionaryOfStockSymbol As Dictionary(Of String, List(Of IStockSymbol))
 
-  'Need to use these name to correctly capture the data from the net old object serialization
-  'this object serialization is not use anymore but we may have old file
-  'that require these variable for a succesful serialization load
+	'Need to use these name to correctly capture the data from the net old object serialization
+	'this object serialization is not use anymore but we may have old file
+	'that require these variable for a succesful serialization load
 
-  'Unlike a List<> ...
+	'Unlike a List<> ...
 
-  'A HashSet Is a List With no duplicate members.
-  'Because a HashSet Is constrained To contain only unique entries, the internal Structure Is optimised For searching (compared With a list) - it Is considerably faster
-  'Adding to a HashSet returns a boolean - false if addition fails due to already existing in Set
-  'Can perform mathematical Set operations against a Set: Union/Intersection/IsSubsetOf etc.
-  'HashSet doesn't implement IList only ICollection
-  'You cannot use indices With a HashSet, only enumerators.
-  'The main reason To use a HashSet would be If you are interested In performing Set operations.
-  'Given 2 sets hashSet1 And hashSet2
-  ' //returns a list of distinct items in both sets
-  ' HashSet set3 = set1.Union(set2);
-  'flies in comparison with an equivalent operation using LINQ. It's also neater to write!
+	'A HashSet Is a List With no duplicate members.
+	'Because a HashSet Is constrained To contain only unique entries, the internal Structure Is optimised For searching (compared With a list) - it Is considerably faster
+	'Adding to a HashSet returns a boolean - false if addition fails due to already existing in Set
+	'Can perform mathematical Set operations against a Set: Union/Intersection/IsSubsetOf etc.
+	'HashSet doesn't implement IList only ICollection
+	'You cannot use indices With a HashSet, only enumerators.
+	'The main reason To use a HashSet would be If you are interested In performing Set operations.
+	'Given 2 sets hashSet1 And hashSet2
+	' //returns a list of distinct items in both sets
+	' HashSet set3 = set1.Union(set2);
+	'flies in comparison with an equivalent operation using LINQ. It's also neater to write!
 
-  Private _DateStart As Date
-  Private _DateStop As Date
-  Private _Industries As ICollection(Of Industry) = New HashSet(Of Industry)
-  Private _Sectors As ICollection(Of Sector) = New HashSet(Of Sector)
-  Private _Stocks As ICollection(Of Stock) = New HashSet(Of Stock)
-  Private _SplitFactorFutures As ICollection(Of SplitFactorFuture) = New HashSet(Of SplitFactorFuture)
-  Private _BondRates As ICollection(Of BondRate) = New HashSet(Of BondRate)
+	Private _DateStart As Date
+	Private _DateStop As Date
+	Private _Industries As ICollection(Of Industry) = New LinkedHashSet(Of Industry)
+	Private _Sectors As ICollection(Of Sector) = New LinkedHashSet(Of Sector)
+	Private _Stocks As ICollection(Of Stock) = New LinkedHashSet(Of Stock)
+	Private _SplitFactorFutures As ICollection(Of SplitFactorFuture) = New LinkedHashSet(Of SplitFactorFuture)
+	Private _BondRates As ICollection(Of BondRate) = New HashSet(Of BondRate)
   Private _BondRates1 As ICollection(Of BondRate1) = New LinkedHashSet(Of BondRate1, String)
 
   Private Const STOCK_RECORD_QUEUE_SIZE_DEFAULT As Integer = 10
@@ -588,216 +590,223 @@ Partial Public Class Report
     Return ThisResult
   End Function
 
-  Public Function StockAdd(ByVal StockSymbol As String, ByVal SectorName As String, ByVal IndustryName As String) As YahooAccessData.Stock
-    Dim ThisStock As YahooAccessData.Stock = Nothing
-    Dim ThisSector As YahooAccessData.Sector = Nothing
-    Dim ThisIndustry As YahooAccessData.Industry = Nothing
+	Public Function StockAdd(ByVal StockSymbol As String, ByVal SectorName As String, ByVal IndustryName As String) As YahooAccessData.Stock
+		Dim ThisStock As YahooAccessData.Stock = Nothing
+		Dim ThisSector As YahooAccessData.Sector = Nothing
+		Dim ThisIndustry As YahooAccessData.Industry = Nothing
 
-    'get rid of the empty string
-    If StockSymbol Is Nothing Then StockSymbol = ""
-    If SectorName Is Nothing Then SectorName = ""
-    If IndustryName Is Nothing Then IndustryName = ""
+		'get rid of the empty string
+		If StockSymbol Is Nothing Then StockSymbol = ""
+		If SectorName Is Nothing Then SectorName = ""
+		If IndustryName Is Nothing Then IndustryName = ""
 
-    ThisSector = Me.Sectors.ToSearch.Find(SectorName)
-    ThisIndustry = Me.Industries.ToSearch.Find(IndustryName)
-    ThisStock = Me.Stocks.ToSearch.Find(StockSymbol)
+		ThisSector = Me.Sectors.ToSearch.Find(SectorName)
+		ThisIndustry = Me.Industries.ToSearch.Find(IndustryName)
+		ThisStock = Me.Stocks.ToSearch.Find(StockSymbol)
 
-    If ThisSector Is Nothing Then
-      ThisSector = New YahooAccessData.Sector(Me, SectorName)
-    End If
-    If ThisIndustry Is Nothing Then
-      ThisIndustry = New YahooAccessData.Industry(Me, ThisSector, IndustryName)
-    End If
-    If ThisStock Is Nothing Then
-      'do not add a stock with no symbol 
-      If StockSymbol.Length > 0 Then
-        'note passing the reference 'Me' automatically add the stock in the base report collection
-        ThisStock = New YahooAccessData.Stock(Me, ThisSector, ThisIndustry, Symbol:=StockSymbol)
-      End If
-    End If
-    If ThisStock IsNot Nothing Then
-      With ThisStock
-        If (.Sector IsNot ThisSector) Or (.Industry IsNot ThisIndustry) Then
-          'break all relation with the actual industry and sector if it exist
-          If .Sector IsNot Nothing Then
-            If .Sector IsNot ThisSector Then
-              'remove the stock relation for this sector
-              .Sector.Stocks.Remove(ThisStock)
-              .SectorID = 0
-            End If
-          End If
-          If .Industry IsNot Nothing Then
-            If .Industry IsNot ThisIndustry Then
-              'remove the stock link with this industry
-              With .Industry.Stocks
-                .Remove(ThisStock)
-                ThisStock.IndustryID = 0
-                If .Count = 0 Then
-                  'no more stock
-                  'we can remove the link to sector
-                  ThisStock.Sector.Industries.Remove(ThisStock.Industry)
-                End If
-              End With
-            End If
-          End If
-          'all previous link have been removed
-          'we can update with the new link
-          If .Sector IsNot ThisSector Then
-            .Sector = ThisSector
-            .Sector.Stocks.Add(ThisStock)
-            .SectorID = .Sector.ID
-          End If
-          If .Industry IsNot ThisIndustry Then
-            .Industry = ThisIndustry
-            .Industry.Stocks.Add(ThisStock)
-            .IndustryID = .Industry.ID
-          End If
-        End If
-      End With
-    End If
-    Return ThisStock
-  End Function
+		If ThisSector Is Nothing Then
+			ThisSector = New YahooAccessData.Sector(Me, SectorName)
+		End If
+		If ThisIndustry Is Nothing Then
+			ThisIndustry = New YahooAccessData.Industry(Me, ThisSector, IndustryName)
+		End If
+		If ThisStock Is Nothing Then
+			'do not add a stock with no symbol 
+			If StockSymbol.Length > 0 Then
+				'note passing the reference 'Me' automatically add the stock in the base report collection
+				ThisStock = New YahooAccessData.Stock(Me, ThisSector, ThisIndustry, Symbol:=StockSymbol)
+			End If
+		End If
+		If ThisStock IsNot Nothing Then
+			With ThisStock
+				If (.Sector IsNot ThisSector) Or (.Industry IsNot ThisIndustry) Then
+					'break all relation with the actual industry and sector if it exist
+					If .Sector IsNot Nothing Then
+						If .Sector IsNot ThisSector Then
+							'remove the stock relation for this sector
+							.Sector.Stocks.Remove(ThisStock)
+							.SectorID = 0
+						End If
+					End If
+					If .Industry IsNot Nothing Then
+						If .Industry IsNot ThisIndustry Then
+							'remove the stock link with this industry
+							With .Industry.Stocks
+								.Remove(ThisStock)
+								ThisStock.IndustryID = 0
+								If .Count = 0 Then
+									'no more stock
+									'we can remove the link to sector
+									ThisStock.Sector.Industries.Remove(ThisStock.Industry)
+								End If
+							End With
+						End If
+					End If
+					'all previous link have been removed
+					'we can update with the new link
+					If .Sector IsNot ThisSector Then
+						.Sector = ThisSector
+						.Sector.Stocks.Add(ThisStock)
+						.SectorID = .Sector.ID
+					End If
+					If .Industry IsNot ThisIndustry Then
+						.Industry = ThisIndustry
+						.Industry.Stocks.Add(ThisStock)
+						.IndustryID = .Industry.ID
+					End If
+				End If
+			End With
+		End If
+		Return ThisStock
+	End Function
 
-  Public Function StockAdd(ByVal StockNew As YahooAccessData.Stock) As YahooAccessData.Stock
-    Dim ThisStock As YahooAccessData.Stock
-    Dim ThisSector As YahooAccessData.Sector = Nothing
-    Dim ThisIndustry As YahooAccessData.Industry = Nothing
+	Public Function StockSearch(ByVal StockSymbol As String) As YahooAccessData.Stock
+		'this call internally use a dictionary for quick search
+		'for more details see: Public Class LinkedHashSet
+		Return Me.Stocks.ToSearch.Find(StockSymbol)
+	End Function
 
-
-    If StockNew.Sector IsNot Nothing Then
-      ThisSector = Me.Sectors.ToSearch.Find(StockNew.Sector.KeyValue)
-      If ThisSector Is Nothing Then
-        ThisSector = StockNew.Sector.CopyDeep(Me, IsIgnoreID:=True)
-      End If
-      If ThisSector.Exception IsNot Nothing Then
-        Me.Exception = New Exception("Sector addition error...", ThisSector.Exception)
-        Return Nothing
-      End If
-    End If
-    If StockNew.Industry IsNot Nothing Then
-      ThisIndustry = Me.Industries.ToSearch.Find(StockNew.Industry.KeyValue)
-      If ThisIndustry Is Nothing Then
-        ThisIndustry = StockNew.Industry.CopyDeep(Me, IsIgnoreID:=True)
-      End If
-      If ThisIndustry.Exception IsNot Nothing Then
-        Me.Exception = New Exception("Industry addition error...", Me.Exception)
-        Return Nothing
-      End If
-    End If
-    ThisStock = Me.Stocks.ToSearch.Find(StockNew.KeyValue)
-    If ThisStock Is Nothing Then
-      'stock does not exist yet locally
-      ThisStock = StockNew.CopyDeep(Me, IsIgnoreID:=True)
-      If ThisStock.Exception IsNot Nothing Then
-        Me.Exception = New Exception("Stock addition error...", Me.Exception)
-        Return Nothing
-      End If
-    Else
-      'stock already exist in the list
-      With ThisStock
-        If StockNew.DateStop > .DateStop Then
-          'this is a new record
-          'check if it match the current relation with sector and industry
-          If ThisStock.Sector.KeyValue <> ThisSector.KeyValue Then
-            'change to the new relation
-            'remove the stock relation for this sector
-            Debug.Assert(False)
-            .Sector.Stocks.Remove(ThisStock)
-            .Sector = ThisSector
-            .Sector.Stocks.Add(ThisStock)
-            .SectorID = .Sector.ID
-            'Me.Exception = New Exception(String.Format("Invalid sector for stock {0}", ThisStock.KeyValue))
-            'Return Nothing
-          End If
-          If ThisStock.Industry.KeyValue <> ThisIndustry.KeyValue Then
-            'remove the stock link with this industry
-            Debug.Assert(False)
-            With .Industry.Stocks
-              .Remove(ThisStock)
-              ThisStock.IndustryID = 0
-              If .Count = 0 Then
-                'no more stock
-                'we can remove the link to sector
-                ThisStock.Sector.Industries.Remove(ThisStock.Industry)
-              End If
-            End With
-            .Industry = ThisIndustry
-            .Industry.Stocks.Add(ThisStock)
-            .IndustryID = .Industry.ID
-          End If
-          If .Sector.Industries.Contains(.Industry) = False Then
-            .Sector.Industries.Add(.Industry)
-          End If
-          .Name = StockNew.Name
-          .IsOption = StockNew.IsOption
-          .Exchange = StockNew.Exchange
-          .IsSymbolError = StockNew.IsSymbolError
-          .ErrorDescription = StockNew.ErrorDescription
-          If StockNew.IsSymbolError Then
-            'add a new error
-            Dim ThisStockError = New YahooAccessData.StockError
-            With ThisStockError
-              .DateUpdate = StockNew.DateStop
-              .Description = StockNew.ErrorDescription
-              .Symbol = StockNew.Symbol
-              .Stock = ThisStock
-              .StockID = .Stock.ID
-            End With
-            .StockErrors.Add(ThisStockError)
-          End If
-        End If
-      End With
-    End If
-    Return ThisStock
-  End Function
-
-  Public Sub StockSymbolChange(ByVal StockSymbolOld As String, ByVal StockSymbolNew As String)
-    Dim ThisStock = Me.Stocks.Item(StockSymbolOld)
-    If ThisStock IsNot Nothing Then
-      ThisStock.Symbol = StockSymbolNew
-    End If
-  End Sub
-
-  Public Sub StockSymbolUpdateChange()
-    For Each ThisStock In Me.StockErrorList
-      With ThisStock
-        Select Case .ErrorDescription
-          Case "Ticker symbol has changed to:"
-
-          Case "No such ticker symbol."
+	Public Function StockAdd(ByVal StockNew As YahooAccessData.Stock) As YahooAccessData.Stock
+		Dim ThisStock As YahooAccessData.Stock
+		Dim ThisSector As YahooAccessData.Sector = Nothing
+		Dim ThisIndustry As YahooAccessData.Industry = Nothing
 
 
+		If StockNew.Sector IsNot Nothing Then
+			ThisSector = Me.Sectors.ToSearch.Find(StockNew.Sector.KeyValue)
+			If ThisSector Is Nothing Then
+				ThisSector = StockNew.Sector.CopyDeep(Me, IsIgnoreID:=True)
+			End If
+			If ThisSector.Exception IsNot Nothing Then
+				Me.Exception = New Exception("Sector addition error...", ThisSector.Exception)
+				Return Nothing
+			End If
+		End If
+		If StockNew.Industry IsNot Nothing Then
+			ThisIndustry = Me.Industries.ToSearch.Find(StockNew.Industry.KeyValue)
+			If ThisIndustry Is Nothing Then
+				ThisIndustry = StockNew.Industry.CopyDeep(Me, IsIgnoreID:=True)
+			End If
+			If ThisIndustry?.Exception IsNot Nothing Then
+				Me.Exception = New Exception("Industry addition error...", Me.Exception)
+				Return Nothing
+			End If
+		End If
+		ThisStock = Me.Stocks.ToSearch.Find(StockNew.KeyValue)
+		If ThisStock Is Nothing Then
+			'stock does not exist yet locally
+			ThisStock = StockNew.CopyDeep(Me, IsIgnoreID:=True)
+			If ThisStock.Exception IsNot Nothing Then
+				Me.Exception = New Exception("Stock addition error...", Me.Exception)
+				Return Nothing
+			End If
+		Else
+			'stock already exist in the list
+			With ThisStock
+				If StockNew.DateStop > .DateStop Then
+					'this is a new record
+					'check if it match the current relation with sector and industry
+					If ThisStock.Sector.KeyValue <> ThisSector.KeyValue Then
+						'change to the new relation
+						'remove the stock relation for this sector
+						Debug.Assert(False)
+						.Sector.Stocks.Remove(ThisStock)
+						.Sector = ThisSector
+						.Sector.Stocks.Add(ThisStock)
+						.SectorID = .Sector.ID
+						'Me.Exception = New Exception(String.Format("Invalid sector for stock {0}", ThisStock.KeyValue))
+						'Return Nothing
+					End If
+					If ThisStock.Industry.KeyValue <> ThisIndustry.KeyValue Then
+						'remove the stock link with this industry
+						Debug.Assert(False)
+						With .Industry.Stocks
+							.Remove(ThisStock)
+							ThisStock.IndustryID = 0
+							If .Count = 0 Then
+								'no more stock
+								'we can remove the link to sector
+								ThisStock.Sector.Industries.Remove(ThisStock.Industry)
+							End If
+						End With
+						.Industry = ThisIndustry
+						.Industry.Stocks.Add(ThisStock)
+						.IndustryID = .Industry.ID
+					End If
+					If .Sector.Industries.Contains(.Industry) = False Then
+						.Sector.Industries.Add(.Industry)
+					End If
+					.Name = StockNew.Name
+					.IsOption = StockNew.IsOption
+					.Exchange = StockNew.Exchange
+					.IsSymbolError = StockNew.IsSymbolError
+					.ErrorDescription = StockNew.ErrorDescription
+					If StockNew.IsSymbolError Then
+						'add a new error
+						Dim ThisStockError = New YahooAccessData.StockError
+						With ThisStockError
+							.DateUpdate = StockNew.DateStop
+							.Description = StockNew.ErrorDescription
+							.Symbol = StockNew.Symbol
+							.Stock = ThisStock
+							.StockID = .Stock.ID
+						End With
+						.StockErrors.Add(ThisStockError)
+					End If
+				End If
+			End With
+		End If
+		Return ThisStock
+	End Function
 
-        End Select
-      End With
-    Next
-  End Sub
+	''' <summary>
+	''' just a test showing the stock symbol change in the report and the stock search with the new symbol does not work
+	'''  Dim StockRefSymbol = StockRef.Symbol
+	'''  Dim ThisStock = StockRef.CopyLocal(StockRef.Report.CopyLocal)
+	'''  Dim ThisReport = ThisStock.Report
+	'''	 ThisReport.StockSymbolChange(StockRefSymbol, "Test")
+	'''	 Dim ThisStockSymbol2 = ThisReport.StockSearch(StockRefSymbol)
+	'''  Dim ThisStockSymbol3 = ThisReport.StockSearch("Test")
+	'''  Note: ThisStockSymbol3 return nothing and not the stock with the new symbol because 
+	'''  the search is still based on the original symbol and not the new symbol
+	'''  'need to be fixed before release
+	''' </summary>
+	''' <param name="StockSymbolOld"></param>
+	''' <param name="StockSymbolNew"></param>
+	''' 'declare the function obsolete for now because it is not working correctly and need to be fixed before release
+	<Obsolete("This function is not working correctly and needs to be fixed before release for use.")>
+	Public Sub StockSymbolChange(ByVal StockSymbolOld As String, ByVal StockSymbolNew As String)
+		Dim ThisStock = Me.Stocks.Item(StockSymbolOld)
+		If ThisStock IsNot Nothing Then
+			ThisStock.Symbol = StockSymbolNew
+		End If
+	End Sub
 
-  Public Sub Remove(ByVal StockSymbol As String)
-    Dim ThisStock = Me.Stocks.Item(StockSymbol)
-    If ThisStock IsNot Nothing Then
-      Dim ThisSector As Sector = ThisStock.Sector
-      Dim ThisIndustry As Industry = ThisStock.Industry
+	Public Sub Remove(ByVal StockSymbol As String)
+		Dim ThisStock = Me.Stocks.Item(StockSymbol)
+		If ThisStock IsNot Nothing Then
+			Dim ThisSector As Sector = ThisStock.Sector
+			Dim ThisIndustry As Industry = ThisStock.Industry
 
-      If ThisSector IsNot Nothing Then
-        'remove the stock link relation for this sector
-        ThisSector.Stocks.Remove(ThisStock)
-      End If
-      If ThisIndustry IsNot Nothing Then
-        'remove the stock link with this industry
-        With ThisIndustry.Stocks
-          .Remove(ThisStock)
-          If .Count = 0 Then
-            'no more stock
-            'we can remove the link to sector
-            ThisSector.Industries.Remove(ThisIndustry)
-          End If
-        End With
-      End If
-    End If
-  End Sub
+			If ThisSector IsNot Nothing Then
+				'remove the stock link relation for this sector
+				ThisSector.Stocks.Remove(ThisStock)
+			End If
+			If ThisIndustry IsNot Nothing Then
+				'remove the stock link with this industry
+				With ThisIndustry.Stocks
+					.Remove(ThisStock)
+					If .Count = 0 Then
+						'no more stock
+						'we can remove the link to sector
+						ThisSector.Industries.Remove(ThisIndustry)
+					End If
+				End With
+			End If
+		End If
+	End Sub
 
-  Public Async Function CopyDeepAsync() As Task(Of YahooAccessData.Report)
+	Public Async Function CopyDeepAsync() As Task(Of YahooAccessData.Report)
     Dim ThisTask = New Task(Of YahooAccessData.Report)(
       Function()
         Return Me.CopyDeep
@@ -808,7 +817,17 @@ Partial Public Class Report
     Return ThisTask.Result
   End Function
 
-  Public Function CopyDeep(Optional IsThreaded As Boolean = False) As YahooAccessData.Report
+	Public Function CopyLocal() As Report
+		Dim ThisReport = New YahooAccessData.Report(Name:=Me.Name)
+		With ThisReport
+			.Name = Me.Name
+			.DateStart = Me.DateStart
+			.DateStop = Me.DateStop
+		End With
+		Return ThisReport
+	End Function
+
+	Public Function CopyDeep(Optional IsThreaded As Boolean = False) As YahooAccessData.Report
     Dim ThisStream As Stream = New MemoryStream
 
     Me.SerializeSaveTo(ThisStream)
@@ -2211,7 +2230,7 @@ Partial Public Class Report
 							'ThisWebYahooStockDescriptor = New WebStockDescriptor(ThisExchange, ThisStockSymbol)
 							Dim ThisWebYahooStockDescriptor = SerializationKeyHelper.ToWebYahoo(ThisStockSymbol)
 							ThisStock = ThisReport.StockAdd(StockSymbol:=ThisWebYahooStockDescriptor.SymbolCode, SectorName:="", IndustryName:="")
-							'if ThisStock is nothing the stock could not be addded likely due conflicting Symbol
+							'if ThisStock is nothing the stock could not be added likely due conflicting Symbol
 							'in that case the stock is ignored
 							If ThisStock IsNot Nothing Then
 								With ThisStock

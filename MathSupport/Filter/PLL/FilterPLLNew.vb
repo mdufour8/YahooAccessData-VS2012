@@ -1,14 +1,12 @@
 ﻿Imports System.Math
 Imports YahooAccessData.MathPlus.Filter
-Imports YahooAccessData.MathPlus.Measure
-Imports YahooAccessData.OptionValuation
 
 ''' <summary>
 ''' The FilterPLL class implements a Phase-Locked Loop (PLL) filter that processes an input signal to generate a filtered output.
 ''' The filter uses a set of coefficients and error terms to adjust the output based on the input signal.
 ''' The class provides methods to run the filter and reset it, as well as properties to access the current state of the filter.
 ''' </summary>
-Public Class FilterPLL
+Public Class FilterPLLNew
 	Implements IFilterRun
 	Implements IFilter
 	Implements IFilterState
@@ -33,13 +31,13 @@ Public Class FilterPLL
 
 	'note we cannot create another PLL filter without causing stack overflow
 	Private MyFilterDoubleExpForError As FilterDoubleExp
+	'Private MyFilterDoubleExpForError As FilterExp
 	Private MyFilterDoubleExpForBandPass As FilterDoubleExp
+	Private MyFilterDoubleExpForBandPassAmplitude As Double
 	Private MyFilterTrendLast As Double
 	Private MyFilterBandPassLast As Double
-	Private MyGainYearlyEstimateLast As Double
+	Private MyGainYearlyEstimate As Double
 	Private MyCircularBuffer As CircularBuffer(Of Double)
-	'not use too much delay with this filter for the slope estimation
-	Private MyFilterLinearRegressionSlope As FilterLinearRegressionSlope
 
 	Public Sub New(ByVal FilterRate As Double, Optional DampingFactor As Double = 1.0, Optional BufferCapacity As Integer = 0)
 		Dim ThisFilterRateMinimum As Double
@@ -57,6 +55,15 @@ Public Class FilterPLL
 		'the ADPLL need the natural frequency of the filter. 
 
 		MyFilterRate = FilterRate
+		'If BufferCapacity < MyFilterRate Then
+		'	' If you truly need "always round up":
+		'	'Math.Ceiling(3.1)  ' → 4
+		'	'Math.Ceiling(3.5)  ' → 4
+		'	'Math.Ceiling(3.9)  ' → 4
+		'	'Math.Ceiling(3.0)  ' → 3 (already whole number)
+		'	'Math.Ceiling(-3.1) ' → -3 (towards positive infinity)
+		'	BufferCapacity = CInt(Math.Ceiling(MyFilterRate))
+		'End If
 		MyDampingFactor = DampingFactor
 		ThisFilterRateMinimum = 5 * MyDampingFactor
 		'If MyFilterRate < ThisFilterRateMinimum Then
@@ -104,6 +111,7 @@ Public Class FilterPLL
 		C = MyVCOPeriod
 		'C2 = 2 * MyDampingFactor * (2 * Math.PI) * FreqDigital
 		'MyFilterDoubleExpForBandPassAmplitude = (MyDampingFactor * This_Ωn)
+		MyFilterDoubleExpForBandPassAmplitude = 1.0 'can be removed not in used
 		C2 = 2 * MyDampingFactor * This_Ωn
 
 		'Dim FreqDigital1 = Math.Log((MyFilterRate + 1) / (MyFilterRate - 1)) / (2 * (MyDampingFactor + (1 / (4 * MyDampingFactor))))
@@ -123,9 +131,9 @@ Public Class FilterPLL
 			Throw New Exception("Low pass PLL filter is not stable...")
 		End If
 		MySignalDelta = 0
-		MyFilterDoubleExpForError = New FilterDoubleExp(FilterRate:=MyFilterRate)
-		MyFilterDoubleExpForBandPass = New FilterDoubleExp(FilterRate:=MyFilterRate)
-		MyFilterLinearRegressionSlope = New FilterLinearRegressionSlope(windowSize:=CInt(MyFilterRate))
+		MyFilterDoubleExpForError = New FilterDoubleExp(FilterRate:=Math.Sqrt(2) * MyFilterRate)
+		'MyFilterDoubleExpForError = New FilterExp(FilterRate:=MyFilterRate)
+		MyFilterDoubleExpForBandPass = New FilterDoubleExp(FilterRate:=MyFilterDoubleExpForError.FilterRate)
 		MyCircularBuffer = New CircularBuffer(Of Double)(capacity:=BufferCapacity, 0.0)
 		_IsReset = True
 	End Sub
@@ -163,20 +171,8 @@ Public Class FilterPLL
 		MyFilterBandPassLast = MyVCO(0) - MyFilterDoubleExpForBandPass.FilterLast
 		'MyFilterTrendLast = MyFilterBandPassLast / 2
 		ValueLast = Value
-		'use the Brown filter to estimate the slope of the signal
-		'this is a second order filter so we use the loop error to obtin teh gain estimate of
-		'and scale it apropriatly
-		'MyFilterForSignalSlope.FilterRun(Value)
-		'MyGainYearlyEstimateLast = MyFilterForSignalSlope.GainYearlyEstimateLast
-		'or use the second order filter to estimate the gain of the signal
-		'Note the performance of this gain estimate is slightly faster and more responsive than the Brown filter above.
-		MyFilterTrendLast = Measure.GainLog(MyVCO(0) + MyFilterDoubleExpForError.FilterLast, MyVCO(0))
-		MyGainYearlyEstimateLast = StockOption.NUMBER_TRADINGDAY_PER_YEAR * MyFilterTrendLast
-		'too much delay with this regression method for the gain estimation
-		'Dim ThisSlope = MyFilterLinearRegressionSlope.Add(Me.FilterLast)
-		'Dim ThisSlope = MyFilterLinearRegressionSlope.Add(Value)
-		'MyGainYearlyEstimateLast = ThisSlope * 252
 		MyCircularBuffer.AddLast(MyVCO(0))
+		MyGainYearlyEstimate = MyFilterDoubleExpForError.FilterLast * (YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR) / (MyVCO(0) + Double.Epsilon)
 		Return MyVCO(0)
 	End Function
 
@@ -262,9 +258,9 @@ Public Class FilterPLL
 	''' The gain is not the same as the gainLog here and the estimate is valid for any range of signal positive or negative	
 	''' </summary>
 	''' <returns></returns>
-	Public ReadOnly Property GainYearlyEstimateLast As Double
+	Public ReadOnly Property GainYearlyEstimate As Double
 		Get
-			Return MyGainYearlyEstimateLast
+			Return MyGainYearlyEstimate
 		End Get
 	End Property
 
@@ -280,7 +276,7 @@ Public Class FilterPLL
 
 	Public ReadOnly Property FilterTrendLast As Double Implements IFilterRun.FilterTrendLast
 		Get
-			Return MyFilterTrendLast
+			Return MyFilterDoubleExpForError.FilterLast
 		End Get
 	End Property
 
@@ -461,7 +457,7 @@ End Class
 
 
 #Region "StepResponseAnalyzer"
-Module StepResponseAnalyzer
+Module StepResponseAnalyzerNew
 
 	''' <summary>
 	''' Should not be use if the damping factor is too close to one 
@@ -515,6 +511,7 @@ Module StepResponseAnalyzer
 		For i = 0 To 50
 			response.Add(pll.FilterRun(1.0))
 		Next
+
 		StepResponseAnalyzer.AnalyzeStepResponse(response, samplingInterval:=1.0)
 	End Sub
 	Public Sub TestPhaseShift()

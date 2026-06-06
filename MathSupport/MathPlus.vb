@@ -1,10 +1,11 @@
-﻿Imports MathNet.Numerics
+﻿Imports System.Runtime.CompilerServices
+Imports System.Text.Json
+Imports MathNet.Numerics
 Imports MathNet.Numerics.RootFinding
-Imports YahooAccessData.MathPlus.Filter
-Imports YahooAccessData.OptionValuation
-Imports YahooAccessData.MathPlus.Measure.Measure
 Imports YahooAccessData.ExtensionService.Extensions
-Imports System.Runtime.CompilerServices
+Imports YahooAccessData.MathPlus.Filter
+Imports YahooAccessData.MathPlus.Measure.Measure
+Imports YahooAccessData.OptionValuation
 
 Namespace MathPlus
 #Const DebugPrediction = False
@@ -20,6 +21,24 @@ Namespace MathPlus
 			Return Enumerable.Repeat(defaultValue, count:=Count).ToList()
 		End Function
 
+		''' <summary>
+		''' usage ex. Dim Data=CreateWith(10, Function() New StockPriceVol With {.Last = 0.0, .Volume = 0.0})
+		''' </summary>
+		''' <typeparam name="T"></typeparam>
+		''' <param name="Count"></param>
+		''' <param name="factory"></param>
+		''' <returns></returns>
+		Public Function CreateWith(Of T)(
+			Count As Integer,
+			factory As Func(Of T)) As List(Of T)
+
+			Dim Result As New List(Of T)(capacity:=Count)
+
+			For I As Integer = 0 To Count - 1
+				Result.Add(If(factory IsNot Nothing, factory(), Nothing))
+			Next
+			Return Result
+		End Function
 
 
 		''' <summary>
@@ -1618,6 +1637,7 @@ Namespace MathPlus
 				Dim ThisFilterRight As New FilterLowPassPLL(MyFilterLowPassPLL.ASIFilterControl.FilterRate, MyDampingFactor)
 				Dim ThisPriceFiltered As Double
 
+				Throw New NotSupportedException
 				If MyNumberLookAheadPoint < 0 Then
 					'direct call here
 					Return MyFilterLowPassPLL.Filter(Value, DelayRemovedToItem)

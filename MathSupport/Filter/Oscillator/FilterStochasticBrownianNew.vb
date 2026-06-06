@@ -16,7 +16,7 @@ Imports System.Runtime.CompilerServices
 
 
 Namespace MathPlus.Filter
-	Public Class FilterStochasticBrownian
+	Public Class FilterStochasticBrownianNew
 		Implements IStochastic
 		Implements IStochastic1
 		Implements IStochastic2
@@ -63,6 +63,8 @@ Namespace MathPlus.Filter
 		Private MyListOfPriceVolatilityGain As List(Of Double)
 		Private MyListOfPriceVolatilityHigh As List(Of Double)
 		Private MyListOfPriceVolatilityLow As List(Of Double)
+		Private MyListOfGain As List(Of Double)
+		Private MyListOfGainDerivative As List(Of Double)
 		Private MyListOfPriceVolatilityTimeProbability As List(Of Double)
 		Private MyListOfProbabilityPDF() As Integer
 		Private MyListOfProbabilityLCR() As Integer
@@ -89,8 +91,10 @@ Namespace MathPlus.Filter
 		Private MyMeasurePeakValueRangeUsingNoPeakFilter As MeasurePeakValueRange
 		Private MyListOfPeakValueGainPrediction As IList(Of Double)
 
-		Private MyFilterPLLForGain As FilterLowPassPLL
-		Private MyFilterPLLForGainPrediction As FilterLowPassPLL
+		'Private MyFilterExpPredictForGain As FilterExpPredict
+		'Private MyFilterExpPredictForGainK1 As FilterExpPredict
+		Private MyFilterExpPredictForGain As FilterPLL
+		Private MyFilterExpPredictForGainK1 As FilterPLL
 
 		Private MyListOfPriceVolatilityPredictionBand_CloseToCloseWithGain As List(Of IStockPriceVolatilityPredictionBand)
 		Private MyListOfPriceNextDailyHigh As IList(Of Double)
@@ -204,8 +208,10 @@ Namespace MathPlus.Filter
 			MyFilterVolatilityYangZhangForStatisticLastPointTrail = New FilterVolatilityYangZhang(MyRateForVolatility, FilterVolatility.enuVolatilityStatisticType.Exponential, IsUseLastSampleHighLowTrail:=True)
 			MyFilterLowPassForPrice = New FilterLowPassPLL(FilterRate, NumberOfPredictionOutput:=0)
 
-			MyFilterPLLForGain = New FilterLowPassPLL(FilterRate, IsPredictionEnabled:=True)
-			MyFilterPLLForGainPrediction = New FilterLowPassPLL(FilterRate:=FilterRate, NumberOfPredictionOutput:=1, IsPredictionEnabled:=True)
+			'MyFilterExpPredictForGain = New FilterExpPredict(FilterRate)
+			'MyFilterExpPredictForGainK1 = New FilterExpPredict(FilterRate, NumberToPredict:=1)
+			MyFilterExpPredictForGain = New FilterPLL(FilterRate)
+			MyFilterExpPredictForGainK1 = New FilterPLL(FilterRate)
 
 			MyListOfProbabilityBandHigh = New List(Of Double)
 			MyListOfProbabilityDailySigmaExcess = New List(Of Double)
@@ -216,6 +222,8 @@ Namespace MathPlus.Filter
 			MyListOfPriceVolatilityGain = New List(Of Double)
 			MyListOfPriceVolatilityHigh = New List(Of Double)
 			MyListOfPriceVolatilityLow = New List(Of Double)
+			MyListOfGain = New List(Of Double)
+			MyListOfGainDerivative = New List(Of Double)
 			MyListOfPriceVolatilityTimeProbability = New List(Of Double)
 			MyStatisticalDistributionForVolatility = New StatisticalDistribution(STATISTIC_VOLATILITY_WINDOWS_SIZE, New StatisticalDistributionFunctionLog(STATISTIC_DB_MINIMUM, STATISTIC_DB_MAXIMUM))
 			MyStatisticalDistributionForVolatilityPositive = New StatisticalDistribution(STATISTIC_VOLATILITY_WINDOWS_SIZE \ 2, New StatisticalDistributionFunctionLog(STATISTIC_DB_MINIMUM, STATISTIC_DB_MAXIMUM))
@@ -484,20 +492,18 @@ Namespace MathPlus.Filter
 				ThisFilterBasedVolatilityRatioFromOpenToClose = 0
 				MyListOfPriceVolatilityTimeProbability.Add(0.5)
 			End If
-			MyFilterPLLForGain.Filter(Value.Last)
-			MyFilterPLLForGainPrediction.Filter(Value.Last)
-			If Me.Count = 500 Then
-				ThisGainPerYear = ThisGainPerYear
-			End If
-			'ThisGainPerYear = MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYear.Last
-			ThisGainPerYear = MyFilterPLLForGain.GainYearlyEstimateLast
+			MyFilterExpPredictForGain.FilterRun(Value.Last)
+			MyFilterExpPredictForGainK1.FilterRun(Value.Last)
+			ThisGainPerYear = MyFilterExpPredictForGain.GainYearlyEstimateLast
+			MyListOfGain.Add(ThisGainPerYear)
+			MyListOfGainDerivative.Add(0.0)
 			If Double.IsNaN(ThisGainPerYear) Then
 				ThisGainPerYear = ThisGainPerYear
 			End If
-			'ThisGainPerYearDerivative = MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYearDerivative.Last
 			ThisGainPerYearDerivative = 0.0
-			ThisGainPerYearPrediction = MyFilterPLLForGainPrediction.AsIFilterPrediction.ToListOfGainPerYear.Last
-			ThisGainPerYearDerivativePrediction = MyFilterPLLForGainPrediction.AsIFilterPrediction.ToListOfGainPerYearDerivative.Last
+			'ThisGainPerYearDerivative = 0.0
+			ThisGainPerYearPrediction = MyFilterExpPredictForGainK1.GainYearlyEstimateLast
+			ThisGainPerYearDerivativePrediction = 0.0
 			'ThisGainPerYearDerivativePrediction = 0
 
 			'create the object that adjust the volatility based the the latest 
@@ -1195,15 +1201,15 @@ Namespace MathPlus.Filter
 		'			ThisFilterBasedVolatilityRatioFromPreviousCloseToOpen = 1.0
 		'			MyListOfPriceVolatilityTimeProbability.Add(0.5)
 		'		End If
-		'		MyFilterPLLForGain.Filter(Value.Last)
-		'		MyFilterPLLForGainPrediction.Filter(Value.Last)
-		'		ThisGainPerYear = MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYear.Last
+		'		MyFilterExpPredictForGain.Filter(Value.Last)
+		'		MyFilterExpPredictForGainK1.Filter(Value.Last)
+		'		ThisGainPerYear = MyFilterExpPredictForGain.AsIFilterPrediction.ToListOfGainPerYear.Last
 		'		'If Double.IsNaN(ThisGainPerYear) Then
 		'		'  Debugger.Break()
 		'		'End If
-		'		ThisGainPerYearDerivative = MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYearDerivative.Last
-		'		ThisGainPerYearPrediction = MyFilterPLLForGainPrediction.AsIFilterPrediction.ToListOfGainPerYear.Last
-		'		ThisGainPerYearDerivativePrediction = MyFilterPLLForGainPrediction.AsIFilterPrediction.ToListOfGainPerYearDerivative.Last
+		'		ThisGainPerYearDerivative = MyFilterExpPredictForGain.AsIFilterPrediction.ToListOfGainPerYearDerivative.Last
+		'		ThisGainPerYearPrediction = MyFilterExpPredictForGainK1.AsIFilterPrediction.ToListOfGainPerYear.Last
+		'		ThisGainPerYearDerivativePrediction = MyFilterExpPredictForGainK1.AsIFilterPrediction.ToListOfGainPerYearDerivative.Last
 
 		'		'correction for the volatility prediction on next day
 		'		Dim ThisVolatilityPredictionFromPreviousCloseToCloseNoGain = New StockPriceVolatilityPredictionBand(
@@ -1326,10 +1332,10 @@ Namespace MathPlus.Filter
 		'		ThisFilterBasedVolatilityTotal = MyFilterVolatilityYangZhangForStatistic.ToList.Item(I)
 		'		ThisFilterBasedVolatilityFromLastPointTrailing = MyFilterVolatilityYangZhangForStatisticLastPointTrail.ToList.Item(I)
 
-		'		ThisGainPerYear = MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYear(I)
-		'		ThisGainPerYearDerivative = MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYearDerivative(I)
-		'		ThisGainPerYearPrediction = MyFilterPLLForGainPrediction.AsIFilterPrediction.ToListOfGainPerYear(I)
-		'		ThisGainPerYearDerivativePrediction = MyFilterPLLForGainPrediction.AsIFilterPrediction.ToListOfGainPerYearDerivative(I)
+		'		ThisGainPerYear = MyFilterExpPredictForGain.AsIFilterPrediction.ToListOfGainPerYear(I)
+		'		ThisGainPerYearDerivative = MyFilterExpPredictForGain.AsIFilterPrediction.ToListOfGainPerYearDerivative(I)
+		'		ThisGainPerYearPrediction = MyFilterExpPredictForGainK1.AsIFilterPrediction.ToListOfGainPerYear(I)
+		'		ThisGainPerYearDerivativePrediction = MyFilterExpPredictForGainK1.AsIFilterPrediction.ToListOfGainPerYearDerivative(I)
 
 		'		With ThisVolatilityPredictionFromPreviousCloseToCloseWithGain
 		'			.VolatilityMaximum = ThisFilterBasedVolatilityFromLastPointTrailing
@@ -1851,13 +1857,13 @@ Namespace MathPlus.Filter
 
 		Friend ReadOnly Property ToListOfGain() As IList(Of Double)
 			Get
-				Return MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYear
+				Return MyListOfGain
 			End Get
 		End Property
 
 		Friend ReadOnly Property ToListOfGainDerivative() As IList(Of Double)
 			Get
-				Return MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYearDerivative
+				Return MyListOfGainDerivative
 			End Get
 		End Property
 #End Region
@@ -2163,10 +2169,9 @@ Namespace MathPlus.Filter
 			ThisProbabilityHigh = 0.5 + SigmaRangeProbability / 2
 			ThisProbabilityLow = 1 - ThisProbabilityHigh
 			ThisFilterBasedVolatilityFromOpenToClose = MyFilterVolatilityYangZhangForStatistic.ToList(Type:=FilterVolatilityYangZhang.enuVolatilityDailyPeriodType.OpenToClose).Last
-			With MyFilterPLLForGain.AsIFilterPrediction
-				ThisGainPerYear = .ToListOfGainPerYear.Last
-				ThisGainPerYearDerivative = .ToListOfGainPerYearDerivative.Last
-			End With
+
+			ThisGainPerYear = MyListOfGain.Last
+			ThisGainPerYearDerivative = MyListOfGainDerivative.Last
 			Dim ThisPriceVolStart = PriceValue
 			'Dim ThisDateStartTime As Date = ThisPriceVolStart.DateDay.Date.AddSeconds(YahooAccessData.ReportDate.MARKET_OPEN_TIME_SEC_DEFAULT)
 			'Dim ThisDateStopTime As Date = ThisPriceVolStart.DateDay.Date.AddSeconds(YahooAccessData.ReportDate.MARKET_CLOSE_TIME_SEC_DEFAULT)
@@ -2230,10 +2235,8 @@ Namespace MathPlus.Filter
 			Dim ThisResult As New List(Of IPriceVol)
 
 
-			With MyFilterPLLForGain.AsIFilterPrediction
-				ThisGainPerYear = .ToListOfGainPerYear(Index)
-				ThisGainPerYearDerivative = .ToListOfGainPerYearDerivative(Index)
-			End With
+			ThisGainPerYear = MyListOfGain(Index)
+			ThisGainPerYearDerivative = MyListOfGainDerivative(Index)
 			Dim ThisPriceVolStart = MyListOfValue(Index)
 
 			Dim ThisDateStartTime As Date = ThisPriceVolStart.DateDay.Date.AddSeconds(YahooAccessData.ReportDate.MARKET_OPEN_TIME_SEC_DEFAULT)
@@ -2585,9 +2588,9 @@ Namespace MathPlus.Filter
 				Case IStochastic.enuStochasticType.RangeVolatility
 					Return MyListOfPriceRangeVolatility
 				Case IStochastic.enuStochasticType.PriceGainPerYear
-					Return MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYear
+					Return MyListOfGain
 				Case IStochastic.enuStochasticType.PriceGainPerYearDerivative
-					Return MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYearDerivative
+					Return MyListOfGainDerivative
 				Case IStochastic.enuStochasticType.ProbabilityHigh, IStochastic.enuStochasticType.ProbabilityLow
 					Throw New NotSupportedException
 				Case Else
@@ -3307,13 +3310,13 @@ Namespace MathPlus.Filter
 
 		Private ReadOnly Property IStochasticBrownianData_PriceGainPerYear As IList(Of Double) Implements IStochasticBrownianData.PriceGainPerYear
 			Get
-				Return MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYear
+				Return MyListOfGain
 			End Get
 		End Property
 
 		Private ReadOnly Property IStochasticBrownianData_PriceGainPerYearDerivative As IList(Of Double) Implements IStochasticBrownianData.PriceGainPerYearDerivative
 			Get
-				Return MyFilterPLLForGain.AsIFilterPrediction.ToListOfGainPerYearDerivative
+				Return MyListOfGainDerivative
 			End Get
 		End Property
 

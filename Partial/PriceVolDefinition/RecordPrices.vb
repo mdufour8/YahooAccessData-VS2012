@@ -1,8 +1,8 @@
 ﻿Imports System.IO
 Imports WebEODData
 Imports YahooAccessData.ExtensionService
-Imports YahooAccessData.MathPlus.Filter
 Imports YahooAccessData.MathPlus
+Imports YahooAccessData.MathPlus.Filter
 
 Public Class RecordPrices
 #Const IS_SPLIT_LOCAL_ENABLED = False
@@ -243,6 +243,12 @@ Public Class RecordPrices
 			End If
 			Call ProcessDataDailyIntraDay(colData, DateStartValue, DateStopValue)
 		End If
+		'set these by default i.e. not normalized!
+		IsRecordNormalized = False
+		PriceNormalized = 100.0
+		DateNormalized = Me.DateStart
+		'only the stream extract from the record quote value is set by default to the stock
+		Me.Stock.SetRecordsPrices(Me)
 	End Sub
 
 	''' <summary>
@@ -261,18 +267,9 @@ Public Class RecordPrices
 
 
 	''' <summary>
-	''' Create a new RecordPrices object based on the provided record price data. The record price data is expected to contain 
-	''' the necessary information to construct the new price stream scaled to a new price normalized value. 
-	''' Useful to compare similar stocks on a same re-price stock value, i.e. by default at 100.0. Gain and Volume data 
-	''' are preserved as the original stream.
+	''' Create a new RecordPrices object based on the provided record price data.
 	''' </summary>
-	''' <param name="recordPrices"></param>
-	''' <param name="PriceNormalized"></param>
-	Public Sub New(
-		recordPrices As RecordPrices,
-		Optional PriceNormalized As Double = 100.0,
-		Optional Index As Integer = 0)
-
+	Public Sub New(recordPrices As RecordPrices)
 		Dim I As Integer = 0
 
 		If recordPrices.NumberPoint = 0 Then
@@ -291,10 +288,10 @@ Public Class RecordPrices
 		MyListOfCumulativeLogGain = recordPrices.ToListOfCumulativeLogGain
 		'with the log gain we can re-price the stream of price data to create the price data stream
 		'based on the price relative value
-		MyListOfStockPriceVol = StockPriceLogGainExtensions.ToCumulativeLogGainInverse(
-				MyListOfCumulativeLogGain,
-				PriceNormalized:=PriceNormalized,
-				Index:=Index)
+		'MyListOfStockPriceVol = StockPriceLogGainExtensions.ToCumulativeLogGainInverse(
+		'		MyListOfCumulativeLogGain,
+		'		PriceNormalized:=PriceNormalized,
+		'		Index:=Index)
 
 		Me.DateStart = recordPrices.DateStart
 		Me.DateStop = recordPrices.DateStop
@@ -311,6 +308,7 @@ Public Class RecordPrices
 
 		Me.IsError = recordPrices.IsError
 		Me.ErrorDescription = recordPrices.ErrorDescription
+		MyListOfStockPriceVol = recordPrices.ToListOfStockPriceVol
 		MyListOfIPriceVol = New List(Of IPriceVol)
 		MyListOfPriceVol = New List(Of PriceVol)
 		MyListOfIStockPriceVol = New List(Of IStockPriceVol)
@@ -320,8 +318,8 @@ Public Class RecordPrices
 		Me.PriceMax = 0.0
 		Me.PriceMin = Single.MaxValue
 		Dim GainDeltaYearly As Double
-		'the min and the max could also be calculated using teh log but this approch
-		'ensure the value include the effet of the transformatione rounding error.
+		'the min and the max could also be calculated using teh log but this approach
+		'ensure the value include the effect of the transformation rounding error.
 		For Each ThisPriceVol As IStockPriceVol In MyListOfStockPriceVol
 			With ThisPriceVol
 				If .Last > 0 Then
@@ -345,10 +343,10 @@ Public Class RecordPrices
 			If MyFilterVolatilityYZYearly.FilterLast > 0 Then
 				MyListOfSharpeRatio.Add(GainDeltaYearly / MyFilterVolatilityYZYearly.FilterLast)
 			Else
-				'should we not return the last sharpe ratio instead of 0?
+				'should we not return the last Sharpe ratio instead of 0?
 				'It is a possibility but it may be better to return 0 to indicate that there is no risk-adjusted return
 				'when volatility is zero or negative, rather than returning the last Sharpe ratio which may not be relevant in this context.
-				'may adjust this in the future to return the last sharpe ratio if it is relevant and not too old but for now we will return 0
+				'may adjust this in the future to return the last Sharpe ratio if it is relevant and not too old but for now we will return 0
 				'to indicate that there is no risk-adjusted return.
 				MyListOfSharpeRatio.Add(0.0)
 			End If
@@ -356,6 +354,156 @@ Public Class RecordPrices
 			I += 1
 		Next
 		Me.PriceVolLast.IsIntraDay = recordPrices.PriceVolLast.IsIntraDay
+		'set these by default i.e. not normalized!
+		IsRecordNormalized = recordPrices.IsRecordNormalized
+		PriceNormalized = recordPrices.PriceNormalized
+		DateNormalized = recordPrices.DateNormalized
+		'only the stream extract from the record quote or a records
+		'not normalized is set by default to the stock
+		If IsRecordNormalized = False Then
+			'only set the real data to the stock if the record is not normalized since if it is normalized
+			'the data may be misleading and do not represent the real price value of the stock
+			Me.Stock.SetRecordsPrices(Me)
+		End If
+	End Sub
+
+	Public Sub New(
+		Stock As Stock,
+		source As IEnumerable(Of StockPriceVol))
+
+		' IMPORTANT:
+		' We intentionally materialize the sequence into a List here.
+		' This guarantees:
+		'   - single, deterministic enumeration
+		'   - stable indexing for anchor/position validation
+		'   - safe behavior if the source is a LINQ iterator or generator
+		'
+		' Do NOT "optimize" this away unless profiling proves it is a bottleneck.
+		' The copy cost is negligible compared to the safety it provides.
+		Dim DataSource = source.ToList()
+
+		If DataSource.Count = 0 Then
+			Throw New InvalidDataException("The record collection is empty.")
+		End If
+		MyFilterVolatilityYZYearly = New FilterVolatilityYangZhang(
+			FilterRate:=FILTER_VOLATILITY_YZ_YEARLY_PERIOD,
+			StatisticType:=FilterVolatility.enuVolatilityStatisticType.Exponential)
+
+		Me.Stock = Stock
+		If Me.Stock Is Nothing Then
+			Throw New InvalidDataException("The stock information is missing in the record collection.")
+		End If
+		Me.Symbol = Me.Stock.Symbol
+		'note here the data need to be in the price format not in the log cumulative
+		'also should not be nothing obviously but we check it just in case
+		'Any determines whether any element of a sequence exists or satisfies a condition.
+		'true if the source sequence contains contain valid elements; otherwise, false.
+		'Returns True if x is Nothing OR x has a different DataType than RawPrice
+		'Any() uses short-circuit evaluation.
+		'as soon as it finds the first element that matches the predicate (returns True), it immediately stops And returns True. It does Not continue checking the rest of the collection.
+		If DataSource.Any(Function(x) x Is Nothing OrElse x.DataType <> StockPriceVol.StockPriceDataType.RawPrice) Then
+			Throw New InvalidDataException("The record collection contains null entries or invalid data type.")
+		End If
+		'with the log gain we can re-price the stream of price data to create the price data stream
+		'based on the price value
+		'may not be necessary but just to make sure that the data is in the correct format and to avoid any modification of the data outside of the current object
+		'make a new list of stock price vol to ensure that the data is not modified outside of the current object and to ensure that the data is in the correct format
+		MyListOfStockPriceVol = New List(Of StockPriceVol)(DataSource.Select(Function(x) New StockPriceVol(x)))
+		'update teh record object with the new list of stock price vol
+		Me.DateStart = MyListOfStockPriceVol.First.DateDay
+		Me.DateStop = MyListOfStockPriceVol.Last.DateDay
+		'assume False i.e. the price target is cannot be extracted from that list of stock price vol that contain just teh data
+		'if needed it can be set later on the record object
+		Me.IsPriceTarget = False
+		Me.NumberPoint = MyListOfStockPriceVol.Count
+		'has no real meaning here with the list the list is already tested for null point and it is always guarantee
+		'at this level to be aligned with weekly data never null with missing date 
+
+		Me.NumberNullPoint = 0
+		Me.NumberNullPointToEnd = 0
+		'the stock split are always now deal with at a lower level that this object
+		'so no worry with this variable. It is kept there for now may be for future use if needed
+		Me.IsSplit = False
+
+		Me.StartPoint = 0
+		Me.StopPoint = MyListOfStockPriceVol.Count - 1
+		'if the list exist it cannot be in error 
+		Me.IsError = False
+		Me.ErrorDescription = ""
+		'to support teh full object we need additional list
+		'most of code base is still base on PriceVol and IPriceVol so we need to create
+		'those list to be able to support the full object and to be able to use the existing code base without modification
+		'StockPriceVol is the new iteration based on double and not single and with the capability to support the log gain 
+		'which is not in the Price domain. The advantage is that we can now make addition of various stock and create
+		'a kind of new stock Index base on what teh user is interested 
+		'Also teh data can be easily change back to the price format which inherently support the re-price of the stock index
+		'data stream. Eventually most of the code will move to this more advanced class and the PriceVol and IPriceVol will be
+		'kept for backward compatibility and to support the code base
+		MyListOfIPriceVol = New List(Of IPriceVol)
+		MyListOfPriceVol = New List(Of PriceVol)
+		MyListOfIStockPriceVol = New List(Of IStockPriceVol)
+		MyListOfSharpeRatio = New List(Of Double)
+		MyListOfSharpeGaussianProbability = New List(Of Double)
+		MyListOfCumulativeLogGain = StockPriceLogGainExtensions.ToCumulativeLogGain(MyListOfStockPriceVol)
+		MyListOfSharpeRatio = New List(Of Double)
+		ReDim MyPriceVols(0 To MyListOfStockPriceVol.Count - 1)
+		Dim GainDeltaYearly As Double
+		Dim ThisPriceVol As IStockPriceVol
+		Me.PriceMax = 0.0
+		Me.PriceMin = Single.MaxValue
+		'This is more complicated we need to check if all the volume are zero we need to set the fals IsVol to true
+		'also we need to record the min and max vol to be able
+		'the best way is probably to scan the record and record the max volume and the min volume and if the max volume is zero then we can set the IsVol to false otherwise we can set it to true
+		Me.VolMin = Long.MaxValue
+		Me.VolMax = Long.MinValue
+		Me.IsVol = False
+		For Each ThisItems In MyListOfStockPriceVol.WithIndex
+			ThisPriceVol = ThisItems.Item
+			With ThisPriceVol
+				If .Volume > 0 AndAlso .Volume < Me.VolMin Then
+					Me.VolMin = .Volume
+				End If
+				If .Volume > Me.VolMax Then
+					Me.VolMax = .Volume
+				End If
+				If .Last > 0 Then
+					'check the range
+					If .High > Me.PriceMax Then
+						Me.PriceMax = .High
+					End If
+					If .Low > 0 Then
+						If .Low < Me.PriceMin Then
+							Me.PriceMin = .Low
+						End If
+					End If
+				End If
+			End With
+			MyListOfIStockPriceVol.Add(ThisPriceVol)
+			MyPriceVols(ThisItems.Index) = New PriceVol(ThisPriceVol)
+			MyListOfPriceVol.Add(MyPriceVols(ThisItems.Index))
+			MyListOfIPriceVol.Add(MyPriceVols(ThisItems.Index))
+			MyFilterVolatilityYZYearly.Filter(MyPriceVols(ThisItems.Index))
+			GainDeltaYearly = MyListOfCumulativeLogGain(ThisItems.Index).Last - MyListOfCumulativeLogGain(Math.Max(0, ThisItems.Index - NUMBER_TRADINGDAY_PER_YEAR)).Last
+			If MyFilterVolatilityYZYearly.FilterLast > 0 Then
+				MyListOfSharpeRatio.Add(GainDeltaYearly / MyFilterVolatilityYZYearly.FilterLast)
+			Else
+				'should we not return the last Sharpe ratio instead of 0?
+				'It is a possibility but it may be better to return 0 to indicate that there is no risk-adjusted return
+				'when volatility is zero or negative, rather than returning the last Sharpe ratio which may not be relevant in this context.
+				'may adjust this in the future to return the last Sharpe ratio if it is relevant and not too old but for now we will return 0
+				'to indicate that there is no risk-adjusted return.
+				MyListOfSharpeRatio.Add(0.0)
+			End If
+			MyListOfSharpeGaussianProbability.Add(Probability.GaussianCDF(MyListOfSharpeRatio.Last))
+		Next
+		If Me.VolMax > 0 Then
+			Me.IsVol = True
+		End If
+		Me.PriceVolLast.IsIntraDay = MyListOfStockPriceVol.Last.IsIntraDay
+		'set these by default i.e. not normalized!
+		IsRecordNormalized = False
+		PriceNormalized = 100.0
+		DateNormalized = Me.DateStart
 	End Sub
 
 #End Region
@@ -418,7 +566,7 @@ Public Class RecordPrices
 	End Function
 
 #Region "Private Update Function"
-	Public Function FilterAndAdjustWeekendData(colData As IEnumerable(Of YahooAccessData.RecordQuoteValue)) As IEnumerable(Of YahooAccessData.RecordQuoteValue)
+	Private Function FilterAndAdjustWeekendData(colData As IEnumerable(Of YahooAccessData.RecordQuoteValue)) As IEnumerable(Of YahooAccessData.RecordQuoteValue)
 		Dim lastRecord = colData.LastOrDefault()
 		If lastRecord Is Nothing Then
 			Throw New InvalidOperationException("The record collection is empty.")
@@ -769,7 +917,7 @@ Public Class RecordPrices
 		MyListOfCumulativeLogGain = StockPriceLogGainExtensions.ToCumulativeLogGain(MyListOfStockPriceVol)
 		MyListOfSharpeRatio = New List(Of Double)
 		Dim GainDeltaYearly As Double
-		'another loop to calculate the sharpe ration from the gain and the volatility 
+		'another loop to calculate the Sharpe ratio from the gain and the volatility 
 		For Each ThisVolItems In MyFilterVolatilityYZYearly.ToList.WithIndex
 			GainDeltaYearly =
 				MyListOfCumulativeLogGain(ThisVolItems.Index).Last -
@@ -992,7 +1140,7 @@ Public Class RecordPrices
 						Me.PriceMinTarget = .OneyrTargetPrice
 					End If
 				End If
-				If .Vol < Me.VolMin Then
+				If .Volume > 0 AndAlso .Volume < Me.VolMin Then
 					Me.VolMin = .Vol
 				End If
 				If .Vol > Me.VolMax Then
@@ -1159,7 +1307,7 @@ Public Class RecordPrices
 					Me.PriceMinTarget = .OneyrTargetPrice
 				End If
 			End If
-			If .Volume < Me.VolMin Then
+			If .Volume > 0 AndAlso .Volume < Me.VolMin Then
 				Me.VolMin = .Volume
 			End If
 			If .Volume > Me.VolMax Then
@@ -1304,7 +1452,11 @@ Public Class RecordPrices
 		Return ThisList
 	End Function
 
-	Public Function ToListOfStockPriceVol() As List(Of IStockPriceVol)
+	Public Function ToListOfStockPriceVol() As List(Of StockPriceVol)
+		Return MyListOfStockPriceVol
+	End Function
+
+	Public Function ToListOfIStockPriceVol() As List(Of IStockPriceVol)
 		Return MyListOfIStockPriceVol
 	End Function
 
@@ -1413,6 +1565,11 @@ Public Class RecordPrices
 		Next
 	End Function
 
+	''' <summary>
+	''' Old implementation should be declared obsolete
+	''' </summary>
+	''' <param name="Ratio"></param>
+	<Obsolete("This method is obsolete. Use the new implementation instead.")>
 	Public Sub PriceVolsMultiPly(ByVal Ratio As Single)
 		Me.PriceMin = Single.MaxValue
 		Me.PriceMax = Single.MinValue
@@ -1427,7 +1584,7 @@ Public Class RecordPrices
 				If .High > Me.PriceMax Then
 					Me.PriceMax = .High
 				End If
-				If .Volume < Me.VolMin Then
+				If .Volume > 0 AndAlso .Volume < Me.VolMin Then
 					Me.VolMin = .Volume
 				End If
 				If .Volume > Me.VolMax Then
@@ -1438,6 +1595,7 @@ Public Class RecordPrices
 		MyPriceVolLast = MyPriceVols(Me.StopPoint)
 	End Sub
 
+	<Obsolete("This method is obsolete. Use the new implementation instead.")>
 	Public Sub PriceVolsAdd(ByVal RecordPrices As YahooAccessData.RecordPrices)
 		Dim I As Integer
 
@@ -1459,7 +1617,7 @@ Public Class RecordPrices
 				If .High > Me.PriceMax Then
 					Me.PriceMax = .High
 				End If
-				If .Volume < Me.VolMin Then
+				If .Volume > 0 AndAlso .Volume < Me.VolMin Then
 					Me.VolMin = .Volume
 				End If
 				If .Volume > Me.VolMax Then
@@ -1470,10 +1628,13 @@ Public Class RecordPrices
 		MyPriceVolLast = MyPriceVols(Me.StopPoint)
 	End Sub
 
+
+	<Obsolete("This method is obsolete. Use the new implementation instead.")>
 	Private Sub PriceVolsMultiPly(ByVal Index As Integer, ByVal Ratio As Single)
 		MyPriceVols(Index).MultiPly(Ratio)
 	End Sub
 
+	<Obsolete("This method is obsolete. Use the new implementation instead.")>
 	Private Sub PriceVolsAdd(ByVal Index As Integer, ByRef PriceVol As PriceVol)
 		MyPriceVols(Index).Add(PriceVol)
 	End Sub
@@ -1508,10 +1669,16 @@ Public Class RecordPrices
 	Public IsPriceTarget As Boolean
 	Public PriceToEarningTarget As Double
 	Public IsVol As Boolean
+	Public IsRecordNormalized As Boolean
+	Public PriceNormalized As Double
+	Public DateNormalized As Date
 
 	Private _VolMin As Long
 	Public Property VolMin As Long
 		Get
+			'note do not retuRn a value egual to zero if not the graph may have a problem
+			'in some zooming scenario
+			If _VolMin = 0 Then Return 1
 			Return _VolMin
 		End Get
 		Set(value As Long)
@@ -1522,7 +1689,7 @@ Public Class RecordPrices
 	Private _VolMax As Long
 	Public Property VolMax As Long
 		Get
-			'note do not retrun a value egual to zero if not the graph may have a problem
+			'note do not retuRn a value egual to zero if not the graph may have a problem
 			'in some zooming scenario
 			If _VolMax = 0 Then Return 1
 			Return _VolMax

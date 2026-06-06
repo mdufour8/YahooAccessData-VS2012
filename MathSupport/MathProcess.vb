@@ -1,17 +1,17 @@
 ﻿Imports MathNet.Numerics
 
 Namespace MathProcess
-  ''' <summary>
-  ''' see: https://en.wikipedia.org/wiki/Wiener_process
-  ''' </summary>
-  ''' <remarks>
-  ''' The Wiener process Wt is characterised by the following properties:[1]
-  ''' 1. Wt(0)   = 0   
-  ''' 2. Wt(t) has independent increments for every t > 0 and the future increments Wt(t+u)− W(t) u ≥ 0, are independent of the past values
-  ''' 3. Wt(t+u) has Gaussian increments: Wt(t + u) − Wt(t) is normally distributed with mean 0 and variance u.   
-  ''' 4. Wt has continuous paths with probability 1 and is continuous in t
-  ''' </remarks>
-  Public Class WeinerProcess
+	''' <summary>
+	''' see: https://en.wikipedia.org/wiki/Wiener_process
+	''' </summary>
+	''' <remarks>
+	''' The Wiener process Wt is characterized by the following properties:[1]
+	''' 1. Wt(0)   = 0   
+	''' 2. Wt(t) has independent increments for every t > 0 and the future increments Wt(t+u)− W(t) u ≥ 0, are independent of the past values
+	''' 3. Wt(t+u) has Gaussian increments: Wt(t + u) − Wt(t) is normally distributed with mean 0 and variance u.   
+	''' 4. Wt has continuous paths with probability 1 and is continuous in t
+	''' </remarks>
+	Public Class WeinerProcess
     Private MyGaussian As Distributions.Normal
     Private MyWeinerProcessValueLast As Double
     Private MyCount As Integer

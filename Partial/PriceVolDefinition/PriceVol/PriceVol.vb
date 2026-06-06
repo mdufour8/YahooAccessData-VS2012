@@ -67,8 +67,16 @@ Public Class PriceVol
 	End Sub
 
 	Public Sub New(PriceVol As IStockPriceVol)
-		_dataType = DataType
-
+		'check for anomaly in data structure and throw exception if the data structure
+		'is not consistent with the expected one for PriceVol
+		If TypeOf PriceVol Is StockPriceVol Then
+			_dataType = DirectCast(PriceVol, StockPriceVol).DataType
+		Else
+			_dataType = StockPriceDataType.RawPrice
+		End If
+		If _dataType <> StockPriceDataType.RawPrice Then
+			Throw New NotSupportedException("Only RawPrice data type is supported for PriceVol")
+		End If
 		Me.DateLastTrade = PriceVol.DateDay
 		Me.Open = PriceVol.Open.ToSingleSafe
 		Me.OpenNext = PriceVol.OpenNext.ToSingleSafe
@@ -77,6 +85,8 @@ Public Class PriceVol
 		Me.High = PriceVol.High.ToSingleSafe
 		Me.Low = PriceVol.Low.ToSingleSafe
 		Me.Volume = PriceVol.Volume
+		'by default
+		Me.IsIntraDay = False
 	End Sub
 	''' <summary>
 	''' Note that IPriceVol is a subset of PriceVol data and not all parameter are updated when using this 

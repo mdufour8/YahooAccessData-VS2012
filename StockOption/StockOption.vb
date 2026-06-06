@@ -15,6 +15,7 @@ Namespace OptionValuation
 		Public Const NUMBER_TRADINGDAY_PER_MONTH As Integer = NUMBER_TRADINGDAY_PER_YEAR \ 12
 		Public Const NUMBER_SECOND_PER_DAY As Integer = 24 * 3600
 		Public Const VOLATILITY_DAILY_TO_YEARLY_RATIO As Double = MathPlus.VOLATILITY_DAILY_TO_YEARLY_RATIO
+		Public Const GAIN_DERIVATIVE_ENABLED As Boolean = False
 
 		Private MyDividendPaymentPeriodType As IStockOption.enuDividendPaymentPeriodType
     Private MySymbol As String
@@ -1301,7 +1302,7 @@ Namespace OptionValuation
 
 			Dim ThisResult As Double
 			Dim ThisTimeInYear As Double = NumberTradingDays / YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR
-			Dim ThisGain As Double = Gain * (1 + ThisTimeInYear * GainDerivative)
+			Dim ThisGain As Double = Gain * (1 + ThisTimeInYear * If(StockOption.GAIN_DERIVATIVE_ENABLED, GainDerivative, 0))
 			'Dim ThisPricePrediction As Double = StockOption.StockPricePrediction(NumberTradingDays, StockPrice, Gain)
 			'Dim ThisPricePredictionMedian As Double = StockOption.StockPricePredictionMedian(NumberTradingDays, StockPrice, Gain, Volatility)
 
@@ -1378,7 +1379,7 @@ Namespace OptionValuation
 			Dim ThisTimeInYear As Double = NumberTradingDays / YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR
 
 			' Adjust expected return to account for slope (derivative of gain)
-			Dim ThisGain As Double = Gain * (1 + ThisTimeInYear * GainDerivative)
+			Dim ThisGain As Double = Gain * (1 + ThisTimeInYear * If(StockOption.GAIN_DERIVATIVE_ENABLED, GainDerivative, 0))
 
 			' Calculate μ and σ parameters for the log-normal distribution
 			Dim ThisMu As Double = (ThisGain - Volatility ^ 2 / 2) * ThisTimeInYear
@@ -1491,9 +1492,43 @@ Namespace OptionValuation
 																											ByVal StockPriceEnd As Double) As Double
 			Dim ThisResult As Double
 			Dim ThisTimeInYear As Double = NumberTradingDays / MathPlus.NUMBER_TRADINGDAY_PER_YEAR
-			Dim ThisGain As Double = Gain * (1 + ThisTimeInYear * GainDerivative)
-			'Dim ThisPricePrediction As Double = StockOption.StockPricePrediction(NumberTradingDays, StockPrice, Gain)
-			'Dim ThisPricePredictionMedian As Double = StockOption.StockPricePredictionMedian(NumberTradingDays, StockPrice, Gain, Volatility)
+
+			'Note here:
+			'this formula is Not appropriate here 
+			'Dim ThisGain As Double = Gain * (1 + ThisTimeInYear * If(StockOption.GAIN_DERIVATIVE_ENABLED, GainDerivative, 0))
+			'a better approximation in this case is ThisGain = Gain + 0.5 * GainDerivative * ThisTimeInYear
+			'Why / 2? Because If gain changes linearly during the prediction interval, the average gain over the interval Is
+			'Gavg=G0+0.5*G′*ThisTimeInYear
+
+			' Estimate the average gain over the forecast interval using
+			' a first-order Taylor expansion of the gain function:
+			'
+			'   G(t) ≈ G0 + G' * t
+			'
+			' The average gain over [0,T] is:
+			'
+			'   Gavg = (1/T) * ∫ G(t) dt
+			'        = G0 + (G' * T) / 2
+			'
+			' where:
+			'   G0 = current annualized gain
+			'   G' = annualized gain derivative
+			'   T  = forecast horizon in years
+			'
+			' This provides a first-order correction for trend acceleration
+			' without requiring higher-order derivatives.
+
+			Dim ThisGain As Double = Gain
+			If StockOption.GAIN_DERIVATIVE_ENABLED Then
+				Dim GainDerivativeEffect As Double = GainDerivative * ThisTimeInYear / 2.0
+
+				' Optional limiter
+				'Dim MaxEffect As Double = Math.Abs(Gain) * 2.0 + 0.25
+				'If (Math.Abs(GainDerivativeEffect) > MaxEffect) Then
+				'	GainDerivativeEffect = Math.Sign(GainDerivativeEffect) * MaxEffect
+				'End If
+				ThisGain = ThisGain + GainDerivativeEffect
+			End If
 
 			'Since the variable Ut=(μ−σ2/2)t+σZt has the normal distribution with mean (μ−σ2/2)t and standard deviation σ√t, 
 			'it follows that Xt=exp(Ut) has the lognormal distribution with these parameters. 
@@ -1559,7 +1594,7 @@ Namespace OptionValuation
       Dim ThisResult As Double
       Dim ThisVolatilityRatio As Double
       Dim ThisTimeInYear As Double = NumberTradingDays / YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR
-			Dim ThisGain As Double = Gain * (1 + ThisTimeInYear * GainDerivative)
+			Dim ThisGain As Double = Gain * (1 + ThisTimeInYear * If(StockOption.GAIN_DERIVATIVE_ENABLED, GainDerivative, 0))
 			'Dim ThisPricePrediction As Double = StockOption.StockPricePrediction(NumberTradingDays, StockPrice, Gain)
 			'Dim ThisPricePredictionMedian As Double = StockOption.StockPricePredictionMedian(NumberTradingDays, StockPrice, Gain, Volatility)
 
@@ -1699,7 +1734,7 @@ Namespace OptionValuation
                                                      ByVal Volatility As Double) As Double
 
       Dim ThisTimeInYear As Double = NumberTradingDays / YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR
-			Dim ThisGain As Double = Gain * (1 + ThisTimeInYear * GainDerivative)
+			Dim ThisGain As Double = Gain * (1 + ThisTimeInYear * If(StockOption.GAIN_DERIVATIVE_ENABLED, GainDerivative, 0))
 			Dim ThisStockPriceMedian As Double = StockPrice * Math.Exp((ThisGain - Volatility ^ 2 / 2) * ThisTimeInYear)
       Return ThisStockPriceMedian
     End Function

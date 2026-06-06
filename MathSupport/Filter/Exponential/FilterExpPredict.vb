@@ -35,6 +35,7 @@ Public Class FilterExpPredict
 	Private MyStatisticalForGain As FilterStatistical
 	Private MyFilterRateYearlyScaling As Double
 	Private MyFilterRateYearlyGainVolatilitySQRTScaling As Double
+	Private MyQueueForBDelta As Queue(Of Double)
 	Private MyCircularBuffer As CircularBuffer(Of Double)
 
 
@@ -93,7 +94,6 @@ Public Class FilterExpPredict
 		MyFilterRateYearlyScaling = YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR / MyFilterRate
 		MyFilterRateYearlyGainVolatilitySQRTScaling = Math.Sqrt(MyFilterRateYearlyScaling)
 
-
 		MyFilter = FilterHead
 		MyFilterY = FilterBase
 
@@ -115,7 +115,9 @@ Public Class FilterExpPredict
 		A = 2 / (MyFilterRate + 1)
 		B = 1 - A
 		ABRatio = 2 / (MyFilterRate - 1)   'This is is equivalent to 'ABRatio = A / B or ABRatio =A / (1 - A)	
-		MyCircularBuffer = New CircularBuffer(Of Double)(capacity:=BufferCapacity, 0.0)
+		'MyQueueForBDelta = New Queue(Of Double)(capacity:=CInt(MyFilterRate))
+		If BufferCapacity < FilterRate Then BufferCapacity = CInt(MyFilterRate)
+		MyCircularBuffer = New CircularBuffer(Of Double)(capacity:=BufferCapacity)
 		_IsReset = True
 	End Sub
 
@@ -124,6 +126,7 @@ Public Class FilterExpPredict
 		Dim Bp As Double
 		Dim Result As Double
 		Dim ResultY As Double
+		Dim BDelta As Double
 		If _IsReset Then
 			'initialization
 			If TypeOf MyFilter Is IFilterRun Then
@@ -141,12 +144,22 @@ Public Class FilterExpPredict
 		ResultY = MyFilterY.Filter(Result)
 		Ap = Result + (Result - ResultY)
 		Bp = ABRatio * (Result - ResultY)
+		'we do not want the normalized slope here but the B Delta over the number samples
+		'with that we can use the Taylor series to expand the gain to a yearly estimate including the gain variation
+		If MyCircularBuffer.Count > 0 Then
+			'BDelta = (MyCircularBuffer.PeekLast() - MyCircularBuffer.PeekFirst()) / MyCircularBuffer.Count
+		End If
+		Debug.Print(BDelta.ToString)
+		Bp = Bp + BDelta
+
 		MyFilterDeltaALast = Ap - MyFilterALast
 		MyFilterDeltaBLast = Bp - MyFilterBLast
 		MyFilterALast = Ap
 		MyFilterBLast = Bp
-		'note that Bp is the average trend
+		'note that Bp is the average trend per sample 
 		FilterValueLast = Ap + Bp * MyNumberToPredict
+
+
 		'do not use the gainLog here 
 		'it is important for a low level filter not to assume that the signal is only positive
 		'this filter want to be generic for any range of signal input. Instead return teh B value and leave the 
@@ -167,9 +180,10 @@ Public Class FilterExpPredict
 		'Thus, the annualized trend estimate Is computed as
 		'b_annual = b_t * f_scale = b_t * (f_s / MyFilterRate)
 		'
-		Dim ThisGainVolatilityCorrected As Double = MyFilterRateYearlyGainVolatilitySQRTScaling * MyStatisticalForGain.Filter(Value:=Bp).StandardDeviation
+		'Dim ThisGainVolatilityCorrected As Double = MyFilterRateYearlyGainVolatilitySQRTScaling * MyStatisticalForGain.Filter(Value:=Bp).StandardDeviation
 
-		MyGainYearlyEstimate = Bp * (YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR) / (1 + ThisGainVolatilityCorrected)
+		'MyGainYearlyEstimate = Bp * (YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR) / (1 + ThisGainVolatilityCorrected)
+		MyGainYearlyEstimate = YahooAccessData.MathPlus.NUMBER_TRADINGDAY_PER_YEAR * Measure.Measure.GainLog(Value:=Ap + Bp, ValueRef:=Ap)
 		'Trace.WriteLine(ThisGainVolatilityCorrected)
 
 		'note that the gain is not the same as the gainLog here. This estimate is valid for any range of signal positive or negative
@@ -231,7 +245,7 @@ Public Class FilterExpPredict
 	''' The gain is not the same as the gainLog here and the estimate is valid for any range of signal positive or negative	
 	''' </summary>
 	''' <returns></returns>
-	Public ReadOnly Property GainYearlyEstimate As Double
+	Public ReadOnly Property GainYearlyEstimateLast As Double
 		Get
 			Return MyGainYearlyEstimate
 		End Get

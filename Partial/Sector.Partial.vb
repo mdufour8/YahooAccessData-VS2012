@@ -55,32 +55,47 @@ Partial Public Class Sector
     End If
   End Sub
 
-  Public Sub New()
-    Me.New("")
-  End Sub
+	Public Sub New()
+		Me.New("")
+	End Sub
 
-  Friend Function CopyDeep(ByRef Parent As Report, Optional ByVal IsIgnoreID As Boolean = False) As Sector
-    Dim ThisSector As Sector
-    ThisSector = New YahooAccessData.Sector
-    'add the sector
-    With ThisSector
-      If IsIgnoreID = False Then .ID = Me.ID
-      .Name = Me.Name
-      .DataSourceID = Me.DataSourceID
-      .Report = Parent
-      .ReportID = .Report.ID
-      .Report.Sectors.Add(ThisSector)
-    End With
-    Return ThisSector
-  End Function
+	Public Function CopyLocal(Optional Report As Report = Nothing) As Sector
+		Dim ThisSector As Sector
+		ThisSector = New YahooAccessData.Sector
+		'add the sector
+		With ThisSector
+			.ID = Me.ID
+			.Name = Me.Name
+			.DataSourceID = Me.DataSourceID
+			.Report = Report
+			.ReportID = If(Report?.ID, 0)
+			.Report?.Sectors.Add(ThisSector)
+		End With
+		Return ThisSector
+	End Function
 
-  ''' <summary>
-  ''' If an exception occurs, the exception object will be stored here. If no exception occurs, this property is null/Nothing.
-  ''' </summary>
-  ''' <value></value>
-  ''' <returns></returns>
-  ''' <remarks></remarks>
-  Public Property Exception() As Exception
+	Friend Function CopyDeep(ByRef Parent As Report, Optional ByVal IsIgnoreID As Boolean = False) As Sector
+		Dim ThisSector As Sector
+		ThisSector = New YahooAccessData.Sector
+		'add the sector
+		With ThisSector
+			If IsIgnoreID = False Then .ID = Me.ID
+			.Name = Me.Name
+			.DataSourceID = Me.DataSourceID
+			.Report = Parent
+			.ReportID = If(.Report?.ID, 0)
+			.Report?.Sectors.Add(ThisSector)
+		End With
+		Return ThisSector
+	End Function
+
+	''' <summary>
+	''' If an exception occurs, the exception object will be stored here. If no exception occurs, this property is null/Nothing.
+	''' </summary>
+	''' <value></value>
+	''' <returns></returns>
+	''' <remarks></remarks>
+	Public Property Exception() As Exception
     Get
       Return MyException
     End Get
