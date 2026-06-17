@@ -66,6 +66,7 @@ Partial Public Class Report
 	Private MyLoadToCacheLatestTick As Integer
 	Private _IsFileReadEndOfDayEnabled As Boolean
 	Private MyWebDataSource As WebEODData.IWebEODHistoricalData
+	Private MyDictionaryOfStock As Dictionary(Of String, Stock)
 	'Private MyDictionaryOfStockSymbol As Dictionary(Of String, List(Of IStockSymbol))
 
 	'Need to use these name to correctly capture the data from the net old object serialization
@@ -154,13 +155,14 @@ Partial Public Class Report
       .BondRates = New LinkedHashSet(Of BondRate, String)
       .SplitFactorFutures = New LinkedHashSet(Of SplitFactorFuture, String)
     End With
-    If MyListHeaderInfo Is Nothing And LIST_OF_HEADER_FILE_ENABLED Then
-      Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.json"
-      MyListHeaderInfo = FileHeaderRead(ThisFile, ListOfHeader, Me.Exception)
-    Else
-      MyListHeaderInfo = ListOfHeader()
-    End If
-  End Sub
+		If MyListHeaderInfo Is Nothing And LIST_OF_HEADER_FILE_ENABLED Then
+			Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.json"
+			MyListHeaderInfo = FileHeaderRead(ThisFile, ListOfHeader, Me.Exception)
+		Else
+			MyListHeaderInfo = ListOfHeader()
+		End If
+		MyDictionaryOfStock = New Dictionary(Of String, Stock)()
+	End Sub
 
   Public Sub New()
     Me.New(

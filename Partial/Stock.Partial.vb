@@ -729,6 +729,9 @@ Partial Public Class Stock
 		End With
 		'also copy the actual local RecordPrices if they exist
 		'_RecordPrices contain the stock price data stream
+		ThisStock.IsGeneratedStock = Me.IsGeneratedStock
+		ThisStock.GenerateBuild = Me.GenerateBuild
+		ThisStock.BuildOriginator = Me.BuildOriginator
 		ThisStock.SetRecordsPrices(_RecordPrices)
 		Return ThisStock
 	End Function
@@ -788,6 +791,9 @@ Partial Public Class Stock
 			'ThisStopWatch.Stop()
 		End With
 		'also copy the actual local RecordPrices if they exist
+		ThisStock.IsGeneratedStock = Me.IsGeneratedStock
+		ThisStock.GenerateBuild = Me.GenerateBuild
+		ThisStock.BuildOriginator = Me.BuildOriginator
 		ThisStock.SetRecordsPrices(_RecordPrices)
 		Return ThisStock
 	End Function

@@ -2,6 +2,7 @@
 Public Class StockPriceVol
 	Implements IEquatable(Of StockPriceVol)
 	Implements IStockPriceVol
+
 	Implements IPriceVol
 
 	Public Enum StockPriceDataType
@@ -29,6 +30,12 @@ Public Class StockPriceVol
 		Me.High = PriceVol.High
 		Me.Low = PriceVol.Low
 		Me.Volume = PriceVol.Volume
+		With PriceVol.AsIStockPriceVol
+			Me.VolumeAverage60 = .VolumeAverage60
+			Me.VolumePrevious = .VolumePrevious
+			Me.VolumePreviousTrading = .VolumePreviousTrading
+			Me.DVAverage60 = .DVAverage60
+		End With
 	End Sub
 
 	''' <summary>
@@ -48,6 +55,12 @@ Public Class StockPriceVol
 		Me.High = StockPriceVol.High
 		Me.Low = StockPriceVol.Low
 		Me.Volume = StockPriceVol.Volume
+		With StockPriceVol
+			Me.VolumeAverage60 = .VolumeAverage60
+			Me.VolumePrevious = .VolumePrevious
+			Me.VolumePreviousTrading = .VolumePreviousTrading
+			Me.DVAverage60 = .DVAverage60
+		End With
 	End Sub
 
 	Public Property DataType As StockPriceDataType
@@ -67,6 +80,8 @@ Public Class StockPriceVol
 	Public Property High As Double Implements IStockPriceVol.High
 	Public Property Low As Double Implements IStockPriceVol.Low
 	Public Property Volume As Long Implements IStockPriceVol.Volume
+
+
 
 	Public Overrides Function ToString() As String
 		Return $"{TypeName(Me)},Date:{Me.DateDay},LastPrevious:{Me.LastPrevious:F3},Open:{Me.Open:F3},High:{Me.High:F3},Low:{Me.Low:F3},Last:{Me.Last:F3},OpenNext:{Me.OpenNext:F3},Volume:{Me.Volume}"
@@ -140,6 +155,8 @@ Public Class StockPriceVol
 		End Get
 	End Property
 
+
+#Region "IPriceVol Implementation"
 	Public ReadOnly Property AsIPriceVol As IPriceVol Implements IPriceVol.AsIPriceVol
 		Get
 			Return Me
@@ -310,7 +327,7 @@ Public Class StockPriceVol
 			Me.Volume = value
 		End Set
 	End Property
-
+#End Region
 #Region "Factory Methods"
 	''' <summary>
 	''' Creates a new StockPriceVol from the local instance.
@@ -318,6 +335,24 @@ Public Class StockPriceVol
 	''' <returns>Return a copy of the current class instance.</returns>
 	Public Function CopyFrom() As StockPriceVol
 		Return New StockPriceVol(Me)
+	End Function
+
+
+	''' <summary>
+	''' Calculates the price * volume so that the volume become a weight for the price, 
+	''' this can be used to calculate a weighted average price over a period of time or for other purposes where the price need to be weighted by the volume 
+	''' for example to calculate a logaritmic weighted average price over a period of time or other pupose
+	''' by summing the PriceVolume and dividing by the total volume of the period
+	''' </summary>
+	Public Function DV() As Double Implements IStockPriceVol.DV
+		'try to return a positive value for the DV even if the volume is zero, this can be useful
+		'to avoid division by zero error when calculating the logarithmic change of the DV
+		'compared to its average over a period of time	
+		If Volume > 0 Then
+			Return Last * Volume
+		Else
+			Return Last * VolumePreviousTrading
+		End If
 	End Function
 
 	Private _IsIntraDay As Boolean
@@ -334,17 +369,78 @@ Public Class StockPriceVol
 			_IsIntraDay = value
 		End Set
 	End Property
+
+	Private _VolumePrevious As Long
+	Public Property VolumePrevious As Long Implements IStockPriceVol.VolumePrevious
+		Get
+			Return _VolumePrevious
+		End Get
+		Set(value As Long)
+			_VolumePrevious = value
+		End Set
+	End Property
+
+	Private _VolumePreviousTrading As Long
+
+	''' <summary>
+	''' VolumePreviousTrading is the volume of the previous trading day.
+	''' The value is never zero and if the stock did not trade yet its value is set back to the volume of the first trading day.
+	''' This value can safely be used to calculate the volume logarithmic change compared to the previous trading day
+	''' this Value need to be set extrenally while the list of StockPriceVol is processed, it is not automatically calculated by the class itself 
+	''' because it can be used in different ways and the logic to set this value can be different based on the best use case
+	''' </summary>
+	Public Property VolumePreviousTrading As Long Implements IStockPriceVol.VolumePreviousTrading
+		Get
+			Return _VolumePreviousTrading
+		End Get
+		Set(value As Long)
+			_VolumePreviousTrading = value
+		End Set
+	End Property
+
+
+
+	Private _VolumeAverage60 As Double
+
+	''' <summary>
+	''' Just a placeholder for the 60-day average volume often use for other calculation.
+	''' The value need to be set extrenally while the list of StockPriceVol is processed
+	''' </summary>
+	Public Property VolumeAverage60 As Double Implements IStockPriceVol.VolumeAverage60
+		Get
+			Return _VolumeAverage60
+		End Get
+		Set(value As Double)
+			_VolumeAverage60 = value
+		End Set
+	End Property
+
+
+	Private _DVAverage60 As Double
+
+	''' <summary>
+	''' The dollar volume average over 60 days, this is the average of the price * volume over the last 60 days. 
+	''' This can be used to calculate the liquidity deviation volume index (LDV) which is a measure of how much 
+	''' the current dollar volume deviates from its average over the last 60 days.
+	''' </summary>
+	''' <returns></returns>
+	Private Property DVAverage60 As Double Implements IStockPriceVol.DVAverage60
+		Get
+			Return _DVAverage60
+		End Get
+		Set(value As Double)
+			_DVAverage60 = value
+		End Set
+	End Property
+
+	Public Function LDV() As Double Implements IStockPriceVol.LDV
+		Dim thisDV = DV()
+		If thisDV > 0 AndAlso _DVAverage60 > 0 Then
+			Return Math.Log(thisDV / _DVAverage60)
+		Else
+			Return 0
+		End If
+	End Function
 #End Region
 End Class
 
-Public Interface IStockPriceVol
-	ReadOnly Property AsIStockPrice As IStockPriceVol
-	Property DateDay As Date
-	Property Open As Double
-	Property OpenNext As Double
-	Property Last As Double
-	Property LastPrevious As Double
-	Property High As Double
-	Property Low As Double
-	Property Volume As Long
-End Interface

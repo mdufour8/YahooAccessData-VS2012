@@ -216,7 +216,7 @@ Public Class PriceVol
 	Public FiveyrPEG As Single
 	Public Range As Single
 	Public RecordQuoteValue As IRecordQuoteValue
-	Public IsNull As Boolean
+	Public Property IsNull As Boolean
 	Public LastAdjusted As Single
 	Public FilterLast As Single
 	Public DividendShare As Single
@@ -836,7 +836,122 @@ Public Class PriceVol
 			Me.Volume = value
 		End Set
 	End Property
-#End Region
+
+	Private _VolumePrevious As Long
+
+	''' <summary>
+	''' Just a placeholder for the volume of the previous trading day.
+	''' 'this volume can be nul if there is no trading on the previous day before the current one
+	''' </summary>
+	Private Property IStockPriceVol_VolumePrevious As Long Implements IStockPriceVol.VolumePrevious
+		Get
+			Return _VolumePrevious
+		End Get
+		Set(value As Long)
+			_VolumePrevious = value
+		End Set
+	End Property
+
+	Private _VolumePreviousTrading As Long
+
+	''' <summary>
+	''' VolumePreviousTrading is the volume of the previous trading day.
+	''' The value may still be zero if the stock did not trade yet but as soon as trading occur it will never be zero
+	''' This value can safely be used to calculate the volume logarithmic change compared to the previous trading day
+	''' this Value need to be set externally while the list of StockPriceVol is processed, it is not automatically calculated by the class itself 
+	''' because it can be used in different ways and the logic to set this value can be different based on the best use case
+	''' </summary>
+	Private Property IStockPriceVol_VolumePreviousTrading As Long Implements IStockPriceVol.VolumePreviousTrading
+		Get
+			Return _VolumePreviousTrading
+		End Get
+		Set(value As Long)
+			_VolumePreviousTrading = value
+		End Set
+	End Property
+
+	Private _VolumeAverage60 As Double
+	''' <summary>
+	''' Just a placeholder for the 60-day average volume.
+	''' </summary>
+	Private Property IStockPriceVol_VolumeAverage60 As Double Implements IStockPriceVol.VolumeAverage60
+		Get
+			Return _VolumeAverage60
+		End Get
+		Set(value As Double)
+			_VolumeAverage60 = value
+		End Set
+	End Property
+
+	Private _DVAverage60 As Double
+	''' <summary>
+	''' Just a placeholder for the 60-day average daily volume.
+	''' </summary>
+	Private Property IStockPriceVol_DVAverage60 As Double Implements IStockPriceVol.DVAverage60
+		Get
+			Return _DVAverage60
+		End Get
+		Set(value As Double)
+			_DVAverage60 = value
+		End Set
+	End Property
+
+
+	''' <summary>
+	''' Liquidity index or Dollar Volume(DV) Is the total actual monetary value Of a security traded during a specific period. 
+	''' Calculated As Shares Traded × Share Price, it reveals how much capital Is flowing through an asset, 
+	''' helping measure liquidity without being misled by share price.
+	''' DVolume = Volume × Current Price
+	''' What Institutions Often Use
+	''' Instead of raw volume
+	''' DV=Price×Volume
+	''' Or ln(DV)
+	''' This measures : 
+	''' Amount of capital exchanged.
+	'''	This Is much more meaningful.
+	''' </summary>
+	Private Function IStockPriceVol_DV() As Double Implements IStockPriceVol.DV
+		Return Last * Volume
+	End Function
+
+	''' <summary>
+	''' --------------------------------------------------------------------
+	''' Liquidity Deviation Volume Index or LDV
+	'''
+	''' LDV(i) = ln( DV(i) / AvgDV60(i) )
+	''' or:
+	''' LDV(i)    = ln( DV(i) / AvgDV60(i) )
+	''' AvgLDV    = Sum( LDV(i) ) / N
+	''' Liquidity = Exp( AvgLDV )
+	''' 
+	''' where:
+	'''   DV(i)      = Price(i) * Volume(i)
+	'''   AvgDV60(i)= 60-day average Dollar Volume
+	''' Interpretation:
+	'''It mirror what is done for the price return:
+	''' Return(i) = ln( Price(i) / Price(i-1) )
+	''' AvgReturn = Sum( Return(i) ) / N
+	''' Growth    = Exp( AvgReturn )
+	'''
+	''' Interpretation:
+	'''   LDV equal to 0  -> Normal liquidity
+	'''   LDV greater than 0  -> Above-average participation
+	'''   LDV less than 0  -> Below-average participation
+	'''
+	''' Example:
+	'''   DV = 2 * AvgDV60
+	'''   LDV = ln(2) = 0.693
+	''' --------------------------------------------------------------------
+	''' </summary>
+	Public Function LDV() As Double Implements IStockPriceVol.LDV
+		Dim DV = IStockPriceVol_DV()
+		If DV > 0 AndAlso _DVAverage60 > 0 Then
+			Return Math.Log(DV / _DVAverage60)
+		Else
+			Return 0
+		End If
+	End Function
+#End Region 'IStockPriceVol
 End Class
 
 

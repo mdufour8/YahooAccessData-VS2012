@@ -427,12 +427,7 @@ Namespace MathPlus.Filter
 		''' <returns></returns>
 		Private ReadOnly Property IFilterRun_FilterLast(Index As Integer) As Double Implements IFilterRun.FilterLast
 			Get
-				'we can use the current List to get data at a specific index
-				'note 0 is the oldest value MyCircularBuffer.Count -1 is the most recent value.
-				'The index reversed in the range [0, MyListOfFilterValue.Count - 1].
-				'change the access range to be in the range [0, MyListOfFilterValue.Count - 1]	
-				Dim ThisBufferIndex As Integer = MyListOfFilterValue.Count - 1 - Index
-				Select Case ThisBufferIndex
+				Select Case Index
 					Case < 0
 						'return the oldest value
 						Return MyListOfFilterValue.First
@@ -441,7 +436,7 @@ Namespace MathPlus.Filter
 						Return MyListOfFilterValue.Last
 					Case Else
 						'return at a specific location in the buffer	
-						Return MyListOfFilterValue.Item(index:=ThisBufferIndex)
+						Return MyListOfFilterValue.Item(index:=Index)
 				End Select
 			End Get
 		End Property

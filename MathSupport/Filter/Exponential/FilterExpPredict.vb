@@ -282,10 +282,7 @@ Public Class FilterExpPredict
 	Public ReadOnly Property FilterLast(Index As Integer) As Double Implements IFilterRun.FilterLast
 		Get
 			'For the CircularBuffer note 0 is the oldest value MyCircularBuffer.Count -1 is
-			'the most recent value.
-			'The index is in the range [0, FilterRate-1].
-			Dim ThisBufferIndex As Integer = MyCircularBuffer.Count - 1 - Index
-			Select Case ThisBufferIndex
+			Select Case Index
 				Case < 0
 					'return the oldest value
 					Return MyCircularBuffer.PeekFirst
@@ -293,8 +290,8 @@ Public Class FilterExpPredict
 					'return the last value (most recent value)
 					Return MyCircularBuffer.PeekLast
 				Case Else
-					'return at a sppecific location in the buffer	
-					Return MyCircularBuffer.Item(BufferIndex:=ThisBufferIndex)
+					'return at a specific location in the buffer	
+					Return MyCircularBuffer.Item(BufferIndex:=Index)
 			End Select
 		End Get
 	End Property
