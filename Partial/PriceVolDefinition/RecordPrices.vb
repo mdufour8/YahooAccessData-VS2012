@@ -340,6 +340,7 @@ Public Class RecordPrices
 			MyListOfIPriceVol.Add(MyPriceVols(I))
 			MyFilterVolatilityYZYearly.Filter(MyPriceVols(I))
 			GainDeltaYearly = MyListOfCumulativeLogGain(I).Last - MyListOfCumulativeLogGain(Math.Max(0, I - NUMBER_TRADINGDAY_PER_YEAR)).Last
+		For Each ThisVolItems In MyFilterVolatilityYZYearly.ToList.WithIndex
 			If MyFilterVolatilityYZYearly.FilterLast > 0 Then
 				MyListOfSharpeRatio.Add(GainDeltaYearly / MyFilterVolatilityYZYearly.FilterLast)
 			Else
