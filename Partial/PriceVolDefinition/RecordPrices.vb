@@ -751,7 +751,6 @@ Public Class RecordPrices
 		Dim ThisListOfSSpecialDividendPayout As New List(Of Integer)
 		Dim ThisRecordQuoteValue As YahooAccessData.RecordQuoteValue
 		'Dim ThisRecordQuoteValuePrevious As YahooAccessData.RecordQuoteValue
-		Dim ThisListOfPriceVols As New List(Of PriceVol)
 		Dim IsLiveUpdate As Boolean
 		'Dim ThisDateStopEndOfDay As Date = DateStopValue.Date.AddHours(24).AddSeconds(-1)
 		'set the default value
@@ -860,7 +859,6 @@ Public Class RecordPrices
 			_IsPriceTarget = False
 		End If
 		'adjust the data
-		ThisListOfPriceVols.Clear()
 		'synchronize the start with the actual data
 		Dim ThisPriceVol As PriceVol
 		Dim ThisPriceVolLast As PriceVol = Nothing
@@ -1059,6 +1057,11 @@ Public Class RecordPrices
 		Next
 	End Sub
 
+	''' <summary>
+	''' old code to adjust the intraday data for stock split, it is not used anymore but may be useful in the future if we want to support the intraday data for the stock that have been split during the day
+	''' </summary>
+	''' <param name="PriceVolIntraDay"></param>
+	''' <param name="PriceVol"></param>
 	Private Sub ProcessSplitAdjustForIntraDay(ByRef PriceVolIntraDay() As PriceVol, ByRef PriceVol As PriceVol)
 		Dim ThisPriceVol As PriceVol
 		Dim ThisVol As Long
@@ -1173,6 +1176,7 @@ Public Class RecordPrices
 				.EPSEstimateNextYear = MyPriceVolLast.EPSEstimateNextYear
 				.OneyrPEG = MyPriceVolLast.OneyrPEG
 				.FiveyrPEG = MyPriceVolLast.FiveyrPEG
+				.AsStockPriceAdjusted.SetPriceAdjusted(MyPriceVolLast.AsStockPriceAdjusted)
 			Else
 				If (Record.Vol = 0 And Record.Last = 0) Then
 					.Open = MyPriceVolLast.Last
@@ -1187,6 +1191,7 @@ Public Class RecordPrices
 					.EPSEstimateNextQuarter = MyPriceVolLast.EPSEstimateNextQuarter
 					.EPSEstimateNextYear = MyPriceVolLast.EPSEstimateNextYear
 					.OneyrPEG = MyPriceVolLast.OneyrPEG
+					.AsStockPriceAdjusted.SetPriceAdjusted(MyPriceVolLast.AsStockPriceAdjusted)
 				Else
 					.Open = Record.Last
 					.DividendYield = Record.DividendYield
@@ -1200,6 +1205,7 @@ Public Class RecordPrices
 					.EPSEstimateNextQuarter = Record.EPSEstimateNextQuarter
 					.EPSEstimateNextYear = Record.EPSEstimateNextYear
 					.OneyrPEG = Record.PEGRatio
+					.AsStockPriceAdjusted.SetPriceAdjusted(Record.Record.AsStockPriceAdjusted)
 				End If
 				.FiveyrPEG = .OneyrPEG
 			End If
@@ -1304,6 +1310,7 @@ Public Class RecordPrices
 			.High = RecordQuote.High
 			.Low = RecordQuote.Low
 			.Last = RecordQuote.Last
+			.AsStockPriceAdjusted.SetPriceAdjusted(RecordQuote.Record.AsStockPriceAdjusted)
 			If RecordQuote.OneyrTargetPrice = 0 Then
 				.OneyrTargetPrice = MyPriceVolLast.OneyrTargetPrice
 				.EarningsShare = MyPriceVolLast.EarningsShare

@@ -41,6 +41,8 @@ Partial Public Class Report
 		Weekly
 	End Enum
 
+	Public Const WEB_DATABASE_DATE_START_MIN As Date = #01/02/2001#
+
 	Private MyException As Exception
 	Private Shared MyListHeaderInfo As List(Of HeaderInfo)
 	Private colVb As Microsoft.VisualBasic.Collection

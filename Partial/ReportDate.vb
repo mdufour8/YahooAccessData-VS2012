@@ -276,8 +276,8 @@ Public Class ReportDate
     'this is equivalent than calling DateToMondayPrevious(DateStart)
     'the transformation is generally non-linear and we procede by condition
     Select Case DateStart.DayOfWeek
-      Case DayOfWeek.Monday    '1
-        ThisNumberOfDayFromMonday = 0
+			Case DayOfWeek.Monday    '1
+				ThisNumberOfDayFromMonday = 0
         'Case DayOfWeek.Sunday   '0
         'do not need to test for this case
         'ThisNumberOfDayFromMonday = 6

@@ -106,6 +106,7 @@ Partial Public Class Stock
 			'the Me parameters will activate the automatic loading of the data when needed
 			'note that for Web update this event should be turned off i.e. IsRecordVirtual==false
 			If IsRecordVirtual Then
+				'note this event model is old and not use withe the new web access method 
 				'the Me parameters will activate the automatic loading of the data when needed
 				.Records = New LinkedHashSet(Of Record, Date)(Me)
 				.RecordsDaily = New LinkedHashSet(Of RecordDaily, Date)(Me)
@@ -281,7 +282,9 @@ Partial Public Class Stock
 	'	Return ThisResult.Result
 	'End Function
 
-	Public Function WebRefreshRecord(ByVal RecordDateStop As Date) As Date
+	Public Function WebRefreshRecord(DateStart As Date, DateStop As Date) As Date
+		Dim ThisRecordDateStop As Date = DateStop
+		Dim ThisRecordDateStart As Date = DateStart
 		Dim ThisTask As Task(Of IResponseStatus(Of Date)) = Nothing
 
 		If Me.Report.WebDataSource Is Nothing Then Return Now
@@ -307,7 +310,7 @@ Partial Public Class Stock
 			'so we use a task to run the async method
 			Dim ThisTaskOfWebRefreshRecord = New Task(Of IResponseStatus(Of Date))(
 				Function()
-					ThisTask = Me.WebRefreshRecordAsync(RecordDateStop)
+					ThisTask = Me.WebRefreshRecordNewAsync(ThisRecordDateStart, ThisRecordDateStop)
 					Return ThisTask.Result
 				End Function)
 
@@ -335,17 +338,13 @@ Partial Public Class Stock
 		End Try
 	End Function
 
-	''' <summary>
-	'''   Use to refresh the data record via the builds-in web interface
-	''' </summary>
-	''' <param name="RecordDateStop"></param>
-	''' <returns>
-	'''   return the date for the last record after the update.
-	''' </returns>
-	Public Async Function WebRefreshRecordAsync(ByVal RecordDateStop As Date) As Task(Of IResponseStatus(Of Date))
+
+	Public Async Function WebRefreshRecordAsync(DateStart As Date, DateStop As Date) As Task(Of IResponseStatus(Of Date))
 		Dim ThisWebDataSource = Me.Report.WebDataSource
 		Dim IsLastRecordLive As Boolean
-		Dim IsNewRecordLive As Boolean
+		Dim IsRecordLive As Boolean
+		Dim ThisRecordDateStop As Date = DateStop
+		Dim ThisRecordDateStart As Date = DateStart
 
 		If ThisWebDataSource Is Nothing Then
 			Return New ResponseStatus(Of Date)(Me.DateStop)
@@ -370,11 +369,10 @@ Partial Public Class Stock
 		If ThisWebEOD.ExchangeCode Is Nothing OrElse ThisWebEOD.SymbolCode Is Nothing Then
 			Return New ResponseStatus(Of Date)(Me.DateStop, IsSuccess:=False, Message:="Invalid exchange and or symbol combination...")
 		End If
-		RecordDateStop = Now
 
-		Dim ThisDateOfLastTrading = ThisWebDataSource.DayTimeOfLastTrading(ThisWebEOD.ExchangeCode, DateValue:=RecordDateStop)
-		Dim ThisDateOfNextTrading = ThisWebDataSource.DayTimeOfNextTrading(ThisWebEOD.ExchangeCode, DateValue:=RecordDateStop)
-		Dim IsLiveUpdateReady = ThisWebDataSource.IsLiveUpdateReady(ThisWebEOD.ExchangeCode, DateValue:=RecordDateStop)
+		Dim ThisDateOfLastTrading = ThisWebDataSource.DayTimeOfLastTrading(ThisWebEOD.ExchangeCode, DateValue:=ThisRecordDateStop)
+		Dim ThisDateOfNextTrading = ThisWebDataSource.DayTimeOfNextTrading(ThisWebEOD.ExchangeCode, DateValue:=ThisRecordDateStop)
+		Dim IsLiveUpdateReady = ThisWebDataSource.IsLiveUpdateReady(ThisWebEOD.ExchangeCode, DateValue:=ThisRecordDateStop)
 		Dim ThisWebDateStart As Date
 		If _Records.Count = 0 Then
 			'reset the date
@@ -387,8 +385,8 @@ Partial Public Class Stock
 			ThisWebDateStart = Me.DateStop
 			If MyRecordQuoteValues.Count <> _Records.Count Then
 				MyRecordQuoteValues.Clear()
-				For Each ThisNewRecord In _Records
-					MyRecordQuoteValues.Add(New RecordQuoteValue(ThisNewRecord))
+				For Each ThisRecord In _Records
+					MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
 				Next
 			End If
 			'should be corrected to the next trading day
@@ -406,7 +404,7 @@ Partial Public Class Stock
 			'	'Debug.Print($"Data is updated but there is no live update available at this time")
 			'	Return New ResponseStatus(Of Date)(Me.DateStop)
 			'End If
-			If ThisWebDateStart.Date = RecordDateStop.Date Then
+			If ThisWebDateStart.Date = ThisRecordDateStop.Date Then
 				If IsLiveUpdateReady = False Then
 					'Debugger.Break()
 					'Return New ResponseStatus(Of Date)(Me.DateStop, IsSuccess:=True, Message:="")
@@ -422,7 +420,7 @@ Partial Public Class Stock
 				ExchangeCode:=ThisWebEOD.ExchangeCode,
 				Symbol:=ThisWebEOD.SymbolCode,
 				DateStart:=ThisWebDateStart,
-				DateStop:=RecordDateStop)
+				DateStop:=ThisRecordDateStop)
 			'use just a test
 			If ThisResponseQuery Is Nothing Then
 				ThisResponseQuery = ThisResponseQuery
@@ -437,9 +435,9 @@ Partial Public Class Stock
 				'however MyRecordQuoteValues may still need to be updated
 				If MyRecordQuoteValues.Count = 0 Then
 					'note we could also have use this
-					'For Each ThisNewRecord In Me.Records(IsLoadEnabled:=False)
-					For Each ThisNewRecord In _Records
-						MyRecordQuoteValues.Add(New RecordQuoteValue(ThisNewRecord))
+					'For Each ThisRecord In Me.Records(IsLoadEnabled:=False)
+					For Each ThisRecord In _Records
+						MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
 					Next
 				End If
 				'If ThisWebDataSource.GetDictionaryOfStockSymbolBySymbol(ThisWebEOD.ExchangeCode).ContainsKey(ThisWebEOD.SymbolCode) Then
@@ -456,7 +454,19 @@ Partial Public Class Stock
 				Dim ThisDictionaryOfStockQuote = ThisResponseQuery.Result
 				If ThisDictionaryOfStockQuote.Count > 0 Then
 					'only one stock at a time and it content is always at element 0 of the dictionary
-					Dim ThisListOfNewStockQuote As List(Of WebEODData.IStockQuote) = ThisDictionaryOfStockQuote.Values.First
+					Dim ThisListOfStockQuote As List(Of WebEODData.IStockQuote) = ThisDictionaryOfStockQuote.Values.First
+					'test for the Adjusted cost price for the stock quote.
+					'If the Adjusted cost price is not zero then it means that the data is already adjusted
+					'for the split factor and hence we do not need to apply the split factor adjustment again.
+					'alos there is a correction for the dividend and variosu stock return scenario
+					'For Each ThisStockQuote As IStockPriceAdjusted In ThisListOfStockQuote
+					'	If ThisStockQuote.Ratio <> 1 Then
+					'		ThisStockQuote = ThisStockQuote
+					'	End If
+					'Next
+
+
+
 					''check if this is a bond exchange
 					'If ThisWebEOD.ExchangeCode = "GBond" Then
 					'	'in that case change the list to reflect the bond price at maturity raher
@@ -464,11 +474,11 @@ Partial Public Class Stock
 					'	'will give 200$ at maturity for an interst rate of 10% per year
 					'	Dim ThisListOfStockBondQuote As New List(Of WebEODData.IStockQuote)
 
-					'	For Each ThisStockQuote In ThisListOfNewStockQuote
+					'	For Each ThisStockQuote In ThisListOfStockQuote
 					'		ThisListOfStockBondQuote.Add(New WebEODData.StockBondQuote(ThisStockQuote, ScalePriceToMaturityInDays:=3650))
 					'	Next
 					'	'get rid of the other list to free memory
-					'	ThisListOfNewStockQuote = ThisListOfStockBondQuote
+					'	ThisListOfStockQuote = ThisListOfStockBondQuote
 					'End If
 					'determine if the last record was a live record
 					If _Records.Count > 0 Then
@@ -480,23 +490,21 @@ Partial Public Class Stock
 					Else
 						IsLastRecordLive = False
 					End If
-					If ThisListOfNewStockQuote.Count > 0 Then
+					If ThisListOfStockQuote.Count > 0 Then
 						'new data record available for this stock
 						'tranform the StockQuote to a local record type
-						Dim ThisListOfNewRecord = ThisListOfNewStockQuote.ToListOfRecord
-						Dim ThisNewRecordLast = ThisListOfNewRecord.Last
-						For Each ThisNewRecord In ThisListOfNewRecord
-							If ThisNewRecord Is ThisNewRecordLast Then
-								ThisNewRecord = ThisNewRecord
+						Dim ThisListOfRecord = ThisListOfStockQuote.ToListOfRecord(StockReference:=Me)
+						Dim ThisRecordLast = ThisListOfRecord.Last
+						For Each ThisRecord In ThisListOfRecord
+							If ThisRecord Is ThisRecordLast Then
+								'use for debugging
+								ThisRecord = ThisRecord
 							End If
-							'set the record parameters
-							ThisNewRecord.Stock = Me
-							ThisNewRecord.StockID = ThisNewRecord.Stock.ID
-							'check if the last records for the new data is live
-							If ThisNewRecord.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
-								IsNewRecordLive = True
+							'check if the current records is live
+							If ThisRecord.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
+								IsRecordLive = True
 							Else
-								IsNewRecordLive = False
+								IsRecordLive = False
 							End If
 							If _Records.Count > 0 Then
 								'note that when the record is not live the time value for the date is always zero or midnight
@@ -505,7 +513,7 @@ Partial Public Class Stock
 								'information become available. Hence it is still necessary to remove the live update and replace with
 								'the new data. The condition below ensure this condition is met.
 								'TODO: This condition for update should be checked again
-								If (ThisNewRecord.DateUpdate > Me.DateStop) Or (IsNewRecordLive = False And IsLastRecordLive = True) Then
+								If (ThisRecord.DateUpdate > Me.DateStop) Or (IsRecordLive = False And IsLastRecordLive = True) Then
 									'work directly with the collection
 									If IsLastRecordLive Then
 										'need to remove the last record
@@ -524,30 +532,298 @@ Partial Public Class Stock
 											Else
 												'Todo: This test could be removed in time
 												'should never happen but just in case
-												MsgBox($"Unable to remove a live record for stock {Me.Symbol} for date {ThisNewRecord.DateDay}")
+												MsgBox($"Unable to remove a live record for stock {Me.Symbol} for date {ThisRecord.DateDay}")
 											End If
 										End With
 									End If
-									If (ThisNewRecord.DateUpdate > Me.DateStop) Then
-										If _Records.TryAdd(ThisNewRecord) = True Then
-											MyRecordQuoteValues.Add(New RecordQuoteValue(ThisNewRecord))
-											Me.DateStop = ThisNewRecord.DateDay
+									If (ThisRecord.DateUpdate > Me.DateStop) Then
+										If _Records.TryAdd(ThisRecord) = True Then
+											MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
+											Me.DateStop = ThisRecord.DateDay
 										Else
 											'should never happen but just in case
 											'wrong  it can happen if you try adding another record with the same date
 											'TODO: This condition for update should be checked again
-											MsgBox($"Unable to add a record for stock {Me.Symbol} for date {ThisNewRecord.DateDay}")
+											MsgBox($"Unable to add a record for stock {Me.Symbol} for date {ThisRecord.DateDay}")
 										End If
 									End If
 								End If
 							Else
 								'special case for the first record
-								If _Records.TryAdd(ThisNewRecord) = True Then
-									MyRecordQuoteValues.Add(New RecordQuoteValue(ThisNewRecord))
-									Me.DateStop = ThisNewRecord.DateDay
+								If _Records.TryAdd(ThisRecord) = True Then
+									MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
+									Me.DateStop = ThisRecord.DateDay
 								Else
 									'should never happen but just in case
-									MsgBox($"Unable to add a record for stock {Me.Symbol} for date {ThisNewRecord.DateDay}")
+									MsgBox($"Unable to add a record for stock {Me.Symbol} for date {ThisRecord.DateDay}")
+								End If
+							End If
+						Next
+					End If
+					If Me.DateStop > Me.Report.DateStop Then
+						Me.Report.DateStop = Me.DateStop
+					End If
+				End If
+			Else
+				Trace.WriteLine($"Web query failure for {Me.Symbol}{vbCr}{ThisResponseQuery.Message}")
+				Return New ResponseStatus(Of Date)(Me.DateStop, IsSuccess:=False, Message:=$"Web query failure for {Me.Symbol}{vbCr}{ThisResponseQuery.Message}")
+			End If
+		End If
+		Return New ResponseStatus(Of Date)(Me.DateStop)
+	End Function
+
+
+	Public Async Function WebRefreshRecordNewAsync(DateStart As Date, DateStop As Date) As Task(Of IResponseStatus(Of Date))
+		Dim ThisWebDataSource = Me.Report.WebDataSource
+		Dim IsLastRecordLive As Boolean
+		Dim IsRecordLive As Boolean
+
+		'check immediatly for this extreme condition
+		DateStart = If(DateStart < Report.WEB_DATABASE_DATE_START_MIN, Report.WEB_DATABASE_DATE_START_MIN, DateStart)
+		If ThisWebDataSource Is Nothing Then
+			Return New ResponseStatus(Of Date)(Me.DateStop)
+		End If
+		'always remove the automatic splitting adjustment
+		'when connected to the web.
+		'the data is already adjusted to reflect the share splitting on the web
+		'If Me.Symbol = "AG" Then
+		'	Me.Symbol = Me.Symbol
+		'End If
+		Me.IsSplitEnabled = False
+		Dim ThisWebEOD = SerializationKeyHelper.ToWebEOD(Me)
+
+		'ThisWebDataSource, ThisWebEOD.ExchangeCode, ThisWebEOD.SymbolCode)
+
+		'SerializationKeyHelper.ToWebEODCode(ThisWebDataSource, ThisWebEOD.ExchangeCode, ThisWebEOD.SymbolCode)
+		'SerializationKeyHelper.NormalizeKey(ThisWebEOD.SymbolCode)
+
+		'If Me.Symbol = "GOLD" Then
+		'	Debugger.Break()
+		'End If
+		If ThisWebEOD.ExchangeCode Is Nothing OrElse ThisWebEOD.SymbolCode Is Nothing Then
+			Return New ResponseStatus(Of Date)(DateStop, IsSuccess:=False, Message:="Invalid exchange and or symbol combination...")
+		End If
+
+		Dim ThisDateOfLastTrading = ThisWebDataSource.DayTimeOfLastTrading(ThisWebEOD.ExchangeCode, DateValue:=DateStop)
+		Dim ThisDateOfNextTrading = ThisWebDataSource.DayTimeOfNextTrading(ThisWebEOD.ExchangeCode, DateValue:=DateStop)
+		Dim IsLiveUpdateReady = ThisWebDataSource.IsLiveUpdateReady(ThisWebEOD.ExchangeCode, DateValue:=DateStop)
+		Dim ThisWebDateStart As Date
+		Dim ThisWebDateStop As Date
+		If _Records.Count = 0 Then
+			'reset the date
+			Me.DateStart = DateStart
+			Me.DateStop = DateStart
+			'make sure there is nothing in the MyRecordQuoteValues
+			MyRecordQuoteValues.Clear()
+		Else
+			'in some case when the stock is added via the Report.add MyRecordQuoteValues may not have been yet updated
+			If MyRecordQuoteValues.Count <> _Records.Count Then
+				MyRecordQuoteValues.Clear()
+				For Each ThisRecord In _Records
+					MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
+				Next
+			End If
+			'do not move Me.DateStart up in time. The data in teh list may not have been availaible it does
+			'not mean that Me.DateStart is not a valid date for a request i.e. properly layout in a weekly data stream 
+			'Me.DateStart = MyRecordQuoteValues.AsDateUpdate.DateStart
+			Me.DateStop = MyRecordQuoteValues.AsDateUpdate.DateStop
+		End If
+		'prepare the query for the stock quote data
+		Dim ThisResponseQuery As IResponseStatus(Of Dictionary(Of String, List(Of IStockQuote))) = Nothing
+		Dim ThisResponseLiveQuery As IResponseStatus(Of IStockQuote) = Nothing
+		'check if the symbol exit
+		If ThisWebDataSource.GetDictionaryOfStockSymbolBySymbol(ThisWebEOD.ExchangeCode).ContainsKey(ThisWebEOD.SymbolCode) Then
+			'ToDo: A timeout is needed here in case the server is not available anymore.
+			'check the current data date and update what is needed.
+			'we may have to get the data in more than one step if we need the data before the current data start
+			If Me.DateStart = Me.DateStop Then
+				'make sure there is nothing in the MyRecordQuoteValues
+				ThisWebDateStart = DateStart
+				MyRecordQuoteValues.Clear()
+			Else
+				'we have some data in the database
+				'we need to update the data if the date start is before the current date stop
+				'but we also need to check if the date stop is after the current date stop
+				'if that case we need to update the data with the new date stop
+				'we may have to get the data in more than one step if we need the data before the current data start
+				'however her we will only do one step update to get the data between the current date stop and the new date stop
+				'because that could change the price adjustement value. More testing is needed before implementing in two step
+				If DateStart < Me.DateStart Then
+					'restart teh loading of the data from the new date start to the current date stop
+					'make sure there is nothing in the MyRecordQuoteValues
+					MyRecordQuoteValues.Clear()
+					ThisWebDateStart = DateStart
+				Else
+					'set the start date here based on the stop date requested by the user and the current date stop in the data
+					'the WebDateStart cannont exceed the current date stop in the data because that would create a gap in the data
+					'and hence a serious problem in the data stream. 
+					'possibly some optimisation are possible here. i.e.
+					'if the last data is not live (enuRecordType.LiveUpdate =false),
+					'possibly we could start set the start date 1 day later than the current date stop because
+					'we know that there is no live update and hence no risk of missing data. B
+					'ut that need to be tested before being implemented.
+					ThisWebDateStart = If(DateStop > Me.DateStop, Me.DateStop, DateStop)
+				End If
+			End If
+			ThisWebDateStop = Now
+			'do a complete update to get all the data properly scaled between the new date start and the current date stop
+			ThisResponseQuery = Await ThisWebDataSource.LoadStockQuoteAsync(
+				ExchangeCode:=ThisWebEOD.ExchangeCode,
+				Symbol:=ThisWebEOD.SymbolCode,
+				DateStart:=ThisWebDateStart,
+				DateStop:=ThisWebDateStop)
+
+			'use just a test
+			'does not seem to happen anymore. Dhould be removed in time
+			If ThisResponseQuery Is Nothing Then
+				ThisResponseQuery = ThisResponseQuery
+				Debugger.Break()
+			End If
+		Else
+			Debug.Print($"Symbol {Me.Symbol} not found on web database...")
+			Return New ResponseStatus(Of Date)(Me.DateStop, IsSuccess:=False, Message:=$"Stock {ThisWebEOD.SymbolCode} Not found in exchange {New ResponseStatus(Of Date)(Me.DateStop, IsSuccess:=False, Message:=$"Stock {ThisWebEOD.ExchangeCode}")}")
+		End If
+		'we have the data here we can process it and update the record.
+		'Note that the data is already adjusted for the split factor and dividends so there is no need to apply any adjustment for the split factor on the data.
+		If ThisResponseQuery IsNot Nothing Then
+			'process the 'end of day' data
+			If ThisResponseQuery.IsSuccess Then
+				Dim ThisDictionaryOfStockQuote = ThisResponseQuery.Result
+				If ThisDictionaryOfStockQuote.Count > 0 Then
+					'only one stock at a time and it content is always at element 0 of the dictionary
+					Dim ThisListOfStockQuote As List(Of WebEODData.IStockQuote) = ThisDictionaryOfStockQuote.Values.First
+					'test for the Adjusted cost price for the stock quote.
+					'If the Adjusted cost price is not zero then it means that the data is already adjusted
+					'for the split factor and hence we do not need to apply the split factor adjustment again.
+					'alos there is a correction for the dividend and variosu stock return scenario
+					'For Each ThisStockQuote As IStockPriceAdjusted In ThisListOfStockQuote
+					'	If ThisStockQuote.Ratio <> 1 Then
+					'		ThisStockQuote = ThisStockQuote
+					'	End If
+					'Next
+
+
+
+					''check if this is a bond exchange
+					'If ThisWebEOD.ExchangeCode = "GBond" Then
+					'	'in that case change the list to reflect the bond price at maturity raher
+					'	'than the interest rate. Scale everything by 10 years. Here 100$ bond
+					'	'will give 200$ at maturity for an interst rate of 10% per year
+					'	Dim ThisListOfStockBondQuote As New List(Of WebEODData.IStockQuote)
+
+					'	For Each ThisStockQuote In ThisListOfStockQuote
+					'		ThisListOfStockBondQuote.Add(New WebEODData.StockBondQuote(ThisStockQuote, ScalePriceToMaturityInDays:=3650))
+					'	Next
+					'	'get rid of the other list to free memory
+					'	ThisListOfStockQuote = ThisListOfStockBondQuote
+					'End If
+					'determine if the last record was a live record
+					If _Records.Count > 0 Then
+						If _Records.Last.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
+							IsLastRecordLive = True
+							'need to remove the last record
+							'it can be done easily if we access the low level functionality
+							With DirectCast(_Records, LinkedHashSet(Of Record, Date))
+								'check if the key exist in the data list
+								'the key may be the same indicating that the data has not yet been updated
+								'to a new timeframe
+								'in that case we ignore the record
+								'the test does not appears to be necessary but just in case
+								'the record to remove is located in the last position
+								Dim ThisLastRecordDate = MyRecordQuoteValues.Last.DateDay
+								If .RemoveAt(_Records.Count - 1) = True Then
+									MyRecordQuoteValues.RemoveAt(MyRecordQuoteValues.Count - 1)
+								Else
+									'this message box was never shown
+									'Todo: This test could be removed in time
+									'should never happen but just in case
+									MsgBox($"Unable to remove a live record for stock {Me.Symbol} for date {ThisLastRecordDate}")
+								End If
+								Me.DateStop = MyRecordQuoteValues.Last.DateDay
+							End With
+						Else
+							IsLastRecordLive = False
+						End If
+					Else
+						IsLastRecordLive = False
+					End If
+					If ThisListOfStockQuote.Count > 0 Then
+						'new data record available for this stock
+						'tranform the StockQuote to a local record type
+						Dim ThisListOfRecord = ThisListOfStockQuote.ToListOfRecord(StockReference:=Me)
+
+						Dim ThisRecordLast = ThisListOfRecord.Last
+						If ThisRecordLast.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate Then
+							IsRecordLive = True
+						Else
+							IsRecordLive = False
+						End If
+						For Each ThisRecord In ThisListOfRecord
+							If ThisRecord Is ThisRecordLast Then
+								ThisRecord = ThisRecord
+							End If
+							'check if the last records for the new data is live
+							If _Records.Count > 0 Then
+								'note that when the record is not live the time value for the date is always zero or midnight
+								'and is not appropriate for comparison. The last live update on the data always contain
+								'a valid time stamp, but this data condition happen when the final eod stock
+								'information become available. Hence it is still necessary to remove the live update and replace with
+								'the new data. The condition below ensure this condition is met.
+								'TODO: This condition for update should be checked again
+								If (ThisRecord.DateUpdate > Me.DateStop) Then
+									If _Records.TryAdd(ThisRecord) = True Then
+										MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
+										Me.DateStop = ThisRecord.DateDay
+									Else
+										'should never happen but just in case
+										'wrong  it can happen if you try adding another record with the same date
+										'TODO: This condition for update should be checked again
+										MsgBox($"Unable to add a record for stock {Me.Symbol} for date {ThisRecord.DateDay}")
+									End If
+								End If
+								'If (ThisRecord.DateUpdate > Me.DateStop) Or (IsRecordLive = False And IsLastRecordLive = True) Then
+								'work directly with the collection
+								'If IsLastRecordLive Then
+								'	'need to remove the last record
+								'	'it wil be replaced with this new one stamped with a more recent date
+								'	'or with the last eod historical daily data
+								'	'it can be done easily if we access the low level functionality
+								'	With DirectCast(_Records, LinkedHashSet(Of Record, Date))
+								'		'check if the key exist in the data list
+								'		'the key may be the same indicating that the data has not yet been updated
+								'		'to a new timeframe
+								'		'in that case we ignore the record
+								'		'the test does not appears to be necessary but just in case
+								'		'the record to remove is located in the last position
+								'		If .RemoveAt(_Records.Count - 1) = True Then
+								'			MyRecordQuoteValues.RemoveAt(MyRecordQuoteValues.Count - 1)
+								'		Else
+								'			'Todo: This test could be removed in time
+								'			'should never happen but just in case
+								'			MsgBox($"Unable to remove a live record for stock {Me.Symbol} for date {ThisRecord.DateDay}")
+								'		End If
+								'	End With
+								'End If
+								'If (ThisRecord.DateUpdate > Me.DateStop) Then
+								'	If _Records.TryAdd(ThisRecord) = True Then
+								'		MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
+								'		Me.DateStop = ThisRecord.DateDay
+								'	Else
+								'		'should never happen but just in case
+								'		'wrong  it can happen if you try adding another record with the same date
+								'		'TODO: This condition for update should be checked again
+								'		MsgBox($"Unable to add a record for stock {Me.Symbol} for date {ThisRecord.DateDay}")
+								'	End If
+								'End If
+								'End If
+							Else
+								'special case for the first record
+								If _Records.TryAdd(ThisRecord) = True Then
+									MyRecordQuoteValues.Add(New RecordQuoteValue(ThisRecord))
+									Me.DateStop = ThisRecord.DateDay
+								Else
+									'should never happen but just in case
+									MsgBox($"Unable to add a record for stock {Me.Symbol} for date {ThisRecord.DateDay}")
 								End If
 							End If
 						Next
@@ -1017,8 +1293,26 @@ Partial Public Class Stock
 			Else
 				'note is loaded is not use for the web
 				If Me.Report.WebDataSource.IsWebAccessEnable Then
-					Me.WebRefreshRecord(Now)
+					Me.WebRefreshRecord(Me.DateStart, Now)
 				End If
+				IsLoaded = True
+			End If
+		End SyncLock
+		Return IsLoaded
+	End Function
+
+	Public Function RecordLoad(ByVal DateStart As Date, ByVal DateStop As Date) As Boolean
+		Dim IsLoaded As Boolean = False
+		SyncLock MySyncLockForStockRecordLoadingAll
+			If Me.Report.WebDataSource Is Nothing Then
+				Me.Report.Exception = New Exception("Error: RecordLoad with date range is not supported for non web data source...")
+				Throw Me.Report.Exception
+			Else
+				'note is loaded is not use for the web
+				If Me.Report.WebDataSource.IsWebAccessEnable Then
+					Me.WebRefreshRecord(DateStart, DateStop)
+				End If
+				'assume it True for now
 				IsLoaded = True
 			End If
 		End SyncLock
@@ -1091,6 +1385,34 @@ Partial Public Class Stock
 
 	Public ReadOnly Property RecordQuoteValues(ByVal TimeFormat As YahooAccessData.Report.enuTimeFormat) As IEnumerable(Of RecordQuoteValue)
 		Get
+			'RecordLoad load the data in memory if it is not already loaded and
+			'return true if the data is loaded and false if the loading have been cancelled
+			If Me.RecordLoad Then
+				Select Case TimeFormat
+					Case YahooAccessData.Report.enuTimeFormat.Sample
+						Return MyRecordQuoteValues
+					Case YahooAccessData.Report.enuTimeFormat.Daily
+						If Me.Report.WebDataSource Is Nothing Then
+							Return MyRecordQuoteValues.ToDaily
+						Else
+							'ToDaily is not needed for the web because the data is already loaded in daily format
+							Return MyRecordQuoteValues
+						End If
+					Case YahooAccessData.Report.enuTimeFormat.Weekly
+						'not implemented yet
+						Throw New NotImplementedException("Weekly time data is not yet implemented at this level...")
+						'Return MyRecordQuoteValues.ToDaily
+					Case Else
+						Return MyRecordQuoteValues
+				End Select
+			Else
+				Return Nothing
+			End If
+		End Get
+	End Property
+
+	Public ReadOnly Property RecordQuoteValues(DateStart As Date, DateStop As Date, Optional TimeFormat As Report.enuTimeFormat = Report.enuTimeFormat.Daily) As IEnumerable(Of RecordQuoteValue)
+		Get
 			If Me.RecordLoad Then
 				Select Case TimeFormat
 					Case YahooAccessData.Report.enuTimeFormat.Sample
@@ -1152,11 +1474,12 @@ Partial Public Class Stock
 	Public Overridable Property Records(ByVal IsLoadEnabled As Boolean) As ICollection(Of Record)
 		Get
 			If Me.Report.WebDataSource Is Nothing Then
+				'Old code
 				If IsLoadEnabled Then Me.RecordLoad()
 				Return _Records
 			Else
 				If Me.Report.WebDataSource.IsWebAccessEnable Then
-					If IsLoadEnabled Then Me.WebRefreshRecord(Now)
+					If IsLoadEnabled Then Me.WebRefreshRecord(Me.DateStart, Now)
 				End If
 				Return _Records
 			End If

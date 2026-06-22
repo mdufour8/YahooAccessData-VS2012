@@ -178,10 +178,6 @@
     <Reference Include="System.Xml" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
-    <Reference Include="WebEODData, Version=1.0.0.2, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\WebEODData\WebEODData\bin\Release\WebEODData.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Import Include="Microsoft.VisualBasic" />
@@ -408,6 +404,10 @@
     <ProjectReference Include="..\..\WebEODData\WCF\SharedContracts\SharedContracts.vbproj">
       <Project>{AD64CC35-EA86-4039-A693-AE8B23B488F6}</Project>
       <Name>SharedContracts</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\WebEODData\WebEODData\WebEODData.vbproj">
+      <Project>{fec4af11-6db7-468b-bec5-36a60339374c}</Project>
+      <Name>WebEODData</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />

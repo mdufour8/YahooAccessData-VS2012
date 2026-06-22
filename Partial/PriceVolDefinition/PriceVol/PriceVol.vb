@@ -1,12 +1,13 @@
 ﻿Imports YahooAccessData.ExtensionService.Extensions
 Imports YahooAccessData.StockPriceVol
+Imports WebEODData
 Public Class PriceVol
 	Implements IEquatable(Of PriceVol)
-
 	Implements IPriceVol
 	Implements IStockPriceVol
 	Implements IPricePivotPoint
 	Implements ISentimentIndicator
+	Implements IStockPriceAdjusted
 
 #Region "New"
 	Public Sub New()
@@ -856,10 +857,13 @@ Public Class PriceVol
 
 	''' <summary>
 	''' VolumePreviousTrading is the volume of the previous trading day.
-	''' The value may still be zero if the stock did not trade yet but as soon as trading occur it will never be zero
-	''' This value can safely be used to calculate the volume logarithmic change compared to the previous trading day
-	''' this Value need to be set externally while the list of StockPriceVol is processed, it is not automatically calculated by the class itself 
-	''' because it can be used in different ways and the logic to set this value can be different based on the best use case
+	''' The value may still be zero if the stock did not trade yet but as soon as trading 
+	''' occur it will never be zero. This value can safely be used to calculate the volume 
+	''' logarithmic change compared to the previous trading day.
+	''' This value need to be set externally while the list of StockPriceVol is processed, 
+	''' it is not automatically calculated by the class itself 
+	''' because it can be used in different ways and the logic to set this value 
+	''' can be different based on the best use case
 	''' </summary>
 	Private Property IStockPriceVol_VolumePreviousTrading As Long Implements IStockPriceVol.VolumePreviousTrading
 		Get
@@ -952,6 +956,34 @@ Public Class PriceVol
 		End If
 	End Function
 #End Region 'IStockPriceVol
+#Region "IStockPriceAdjusted"
+	Public Function AsStockPriceAdjusted() As IStockPriceAdjusted Implements IStockPriceAdjusted.AsStockPriceAdjusted
+		Return Me
+	End Function
+
+	Private _Ratio As Double
+	Private ReadOnly Property IStockPriceAdjusted_Ratio As Double Implements IStockPriceAdjusted.Ratio
+		Get
+			Return _Ratio
+		End Get
+	End Property
+
+	Private _PriceDelta As Double
+	Private ReadOnly Property IStockPriceAdjusted_PriceDelta As Double Implements IStockPriceAdjusted.PriceDelta
+		Get
+			Return _PriceDelta
+		End Get
+	End Property
+
+	Public Function IStockPriceAdjusted_PriceDeltaPerCent() As Double Implements IStockPriceAdjusted.PriceDeltaPerCent
+		Return If(Me.Last > 0, 100 * (_PriceDelta / Me.Last), 0)
+	End Function
+
+	Public Sub IStockPriceAdjusted_SetPriceAdjusted(value As IStockPriceAdjusted) Implements IStockPriceAdjusted.SetPriceAdjusted
+		_PriceDelta = value.PriceDelta
+		_Ratio = value.Ratio
+	End Sub
+#End Region  '"IStockPriceAdjusted"
 End Class
 
 

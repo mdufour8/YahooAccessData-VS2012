@@ -1,8 +1,9 @@
-﻿Imports YahooAccessData.ExtensionService.Extensions
+﻿Imports WebEODData
+Imports YahooAccessData.ExtensionService.Extensions
 Public Class StockPriceVol
 	Implements IEquatable(Of StockPriceVol)
 	Implements IStockPriceVol
-
+	Implements IStockPriceAdjusted
 	Implements IPriceVol
 
 	Public Enum StockPriceDataType
@@ -36,6 +37,7 @@ Public Class StockPriceVol
 			Me.VolumePreviousTrading = .VolumePreviousTrading
 			Me.DVAverage60 = .DVAverage60
 		End With
+		Me.AsStockPriceAdjusted.SetPriceAdjusted(PriceVol.AsStockPriceAdjusted)
 	End Sub
 
 	''' <summary>
@@ -61,6 +63,7 @@ Public Class StockPriceVol
 			Me.VolumePreviousTrading = .VolumePreviousTrading
 			Me.DVAverage60 = .DVAverage60
 		End With
+		Me.AsStockPriceAdjusted.SetPriceAdjusted(StockPriceVol.AsStockPriceAdjusted)
 	End Sub
 
 	Public Property DataType As StockPriceDataType
@@ -442,5 +445,33 @@ Public Class StockPriceVol
 		End If
 	End Function
 #End Region
+#Region "IStockPriceAdjusted"
+	Function AsStockPriceAdjusted() As IStockPriceAdjusted Implements IStockPriceAdjusted.AsStockPriceAdjusted
+		Return Me
+	End Function
+
+	Private _Ratio As Double
+	Private ReadOnly Property IStockPriceAdjusted_Ratio As Double Implements IStockPriceAdjusted.Ratio
+		Get
+			Return _Ratio
+		End Get
+	End Property
+
+	Private _PriceDelta As Double
+	Private ReadOnly Property IStockPriceAdjusted_PriceDelta As Double Implements IStockPriceAdjusted.PriceDelta
+		Get
+			Return _PriceDelta
+		End Get
+	End Property
+
+	Public Function IStockPriceAdjusted_PriceDeltaPerCent() As Double Implements IStockPriceAdjusted.PriceDeltaPerCent
+		Return If(Me.Last > 0, 100 * (_PriceDelta / Me.Last), 0)
+	End Function
+
+	Public Sub IStockPriceAdjusted_SetPriceAdjusted(value As IStockPriceAdjusted) Implements IStockPriceAdjusted.SetPriceAdjusted
+		_PriceDelta = value.PriceDelta
+		_Ratio = value.Ratio
+	End Sub
+#End Region  '"IStockPriceAdjusted"
 End Class
 

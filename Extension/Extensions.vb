@@ -1,6 +1,7 @@
 ﻿#Region "Imports"
 Imports System
 Imports System.IO
+Imports WebEODData
 Imports System.Collections.Generic
 'Imports System.Data.Entity
 'Imports System.Data.Entity.Infrastructure
@@ -1210,10 +1211,10 @@ Namespace ExtensionService
 #End Region
 #Region "IStockQuote"
 		<Extension()>
-		Public Function ToListOfRecord(colData As List(Of WebEODData.IStockQuote)) As List(Of YahooAccessData.Record)
+		Public Function ToListOfRecord(colData As List(Of IStockQuote)) As List(Of YahooAccessData.Record)
 			Dim ThisList = New List(Of YahooAccessData.Record)
 			Dim ThisRecord As YahooAccessData.Record
-			For Each ThisStockQuote In colData
+			For Each ThisStockQuote As StockQuote In colData
 				ThisRecord = New YahooAccessData.Record
 				With ThisRecord
 					.DateDay = ThisStockQuote.DateTime
@@ -1230,8 +1231,51 @@ Namespace ExtensionService
 					Else
 						.AsIRecordType.RecordType = IRecordType.enuRecordType.EndOfDay
 					End If
+					'transfer the stockquote price adjustment for dividend , split and capital return to the record
+					.AsStockPriceAdjusted.SetPriceAdjusted(value:=ThisStockQuote.AsStockPriceAdjusted)
 				End With
 				ThisList.Add(ThisRecord)
+			Next
+			Return ThisList
+		End Function
+
+		<Extension()>
+		Public Function ToListOfRecord(colData As List(Of IStockQuote), StockReference As Stock) As List(Of YahooAccessData.Record)
+			Dim ThisList = New List(Of YahooAccessData.Record)
+			Dim ThisRecord As YahooAccessData.Record
+			For Each ThisStockQuote As StockQuote In colData
+				ThisRecord = New YahooAccessData.Record
+				With ThisRecord
+					'set the record parameters
+					.Stock = StockReference
+					.StockID = .Stock.ID
+					.DateDay = ThisStockQuote.DateTime
+					.DateLastTrade = .DateDay
+					.DateUpdate = .DateDay
+					.High = ThisStockQuote.High.ToSingleSafe(RoundingDigit:=3)
+					.Open = ThisStockQuote.Open.ToSingleSafe(RoundingDigit:=3)
+					.Low = ThisStockQuote.Low.ToSingleSafe(RoundingDigit:=3)
+					.Last = ThisStockQuote.Close.ToSingleSafe(RoundingDigit:=3)
+					.Vol = ThisStockQuote.Volume.ToIntegerSafe
+					.Volume = ThisStockQuote.Volume
+					If ThisStockQuote.IsLiveUpdate Then
+						.AsIRecordType.RecordType = IRecordType.enuRecordType.LiveUpdate
+					Else
+						.AsIRecordType.RecordType = IRecordType.enuRecordType.EndOfDay
+					End If
+					'transfer the stockquote price adjustment for dividend , split and capital return to the record
+					.AsStockPriceAdjusted.SetPriceAdjusted(value:=ThisStockQuote.AsStockPriceAdjusted)
+				End With
+				ThisList.Add(ThisRecord)
+			Next
+			Return ThisList
+		End Function
+
+		<Extension()>
+		Public Function ToListOfPriceAdjustmentPerCent(colData As List(Of WebEODData.IStockQuote)) As List(Of Double)
+			Dim ThisList = New List(Of Double)
+			For Each ThisStockQuote In colData
+				ThisList.Add(DirectCast(ThisStockQuote, WebEODData.IStockPriceAdjusted).PriceDeltaPerCent())
 			Next
 			Return ThisList
 		End Function
