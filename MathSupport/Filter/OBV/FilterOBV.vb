@@ -1,11 +1,10 @@
-﻿#Region "FilterOBV"
-Imports Newtonsoft.Json.Linq
+﻿Imports Newtonsoft.Json.Linq
 Imports YahooAccessData.MathPlus
 Imports YahooAccessData.MathPlus.Filter
 
 <Serializable()>
 Public Class FilterOBV
-	Private Const FILTER_RATE_FOR_AVERAGE_VOLUME As Integer = 20
+	Private Const FILTER_RATE_FOR_AVERAGE_VOLUME As Integer = NUMBER_TRADINGDAY_PER_YEAR \ 12
 	Private MyRate As Double
 	Private MyRatePreFilter As Integer
 	Private MyPriceLast As Double
@@ -229,4 +228,3 @@ Public Class FilterOBV
 		Return Me.FilterLast.ToString
 	End Function
 End Class
-#End Region

@@ -134,163 +134,190 @@ Partial Public Class Record
 	'''   False → anomaly detected, caller should handle (e.g. fallback to LastPrevious).
 	''' </summary>
 	Public Shared Function CheckPrice(
-																	 ByRef ThisPriceVol As IPriceVol,
+																	 ByRef StockPriceVol As IStockPriceVol,
 																	 Optional ByVal IsApplyCorrection As Boolean = False,
-																	 Optional ByVal IsCorrectionOnVolume As Boolean = False) As Boolean
-		With ThisPriceVol
-			If IsCorrectionOnVolume Then
-				If .Vol = 0 Then
-					If .Low <> .Last Then
-						If IsApplyCorrection Then
-							.Low = .Last
-						Else
-							Return False
+																	 Optional ByVal IsCorrectionOnVolume As Boolean = False,
+																	 Optional ByVal IsIgnoreVolume As Boolean = False) As Boolean
+		Do
+			With StockPriceVol
+				If IsCorrectionOnVolume AndAlso Not IsIgnoreVolume Then
+					If .Volume = 0 Then
+						If .Low <> .Last Then
+							If IsApplyCorrection Then
+								.Low = .Last
+							Else
+								Exit Do
+							End If
 						End If
-					End If
-					If .Open <> .Last Then
+						If .Open <> .Last Then
+							If IsApplyCorrection Then
+								.Open = .Last
+							Else
+								Exit Do
+							End If
+						End If
+						If .High <> .Last Then
+							If IsApplyCorrection Then
+								.High = .Last
+							Else
+								Exit Do
+							End If
+						End If
+						Return True
+					ElseIf .Last = 0 Then
+						'we know already that the volume is > 0
+						'we cannot have a volume > 0 with the last transaction value = 0
+						'make sure everything is zero including the volume
+						If IsApplyCorrection Then
+							.Volume = 0
+							.Open = 0
+							.High = 0
+							.Low = 0
+						Else
+							Exit Do
+						End If
+						Return True
+					ElseIf .Open = 0 Then
+						'we know already that last is not zero and that Volume is greater than zero
+						'this is an error but estimate that the open is the same than the last
 						If IsApplyCorrection Then
 							.Open = .Last
+							'we need to fix here the case where .Low=0
+							If .Low = 0 Then
+								If .Open < .Last Then
+									.Low = .Open
+								Else
+									.Low = .Last
+								End If
+							End If
+							'this will fix the case where .High is zero
+							CheckHighLow(StockPriceVol, True)
 						Else
-							Return False
+							Exit Do
 						End If
-					End If
-					If .High <> .Last Then
+					ElseIf .Low = 0 Then
+						'we know already that last and open is not zero and that Volume is greater than zero
 						If IsApplyCorrection Then
-							.High = .Last
-						Else
-							Return False
-						End If
-					End If
-					Return True
-				ElseIf .Last = 0 Then
-					'we know already that the volume is > 0
-					'we cannot have a volume > 0 with the last transaction value = 0
-					'make sure everything is zero including the volume
-					If IsApplyCorrection Then
-						.Vol = 0
-						.Open = 0
-						.High = 0
-						.Low = 0
-					Else
-						Return False
-					End If
-					Return True
-				ElseIf .Open = 0 Then
-					'we know already that last is not zero and that Volume is greater than zero
-					'this is an error but estimate that the open is the same than the last
-					If IsApplyCorrection Then
-						.Open = .Last
-						'we need to fix here the case where .Low=0
-						If .Low = 0 Then
 							If .Open < .Last Then
 								.Low = .Open
 							Else
 								.Low = .Last
 							End If
-						End If
-						'this will fix the case where .High is zero
-						CheckHighLow(ThisPriceVol, True)
-					Else
-						Return False
-					End If
-				ElseIf .Low = 0 Then
-					'we know already that last and open is not zero and that Volume is greater than zero
-					If IsApplyCorrection Then
-						If .Open < .Last Then
-							.Low = .Open
+							'this will fix the high=0 error condition
+							CheckHighLow(StockPriceVol, True)
 						Else
-							.Low = .Last
+							Exit Do
 						End If
+					ElseIf .High = 0 Then
+						'we know already that last and open and low are not zero and that Volume is greater than zero
 						'this will fix the high=0 error condition
-						CheckHighLow(ThisPriceVol, True)
-					Else
-						Return False
+						If IsApplyCorrection Then
+							CheckHighLow(StockPriceVol, True)
+						Else
+							Exit Do
+						End If
 					End If
-				ElseIf .High = 0 Then
-					'we know already that last and open and low are not zero and that Volume is greater than zero
-					'this will fix the high=0 error condition
-					If IsApplyCorrection Then
-						CheckHighLow(ThisPriceVol, True)
-					Else
-						Return False
-					End If
-				End If
-			Else
-				If .Last = 0 Then
-					'we know already that the volume is > 0
-					'we cannot have a volume > 0 with the last transaction value = 0
-					'make sure everything is zero including the volume
-					If IsApplyCorrection Then
-						.Vol = 0
-						.Open = 0
-						.High = 0
-						.Low = 0
-					Else
-						Return False
-					End If
-					Return True
-				ElseIf .Open = 0 Then
-					'we know already that last is not zero and that Volume is greater than zero
-					'this is an error but estimate that the open is the same than the last
-					If IsApplyCorrection Then
-						.Open = .Last
-						'we need to fix here the case where .Low=0
-						If .Low = 0 Then
+				Else
+					If .Last = 0 Then
+						'we know already that the volume is > 0
+						'we cannot have a volume > 0 with the last transaction value = 0
+						'make sure everything is zero including the volume
+						If IsApplyCorrection Then
+							.Volume = 0
+							.Open = 0
+							.High = 0
+							.Low = 0
+						Else
+							Exit Do
+						End If
+						Return True
+					ElseIf .Open = 0 Then
+						'we know already that last is not zero and that Volume is greater than zero
+						'this is an error but estimate that the open is the same than the last
+						If IsApplyCorrection Then
+							.Open = .Last
+							'we need to fix here the case where .Low=0
+							If .Low = 0 Then
+								If .Open < .Last Then
+									.Low = .Open
+								Else
+									.Low = .Last
+								End If
+							End If
+							'this will fix the case where .High is zero
+							CheckHighLow(StockPriceVol, True)
+						Else
+							Exit Do
+						End If
+					ElseIf .Low = 0 Then
+						'we know already that last and open is not zero and that Volume is greater than zero
+						If IsApplyCorrection Then
 							If .Open < .Last Then
 								.Low = .Open
 							Else
 								.Low = .Last
 							End If
-						End If
-						'this will fix the case where .High is zero
-						CheckHighLow(ThisPriceVol, True)
-					Else
-						Return False
-					End If
-				ElseIf .Low = 0 Then
-					'we know already that last and open is not zero and that Volume is greater than zero
-					If IsApplyCorrection Then
-						If .Open < .Last Then
-							.Low = .Open
+							'this will fix the high=0 error condition
+							CheckHighLow(StockPriceVol, True)
 						Else
-							.Low = .Last
+							Exit Do
 						End If
+					ElseIf .High = 0 Then
+						'we know already that last and open and low are not zero and that Volume is greater than zero
 						'this will fix the high=0 error condition
-						CheckHighLow(ThisPriceVol, True)
-					Else
-						Return False
-					End If
-				ElseIf .High = 0 Then
-					'we know already that last and open and low are not zero and that Volume is greater than zero
-					'this will fix the high=0 error condition
-					If IsApplyCorrection Then
-						CheckHighLow(ThisPriceVol, True)
-					Else
-						Return False
+						If IsApplyCorrection Then
+							CheckHighLow(StockPriceVol, True)
+						Else
+							Exit Do
+						End If
 					End If
 				End If
-			End If
+			End With
 			' Final sanity guard
-			If .Low > .High OrElse
-				.Open > .High OrElse
-				.Last > .High OrElse
-				.Open < .Low OrElse
-				.Last < .Low Then
+			'do not use with her otherwise you cannot check which value cause a problem`
+			If StockPriceVol.Low > StockPriceVol.High Then Exit Do
+			If StockPriceVol.Open > StockPriceVol.High Then Exit Do
+			If StockPriceVol.Last > StockPriceVol.High Then Exit Do
+			If StockPriceVol.Open < StockPriceVol.Low Then Exit Do
+			If StockPriceVol.Last < StockPriceVol.Low Then Exit Do
+			Return True
+		Loop
+		Return False
+	End Function
 
-				Return False
-			End If
-		End With
-		Return True
+	Public Shared Function CheckPrice(
+		ByRef PriceVol As IPriceVol,
+		Optional ByVal IsApplyCorrection As Boolean = False,
+		Optional ByVal IsCorrectionOnVolume As Boolean = False,
+		Optional ByVal IsIgnoreVolume As Boolean = False) As Boolean
+
+		Return CheckPrice(DirectCast(PriceVol, IStockPriceVol), IsApplyCorrection, IsCorrectionOnVolume, IsIgnoreVolume)
 	End Function
 
 	''' <summary>
 	''' Function use locally just to correct the high low anomalies based on open and last
 	''' </summary>
 	''' <returns></returns>
-	''' <remarks>The function does not check the validity of open and last</remarks>
-	Private Shared Function CheckHighLow(ByRef ThisPriceVol As IPriceVol, Optional ByVal IsApplyCorrection As Boolean = False) As Boolean
-		With ThisPriceVol
+	Public Shared Function CheckHighLow(ByRef PriceVol As IPriceVol, Optional ByVal IsApplyCorrection As Boolean = False) As Boolean
+		Return CheckHighLow(DirectCast(PriceVol, IStockPriceVol), IsApplyCorrection)
+	End Function
+
+	Public Shared Function CheckHighLow(ByRef StockPriceVol As IStockPriceVol, Optional ByVal IsApplyCorrection As Boolean = False) As Boolean
+		If IsApplyCorrection Then
+			IsApplyCorrection = IsApplyCorrection
+		End If
+		With StockPriceVol
 			If .Open > .Last Then
+				If .High < .Low Then
+					If IsApplyCorrection Then
+						'swap the high and low values
+						Dim ThisTemp As Double = .High
+						.High = .Low
+						.Low = ThisTemp
+					Else
+						Return False
+					End If
+				End If
 				If .High < .Open Then
 					If IsApplyCorrection Then
 						.High = .Open
@@ -1091,6 +1118,7 @@ Partial Public Class Record
 	Public Function AsISentimentIndicator() As ISentimentIndicator Implements ISentimentIndicator.AsISentimentIndicator
 		Return Me
 	End Function
+#End Region
 
 #Region "IStockPriceAdjusted"
 	Function AsStockPriceAdjusted() As IStockPriceAdjusted Implements IStockPriceAdjusted.AsStockPriceAdjusted
@@ -1115,13 +1143,25 @@ Partial Public Class Record
 		Return If(Me.Last > 0, 100 * (_PriceDelta / Me.Last), 0)
 	End Function
 
+
 	Public Sub SetPriceAdjusted(value As IStockPriceAdjusted) Implements IStockPriceAdjusted.SetPriceAdjusted
 		_PriceDelta = value.PriceDelta
 		_Ratio = value.Ratio
+		_IsPriceAdjustedEnabled = value.IsEnabled
 	End Sub
 
-#End Region
+	Private _IsPriceAdjustedEnabled As Boolean
+	Public ReadOnly Property IsEnabled As Boolean Implements IStockPriceAdjusted.IsEnabled
+		Get
+			Return _IsPriceAdjustedEnabled
+		End Get
+	End Property
 
+	Public Sub SetPriceAdjusted(Enable As Boolean) Implements IStockPriceAdjusted.SetPriceAdjusted
+		Throw New NotImplementedException
+		'_IsPriceAdjustedEnabled = Enable
+	End Sub
+#End Region  '"IStockPriceAdjusted"
 
 	Private _SentimentIndicatorCount As Integer
 	Private Property ISentimentIndicator_Count As Integer Implements ISentimentIndicator.Count
@@ -1369,7 +1409,7 @@ Partial Public Class Record
 	End Property
 #End Region
 End Class    'Record
-#End Region
+
 #Region "Class EqualityComparerOfRecord"
 <Serializable()>
 Friend Class EqualityComparerOfRecord

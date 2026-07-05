@@ -10,12 +10,27 @@ Public Class StockPriceVol
 		RawPrice = 0
 		CumulativeLogReturn = 1
 		CumulativeLogYearlyReturn = 2
+		LogReturn = 3
 	End Enum
 
 	Private _dataType As StockPriceDataType = StockPriceDataType.RawPrice
 
 	Public Sub New()
 		Me.DateDay = Now.Date
+	End Sub
+
+	Public Sub New(scalarValue As Double)
+		Me.New()
+		Me.Open = scalarValue
+		Me.High = scalarValue
+		Me.Low = scalarValue
+		Me.Last = scalarValue
+		Me.OpenNext = scalarValue
+		Me.LastPrevious = scalarValue
+		Me.Volume = 0
+		_Ratio = 1.0
+		_PriceDelta = 0.0
+		_IsPriceAdjustedEnabled = False
 	End Sub
 
 	Public Sub New(PriceVol As PriceVol)
@@ -31,12 +46,9 @@ Public Class StockPriceVol
 		Me.High = PriceVol.High
 		Me.Low = PriceVol.Low
 		Me.Volume = PriceVol.Volume
-		With PriceVol.AsIStockPriceVol
-			Me.VolumeAverage60 = .VolumeAverage60
-			Me.VolumePrevious = .VolumePrevious
-			Me.VolumePreviousTrading = .VolumePreviousTrading
-			Me.DVAverage60 = .DVAverage60
-		End With
+		Volume = Volume
+		VolumePrevious = Volume
+		VolumePreviousTrading = Volume
 		Me.AsStockPriceAdjusted.SetPriceAdjusted(PriceVol.AsStockPriceAdjusted)
 	End Sub
 
@@ -57,13 +69,9 @@ Public Class StockPriceVol
 		Me.High = StockPriceVol.High
 		Me.Low = StockPriceVol.Low
 		Me.Volume = StockPriceVol.Volume
-		With StockPriceVol
-			Me.VolumeAverage60 = .VolumeAverage60
-			Me.VolumePrevious = .VolumePrevious
-			Me.VolumePreviousTrading = .VolumePreviousTrading
-			Me.DVAverage60 = .DVAverage60
-		End With
-		Me.AsStockPriceAdjusted.SetPriceAdjusted(StockPriceVol.AsStockPriceAdjusted)
+		VolumePrevious = StockPriceVol.VolumePrevious
+		VolumePreviousTrading = StockPriceVol.VolumePreviousTrading
+		IStockPriceAdjusted_SetPriceAdjusted(StockPriceVol.AsStockPriceAdjusted)
 	End Sub
 
 	Public Property DataType As StockPriceDataType
@@ -83,8 +91,6 @@ Public Class StockPriceVol
 	Public Property High As Double Implements IStockPriceVol.High
 	Public Property Low As Double Implements IStockPriceVol.Low
 	Public Property Volume As Long Implements IStockPriceVol.Volume
-
-
 
 	Public Overrides Function ToString() As String
 		Return $"{TypeName(Me)},Date:{Me.DateDay},LastPrevious:{Me.LastPrevious:F3},Open:{Me.Open:F3},High:{Me.High:F3},Low:{Me.Low:F3},Last:{Me.Last:F3},OpenNext:{Me.OpenNext:F3},Volume:{Me.Volume}"
@@ -340,24 +346,6 @@ Public Class StockPriceVol
 		Return New StockPriceVol(Me)
 	End Function
 
-
-	''' <summary>
-	''' Calculates the price * volume so that the volume become a weight for the price, 
-	''' this can be used to calculate a weighted average price over a period of time or for other purposes where the price need to be weighted by the volume 
-	''' for example to calculate a logaritmic weighted average price over a period of time or other pupose
-	''' by summing the PriceVolume and dividing by the total volume of the period
-	''' </summary>
-	Public Function DV() As Double Implements IStockPriceVol.DV
-		'try to return a positive value for the DV even if the volume is zero, this can be useful
-		'to avoid division by zero error when calculating the logarithmic change of the DV
-		'compared to its average over a period of time	
-		If Volume > 0 Then
-			Return Last * Volume
-		Else
-			Return Last * VolumePreviousTrading
-		End If
-	End Function
-
 	Private _IsIntraDay As Boolean
 	''' <summary>
 	''' Indicate that the price vol data is an intraday data update and the day has not yet finished trading
@@ -402,47 +390,73 @@ Public Class StockPriceVol
 	End Property
 
 
-
-	Private _VolumeAverage60 As Double
+	''' <summary>
+	''' Liquidity index or Dollar Volume(DV) Is the total actual monetary value Of a security traded during a specific period. 
+	''' Calculated As the naturel log of the Volume × Share Price, it reveals how much capital Is flowing through an asset, 
+	''' helping measure liquidity without being misled by share price.
+	''' DV=(Volume × Current Price) 
+	''' It is reasonable to represent the DV as a natural log because the DV can vary 
+	''' over several orders of magnitude and the nature of the price process is theoritically 
+	''' represented a a lognormal distribution. The log of the DV therefore more likely 
+	''' to be normally distributed and can be used in statistical analysis which is 
+	''' What iInstitutions Often Use instead of raw volume
+	''' DV=Price×Volume
+	''' Or ln(DV) see LDV for more details
+	''' This measures : 
+	''' Amount of capital exchanged on a logarithmic .
+	'''	This Is much more meaningful in term of significance than teh DV itself.
+	''' </summary>
+	Private Function IStockPriceVol_DV() As Double Implements IStockPriceVol.DV
+		Return Me.Last * Me.Volume
+	End Function
 
 	''' <summary>
-	''' Just a placeholder for the 60-day average volume often use for other calculation.
-	''' The value need to be set extrenally while the list of StockPriceVol is processed
+	''' --------------------------------------------------------------------
+	''' Liquidity Deviation Volume Index or LDV
+	'''
+	''' LDV(i) = ln( DV(i) / AvgDV60(i) )
+	''' or:
+	''' LDV(i)    = ln( DV(i) / AvgDV60(i) )
+	''' AvgLDV    = Sum( LDV(i) ) / N
+	''' Liquidity = Exp( AvgLDV )
+	''' 
+	''' Interpretation:
+	'''	It mirror what is done for the price return:
+	''' Return(i) = ln( Price(i) / Price(i-1) )
+	''' AvgReturn = Sum( Return(i) ) / N
+	''' Growth    = Exp( AvgReturn )
+	''' Her it return the LDV based on the DVReference passed as parameter
+	''' LDV(i)    = ln(DV(i) / DVReference)
+	''' Generally the DVReference is the average DV over a certain period, for example 60 days, 
+	''' but it can be any other reference value including the DV of the previous day or the DV of the previous trading day, etc.
+	''' 
+	''' where:
+	'''   DV(i)      = Price(i) * Volume(i)
+	'''   AvgDV60(i)= 60-day average Dollar Volume
+	''' Interpretation:
+	'''It mirror what is done for the price return:
+	''' Return(i) = ln( Price(i) / Price(i-1) )
+	''' AvgReturn = Sum( Return(i) ) / N
+	''' Growth    = Exp( AvgReturn )
+	'''
+	''' Interpretation:
+	'''   LDV equal to 0  -> Normal liquidity
+	'''   LDV greater than 0  -> Above-average participation
+	'''   LDV less than 0  -> Below-average participation
+	'''
+	''' Example:
+	'''   DV = 2 * AvgDV60
+	'''   LDV = ln(2) = 0.693
+	''' --------------------------------------------------------------------
 	''' </summary>
-	Public Property VolumeAverage60 As Double Implements IStockPriceVol.VolumeAverage60
-		Get
-			Return _VolumeAverage60
-		End Get
-		Set(value As Double)
-			_VolumeAverage60 = value
-		End Set
-	End Property
-
-
-	Private _DVAverage60 As Double
-
-	''' <summary>
-	''' The dollar volume average over 60 days, this is the average of the price * volume over the last 60 days. 
-	''' This can be used to calculate the liquidity deviation volume index (LDV) which is a measure of how much 
-	''' the current dollar volume deviates from its average over the last 60 days.
-	''' </summary>
-	''' <returns></returns>
-	Private Property DVAverage60 As Double Implements IStockPriceVol.DVAverage60
-		Get
-			Return _DVAverage60
-		End Get
-		Set(value As Double)
-			_DVAverage60 = value
-		End Set
-	End Property
-
 	Public Function LDV() As Double Implements IStockPriceVol.LDV
-		Dim thisDV = DV()
-		If thisDV > 0 AndAlso _DVAverage60 > 0 Then
-			Return Math.Log(thisDV / _DVAverage60)
-		Else
-			Return 0
-		End If
+		Dim ThisDV As Double = Me.Last * Me.Volume
+		Return If(ThisDV > 0, Math.Log(ThisDV), 0)
+	End Function
+
+	Public Function LDV(DVReference As Double) As Double Implements IStockPriceVol.LDV
+		Dim ThisDV As Double = Me.Last * Me.Volume
+		Return If(ThisDV > 0 AndAlso DVReference > 0, Math.Log(ThisDV / DVReference), 0)
 	End Function
 #End Region
 #Region "IStockPriceAdjusted"
@@ -471,6 +485,19 @@ Public Class StockPriceVol
 	Public Sub IStockPriceAdjusted_SetPriceAdjusted(value As IStockPriceAdjusted) Implements IStockPriceAdjusted.SetPriceAdjusted
 		_PriceDelta = value.PriceDelta
 		_Ratio = value.Ratio
+		_IsPriceAdjustedEnabled = value.IsEnabled
+	End Sub
+
+	Private _IsPriceAdjustedEnabled As Boolean
+	Public ReadOnly Property IsEnabled As Boolean Implements IStockPriceAdjusted.IsEnabled
+		Get
+			Return _IsPriceAdjustedEnabled
+		End Get
+	End Property
+
+	Public Sub SetPriceAdjusted(Enable As Boolean) Implements IStockPriceAdjusted.SetPriceAdjusted
+		Throw New NotImplementedException
+		'_IsPriceAdjustedEnabled = Enable
 	End Sub
 #End Region  '"IStockPriceAdjusted"
 End Class

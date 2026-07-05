@@ -6745,12 +6745,17 @@ Namespace MathPlus
 				Dim ThisDISum As Double
 
 
-				If MyFilterPV Is Nothing Then
-					'no filtering
-					ThisValuePVFiltered = DirectCast(Value, PriceVol).CopyFrom
-				Else
-					ThisValuePVFiltered = MyFilterPV.Filter(Value)
-				End If
+				Try
+					If MyFilterPV Is Nothing Then
+						'no filtering
+						ThisValuePVFiltered = DirectCast(Value, PriceVol).CopyFrom
+					Else
+						ThisValuePVFiltered = MyFilterPV.Filter(Value)
+					End If
+				Catch ex As Exception
+					ex = ex
+				End Try
+
 				If MyListOfRSI.Count = 0 Then
 					MyValuePriceVolFilteredLast = DirectCast(ThisValuePVFiltered, PriceVol).CopyFrom
 					RSILast = 0.5

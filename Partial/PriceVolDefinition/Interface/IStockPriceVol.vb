@@ -30,10 +30,10 @@
 	'''' </summary>
 	'Property VolumeAverage20 As Long
 
-	''' <summary>
-	''' Just a placeholder for the 60-day average volume.
-	''' </summary>
-	Property VolumeAverage60 As Double
+	'''' <summary>
+	'''' Just a placeholder for the 60-day average volume.
+	'''' </summary>
+	'Property VolumeAverage60 As Double
 
 	'''' <summary>
 	'''' Just a placeholder for the 100-day average volume.
@@ -60,14 +60,15 @@
 	''' What Institutions Often Use
 	''' Instead of raw volume
 	''' DV=Price×Volume
-	''' Or ln(DV)
+	''' Or ln(DV) (see below the LDV function
 	''' This measures : 
 	''' Amount of capital exchanged.
-	'''	This Is much more meaningful.
+	'''	The LDV is much more meaningful than just the volume 
+	'''	because it takes into account the price of the stock and not just the number of shares traded.
 	''' </summary>
 	Function DV() As Double
 
-	Property DVAverage60 As Double
+	'Property DVAverage60 As Double
 
 	' --------------------------------------------------------------------
 	' Liquidity Deviation Volume Index or LDV
@@ -83,7 +84,7 @@
 	'   AvgDV60(i)= 60-day average Dollar Volume
 
 	' Interpretation:
-	'It mirror what is done for the price return:
+	'	It mirror what is done for the price return:
 	' Return(i) = ln( Price(i) / Price(i-1) )
 	' AvgReturn = Sum( Return(i) ) / N
 	' Growth    = Exp( AvgReturn )
@@ -99,5 +100,20 @@
 	'   LDV = ln(2) = 0.693
 	' --------------------------------------------------------------------
 	Function LDV() As Double
+
+
+	''' <summary>
+	''' Interpretation:
+	'''	It mirror what is done for the price return:
+	''' Return(i) = ln( Price(i) / Price(i-1) )
+	''' AvgReturn = Sum( Return(i) ) / N
+	''' Growth    = Exp( AvgReturn )
+	''' Her it return the LDV based on the DVReference passed as parameter
+	''' LDV(i)    = ln(DV(i) / DVReference)
+	''' Generally the DVReference is the average DV over a certain period, for example 60 days, 
+	''' but it can be any other reference value including the DV of the previous day or the DV of the previous trading day, etc.
+	''' </summary>
+	''' <returns></returns>
+	Function LDV(DVReference As Double) As Double
 End Interface
 

@@ -22,8 +22,13 @@ Public Class PriceVol
 		Me.Last = PriceValue
 		Me.LastPrevious = PriceValue
 		Me.LastWeighted = PriceValue
+		IStockPriceVol_VolumePrevious = Volume
+		IStockPriceVol_VolumePreviousTrading = Volume
 		Me.Vol = Volume.ToIntegerSafe()
 		Me.Volume = Volume
+		_Ratio = 1
+		_PriceDelta = 0.0
+		_IsPriceAdjustedEnabled = False
 	End Sub
 
 	Public Sub New(ByVal PriceValue As PriceVol)
@@ -38,6 +43,8 @@ Public Class PriceVol
 			.LastWeighted = PriceValue.LastWeighted
 			.Vol = PriceValue.Vol
 			.Volume = PriceValue.Volume
+			IStockPriceVol_VolumePrevious = Volume
+			IStockPriceVol_VolumePreviousTrading = Volume
 			.OneyrTargetPrice = PriceValue.OneyrTargetPrice
 			.OneyrTargetEarning = PriceValue.OneyrTargetEarning
 			.OneyrTargetEarningGrow = PriceValue.OneyrTargetEarningGrow
@@ -64,6 +71,7 @@ Public Class PriceVol
 
 			.AsISentimentIndicator.Count = PriceValue.AsISentimentIndicator.Count
 			.AsISentimentIndicator.Value = PriceValue.AsISentimentIndicator.Value
+			.AsStockPriceAdjusted.SetPriceAdjusted(PriceValue.AsStockPriceAdjusted)
 		End With
 	End Sub
 
@@ -86,6 +94,9 @@ Public Class PriceVol
 		Me.High = PriceVol.High.ToSingleSafe
 		Me.Low = PriceVol.Low.ToSingleSafe
 		Me.Volume = PriceVol.Volume
+		IStockPriceVol_VolumePrevious = Volume
+		IStockPriceVol_VolumePreviousTrading = Volume
+		Me.AsStockPriceAdjusted.SetPriceAdjusted(DirectCast(PriceVol, IStockPriceAdjusted))
 		'by default
 		Me.IsIntraDay = False
 	End Sub
@@ -105,14 +116,16 @@ Public Class PriceVol
 			.High = PriceValue.High
 			.Low = PriceValue.Low
 			.LastWeighted = PriceValue.LastWeighted
-			.Vol = PriceValue.Vol
-			.Volume = DirectCast(PriceValue, PriceVol).Volume
+			Volume = DirectCast(PriceValue, PriceVol).Volume
+			IStockPriceVol_VolumePrevious = Volume
+			IStockPriceVol_VolumePreviousTrading = Volume
 			.Range = PriceValue.Range
 			.LastAdjusted = PriceValue.LastAdjusted
 			If TypeOf PriceValue Is ISentimentIndicator Then
 				.AsISentimentIndicator.Count = DirectCast(PriceValue, ISentimentIndicator).Count
 				.AsISentimentIndicator.Value = DirectCast(PriceValue, ISentimentIndicator).Value
 			End If
+			Me.AsStockPriceAdjusted.SetPriceAdjusted(DirectCast(PriceValue, IStockPriceAdjusted))
 		End With
 	End Sub
 #End Region
@@ -874,48 +887,24 @@ Public Class PriceVol
 		End Set
 	End Property
 
-	Private _VolumeAverage60 As Double
-	''' <summary>
-	''' Just a placeholder for the 60-day average volume.
-	''' </summary>
-	Private Property IStockPriceVol_VolumeAverage60 As Double Implements IStockPriceVol.VolumeAverage60
-		Get
-			Return _VolumeAverage60
-		End Get
-		Set(value As Double)
-			_VolumeAverage60 = value
-		End Set
-	End Property
-
-	Private _DVAverage60 As Double
-	''' <summary>
-	''' Just a placeholder for the 60-day average daily volume.
-	''' </summary>
-	Private Property IStockPriceVol_DVAverage60 As Double Implements IStockPriceVol.DVAverage60
-		Get
-			Return _DVAverage60
-		End Get
-		Set(value As Double)
-			_DVAverage60 = value
-		End Set
-	End Property
-
-
 	''' <summary>
 	''' Liquidity index or Dollar Volume(DV) Is the total actual monetary value Of a security traded during a specific period. 
-	''' Calculated As Shares Traded × Share Price, it reveals how much capital Is flowing through an asset, 
+	''' Calculated As the naturel log of the Volume × Share Price, it reveals how much capital Is flowing through an asset, 
 	''' helping measure liquidity without being misled by share price.
-	''' DVolume = Volume × Current Price
-	''' What Institutions Often Use
-	''' Instead of raw volume
+	''' DV=(Volume × Current Price) 
+	''' It is reasonable to represent the DV as a natural log because the DV can vary 
+	''' over several orders of magnitude and the nature of the price process is theoritically 
+	''' represented a a lognormal distribution. The log of the DV therefore more likely 
+	''' to be normally distributed and can be used in statistical analysis which is 
+	''' What iInstitutions Often Use instead of raw volume
 	''' DV=Price×Volume
-	''' Or ln(DV)
+	''' Or ln(DV) see LDV for more details
 	''' This measures : 
-	''' Amount of capital exchanged.
-	'''	This Is much more meaningful.
+	''' Amount of capital exchanged on a logarithmic .
+	'''	This Is much more meaningful in term of significance than teh DV itself.
 	''' </summary>
 	Private Function IStockPriceVol_DV() As Double Implements IStockPriceVol.DV
-		Return Last * Volume
+		Return Me.Last * Me.Volume
 	End Function
 
 	''' <summary>
@@ -927,6 +916,16 @@ Public Class PriceVol
 	''' LDV(i)    = ln( DV(i) / AvgDV60(i) )
 	''' AvgLDV    = Sum( LDV(i) ) / N
 	''' Liquidity = Exp( AvgLDV )
+	''' 
+	''' Interpretation:
+	'''	It mirror what is done for the price return:
+	''' Return(i) = ln( Price(i) / Price(i-1) )
+	''' AvgReturn = Sum( Return(i) ) / N
+	''' Growth    = Exp( AvgReturn )
+	''' Her it return the LDV based on the DVReference passed as parameter
+	''' LDV(i)    = ln(DV(i) / DVReference)
+	''' Generally the DVReference is the average DV over a certain period, for example 60 days, 
+	''' but it can be any other reference value including the DV of the previous day or the DV of the previous trading day, etc.
 	''' 
 	''' where:
 	'''   DV(i)      = Price(i) * Volume(i)
@@ -948,13 +947,26 @@ Public Class PriceVol
 	''' --------------------------------------------------------------------
 	''' </summary>
 	Public Function LDV() As Double Implements IStockPriceVol.LDV
-		Dim DV = IStockPriceVol_DV()
-		If DV > 0 AndAlso _DVAverage60 > 0 Then
-			Return Math.Log(DV / _DVAverage60)
-		Else
-			Return 0
-		End If
+		Dim ThisDV As Double = Me.Last * Me.Volume
+		Return If(ThisDV > 0, Math.Log(ThisDV), 0)
 	End Function
+
+	''' <summary>
+	''' DVReference is the reference Dollar Volume(DV) value to compare with the current DV value.
+	''' Generally DVReference will be an average over a certain period, for example 60 days, 
+	''' but it can be any other reference value including the DV of the previous day or 
+	''' the DV of the previous trading day, etc.
+	''' The function execute the following calculation:
+	''' LDV(i)    = ln(DV(i) / DVReference)
+	''' In case of any invalid value, the function will return 0
+	''' </summary>
+	''' <param name="DVReference"></param>
+	''' <returns></returns>
+	Public Function LDV(DVReference As Double) As Double Implements IStockPriceVol.LDV
+		Dim ThisDV As Double = Me.Last * Me.Volume
+		Return If(ThisDV > 0 AndAlso DVReference > 0, Math.Log(ThisDV / DVReference), 0)
+	End Function
+
 #End Region 'IStockPriceVol
 #Region "IStockPriceAdjusted"
 	Public Function AsStockPriceAdjusted() As IStockPriceAdjusted Implements IStockPriceAdjusted.AsStockPriceAdjusted
@@ -982,6 +994,19 @@ Public Class PriceVol
 	Public Sub IStockPriceAdjusted_SetPriceAdjusted(value As IStockPriceAdjusted) Implements IStockPriceAdjusted.SetPriceAdjusted
 		_PriceDelta = value.PriceDelta
 		_Ratio = value.Ratio
+		_IsPriceAdjustedEnabled = value.IsEnabled
+	End Sub
+
+	Private _IsPriceAdjustedEnabled As Boolean
+	Public ReadOnly Property IsEnabled As Boolean Implements IStockPriceAdjusted.IsEnabled
+		Get
+			Return _IsPriceAdjustedEnabled
+		End Get
+	End Property
+
+	Public Sub SetPriceAdjusted(Enable As Boolean) Implements IStockPriceAdjusted.SetPriceAdjusted
+		Throw New NotImplementedException
+		'_IsPriceAdjustedEnabled = Enable
 	End Sub
 #End Region  '"IStockPriceAdjusted"
 End Class

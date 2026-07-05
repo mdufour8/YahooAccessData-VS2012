@@ -152,6 +152,7 @@ Namespace MathPlus.Filter
 		Private MyStocRangeVolatility As Double
 		Private MyStochasticPriceGain As StochasticPriceGain
 		Private MyFilterForPriceOBV As FilterOBV
+		Private MyFilterForLDV As FilterLDV
 		Private MyFilterOfPriceRSIOfOBV As FilterRSI
 		Private MyFilterOfVolatilityRSIOfOBV As FilterRSI
 		Private MyListOfPriceRSIOfOBV As List(Of Double)
@@ -285,6 +286,7 @@ Namespace MathPlus.Filter
 			MyListOfPriceNextDailyLowWithGainOpenToClose = New List(Of Double)
 			MyStatisticRangeOfExcess = New StatisticRangeExcess(MyRateForVolatility)
 			MyFilterForPriceOBV = New FilterOBV(FilterRate:=1.5) With {.Tag = Symbol}
+			MyFilterForLDV = New FilterLDV(FilterRate:=1.5) With {.Tag = Symbol}
 			'the new usage is with no prefilter or very small filtering
 			MyFilterOfPriceRSIOfOBV = New FilterRSI(PreFilterRate:=1.5, FilterRate:=FilterRate, PostFilterHighPassRate:=0)
 			MyFilterOfVolatilityRSIOfOBV = New FilterRSI(PreFilterRate:=1.5, FilterRate:=FilterRate, PostFilterHighPassRate:=0)
@@ -1117,11 +1119,11 @@ Namespace MathPlus.Filter
 			ThisFilterDirection = MyFilterVolatilityForPositifNegatif.FilterDirection
 			Dim ThisVolatilityPositiveToNegativeRatio = MyFilterVolatilityForPositifNegatif.ToList(Type:=FilterVolatilityYangZhang.enuVolatilityDailyPeriodType.OpenToHighToLowCloseRatioFiltered).Last
 			MyFilterForPriceOBV.Filter(DirectCast(Value, PriceVol).Volume, ThisFilterDirection)
-			MyFilterOfPriceRSIOfOBV.Filter(MyFilterForPriceOBV.FilterLast)
-			MyListOfPriceRSIOfOBV.Add((0.75 * MyFilterOfPriceRSIOfOBV.FilterLast + 0.25 * ThisVolatilityPositiveToNegativeRatio))
-			'MyListOfPriceRSIOfOBV.Add((MyFilterOfPriceRSIOfOBV.FilterLast + MyFilterOfVolatilityRSIOfOBV.FilterLast) / 2)
-			'MyListOfPriceRSIOfOBV.Add((MyFilterOfPriceRSIOfOBV.FilterLast + MyFilterVolatilityForPositifNegatif.FilterLast) / 2)
-
+			MyFilterForLDV.Filter(DirectCast(Value, IStockPriceVol).LDV, ThisFilterDirection)
+			'MyFilterOfPriceRSIOfOBV.Filter(MyFilterForPriceOBV.FilterLast)
+			MyFilterOfPriceRSIOfOBV.Filter(MyFilterForLDV.FilterLast)
+			'MyListOfPriceRSIOfOBV.Add((0.75 * MyFilterOfPriceRSIOfOBV.FilterLast + 0.25 * ThisVolatilityPositiveToNegativeRatio))
+			MyListOfPriceRSIOfOBV.Add(MyFilterOfPriceRSIOfOBV.FilterLast)
 
 			MyListOfPriceRangeVolatility.Add(ThisFilterBasedVolatilityTotal)
 			MyListOfPriceRangeVolatilityFromPreviousCloseToOpenRatio.Add(ThisFilterBasedVolatilityRatioFromPreviousCloseToOpen)

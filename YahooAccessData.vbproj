@@ -192,6 +192,7 @@
   <ItemGroup>
     <Compile Include="Extension\EnumerableExtension.vb" />
     <Compile Include="Extension\Extensions.vb" />
+    <Compile Include="Extension\StockPriceLogGainExtensions.vb" />
     <Compile Include="MathSupport\Buffer\CircularBuffer.vb" />
     <Compile Include="FileSupport\FileMutex.vb" />
     <Compile Include="GlobalSuppressions.vb" />
@@ -216,6 +217,7 @@
     <Compile Include="MathSupport\Filter\Interface\IUndoLastState.vb" />
     <Compile Include="MathSupport\Filter\ListWindowsFrame\ListWindowFrameAsClass.vb" />
     <Compile Include="MathSupport\Filter\ListWindowsFrame\WindowFrameDebug.vb" />
+    <Compile Include="MathSupport\Filter\OBV\FilterLDV.vb" />
     <Compile Include="MathSupport\Filter\OBV\FilterOBV.vb" />
     <Compile Include="MathSupport\Filter\Oscillator\IStochasticBrownianData.vb" />
     <Compile Include="MathSupport\Filter\Oscillator\StochasticBrownian.vb" />
@@ -262,6 +264,7 @@
     <Compile Include="MathSupport\Filter\Volatility\VolatilityEstimator\StockPriceDuplex.vb" />
     <Compile Include="MathSupport\MathPlus.vb" />
     <Compile Include="MathSupport\MathProcess.vb" />
+    <Compile Include="MathSupport\MathProcessor.vb" />
     <Compile Include="MathSupport\Measure.vb" />
     <Compile Include="MathSupport\PriceCDFProbabilityAnalysis\CDFProbabilityAnalysis.vb" />
     <Compile Include="MathSupport\PriceCDFProbabilityAnalysis\FilterProbabilityState.vb" />
@@ -291,13 +294,13 @@
     <Compile Include="Partial\BondRate.Partial.vb" />
     <Compile Include="Partial\BondRate1.vb" />
     <Compile Include="Partial\BondRateRecord.vb" />
-    <Compile Include="Partial\PriceVolDefinition\Extension\StockPriceLogGainExtensions.vb" />
     <Compile Include="Partial\PriceVolDefinition\Interface\IPricePivotPoint.vb" />
     <Compile Include="Partial\PriceVolDefinition\Interface\IPriceVol.vb" />
     <Compile Include="Partial\PriceVolDefinition\Interface\IPriceVolGain.vb" />
     <Compile Include="Partial\PriceVolDefinition\Interface\IPriceVolLarge.vb" />
     <Compile Include="Partial\PriceVolDefinition\Interface\IPriceVolShort.vb" />
     <Compile Include="Partial\PriceVolDefinition\Interface\IStockPriceVol.vb" />
+    <Compile Include="Partial\PriceVolDefinition\PriceVol\PriceOHLC.vb" />
     <Compile Include="Partial\PriceVolDefinition\PriceVol\PriceVol.vb" />
     <Compile Include="Partial\PriceVolDefinition\PriceVol\PriceVolData.vb" />
     <Compile Include="Partial\PriceVolDefinition\PriceVol\PriceVolGain.vb" />

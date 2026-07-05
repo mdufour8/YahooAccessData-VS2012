@@ -52,6 +52,7 @@ Public Class RecordPrices
 
 
 	Private MyPriceVolLast As PriceVol
+	Private MyPriceVolLastNotNull As PriceVol
 	Private MyPriceVols() As PriceVol
 	Private MyPriceVolsAsLog() As PriceVol
 	Private MyPriceVolsIntraDay()() As PriceVol
@@ -69,6 +70,7 @@ Public Class RecordPrices
 	Private MyListOfStockPriceVol As List(Of StockPriceVol)
 	Private MyListOfIStockPriceVol As List(Of IStockPriceVol)
 	Private MyListOfCumulativeLogGain As List(Of StockPriceVol)
+	Private MyListOfLogGain As List(Of StockPriceVol)
 	Private MyFilterVolatilityYZYearly As FilterVolatilityYangZhang
 	Private MyListOfSharpeRatio As List(Of Double)
 	Private MyListOfSharpeGaussianProbability As List(Of Double)
@@ -254,6 +256,8 @@ Public Class RecordPrices
 		IsRecordNormalized = False
 		PriceNormalized = 100.0
 		DateNormalized = Me.DateStart
+		LDVMin = If(DVMin > 0, Math.Log(DVMin), 0)
+		LDVMax = If(DVMax > 0, Math.Log(DVMax), 0)
 		'only the stream extract from the record quote value is set by default to the stock
 		Me.Stock.SetRecordsPrices(Me)
 	End Sub
@@ -293,6 +297,7 @@ Public Class RecordPrices
 		Me.Symbol = Me.Stock.Symbol
 		'reprice the data to the default value
 		MyListOfCumulativeLogGain = recordPrices.ToListOfCumulativeLogGain
+		MyListOfLogGain = recordPrices.ToListOfLogGain
 		'with the log gain we can re-price the stream of price data to create the price data stream
 		'based on the price relative value
 		'MyListOfStockPriceVol = StockPriceLogGainExtensions.ToCumulativeLogGainInverse(
@@ -306,6 +311,10 @@ Public Class RecordPrices
 		Me.IsVol = recordPrices.IsVol
 		Me.VolMin = recordPrices.VolMin
 		Me.VolMax = recordPrices.VolMax
+		Me.DVMax = recordPrices.DVMax
+		Me.DVMin = recordPrices.DVMin
+		Me.LDVMax = recordPrices.LDVMax
+		Me.LDVMin = recordPrices.LDVMin
 		Me.NumberPoint = recordPrices.NumberPoint
 		Me.NumberNullPoint = recordPrices.NumberNullPoint
 		Me.NumberNullPointToEnd = recordPrices.NumberNullPointToEnd
@@ -313,6 +322,8 @@ Public Class RecordPrices
 		Me.StartPoint = recordPrices.StartPoint
 		Me.StopPoint = recordPrices.StopPoint
 		Me.FirstNonZeroIndex = recordPrices.FirstNonZeroIndex
+		'Me.DVAverage60Min = recordPrices.DVAverage60Min
+		'Me.DVAverage60Max = recordPrices.DVAverage60Max
 
 		Me.IsError = recordPrices.IsError
 		Me.ErrorDescription = recordPrices.ErrorDescription
@@ -326,14 +337,17 @@ Public Class RecordPrices
 		Me.PriceMax = 0.0
 		Me.PriceMin = Single.MaxValue
 		Dim ThisFilterPLLForGain As New FilterPLL(FilterRate:=60, BufferCapacity:=Me.NumberPoint)
+		Dim ThisFilterExpForDV As New FilterExp(FilterRate:=60)
 		Dim GainDeltaYearly As Double
 		'the min and the max could also be calculated using teh log but this approach
 		'ensure the value include the effect of the transformation rounding error.
 		'make a new list of stock price vol to ensure that the data is not modified outside of the current object and to ensure that the data is in the correct format
 		Dim ThisStockPriceVol As IStockPriceVol
 		MyListOfStockPriceVol = New List(Of StockPriceVol)(recordPrices.ToListOfStockPriceVol.Select(Function(x) New StockPriceVol(x)))
+
 		For Each ThisWithItem In MyListOfStockPriceVol.WithIndex
 			ThisStockPriceVol = ThisWithItem.Item
+			Record.CheckPrice(DirectCast(ThisStockPriceVol, IPriceVol))
 			With ThisStockPriceVol
 				If .Last > 0 Then
 					'check the range
@@ -352,6 +366,7 @@ Public Class RecordPrices
 			MyListOfPriceVol.Add(MyPriceVols(I))
 			MyListOfIPriceVol.Add(MyPriceVols(I))
 			MyFilterVolatilityYZYearly.Filter(MyPriceVols(I))
+
 			ThisFilterPLLForGain.FilterRun(MyListOfCumulativeLogGain(ThisWithItem.Index).Last)
 			GainDeltaYearly =
 					ThisFilterPLLForGain.FilterLast -
@@ -374,6 +389,8 @@ Public Class RecordPrices
 		Me.IsRecordNormalized = recordPrices.IsRecordNormalized
 		Me.PriceNormalized = recordPrices.PriceNormalized
 		DateNormalized = recordPrices.DateNormalized
+		LDVMin = If(DVMin > 0, Math.Log(DVMin), 0)
+		LDVMax = If(DVMax > 0, Math.Log(DVMax), 0)
 		'only the stream extract from the record quote or a records
 		'not normalized is set by default to the stock
 		If IsRecordNormalized = False Then
@@ -463,7 +480,6 @@ Public Class RecordPrices
 		MyListOfIStockPriceVol = New List(Of IStockPriceVol)
 		MyListOfSharpeRatio = New List(Of Double)
 		MyListOfSharpeGaussianProbability = New List(Of Double)
-		MyListOfCumulativeLogGain = StockPriceLogGainExtensions.ToCumulativeLogGain(MyListOfStockPriceVol)
 		Dim ThisFilterPLLForGain As New FilterPLL(FilterRate:=60, BufferCapacity:=Me.NumberPoint)
 
 		ReDim MyPriceVols(0 To MyListOfStockPriceVol.Count - 1)
@@ -476,6 +492,8 @@ Public Class RecordPrices
 		'the best way is probably to scan the record and record the max volume and the min volume and if the max volume is zero then we can set the IsVol to false otherwise we can set it to true
 		Me.VolMin = Long.MaxValue
 		Me.VolMax = Long.MinValue
+		Me.DVMin = Long.MaxValue
+		Me.DVMax = Long.MinValue
 		Me.IsVol = False
 		For Each ThisItems In MyListOfStockPriceVol.WithIndex
 			ThisPriceVol = ThisItems.Item
@@ -483,11 +501,19 @@ Public Class RecordPrices
 				If Me.FirstNonZeroIndex = -1 AndAlso .Last > 0 AndAlso .Volume > 0 Then
 					Me.FirstNonZeroIndex = ThisItems.Index
 				End If
-				If .Volume > 0 AndAlso .Volume < Me.VolMin Then
-					Me.VolMin = .Volume
-				End If
-				If .Volume > Me.VolMax Then
-					Me.VolMax = .Volume
+				If .Volume > 0 Then
+					If .Volume < _VolMin Then
+						_VolMin = .Volume
+					End If
+					If .Volume > _VolMax Then
+						_VolMax = .Volume
+					End If
+					If ThisPriceVol.DV < DVMin Then
+						DVMin = ThisPriceVol.DV
+					End If
+					If ThisPriceVol.DV > DVMax Then
+						DVMax = ThisPriceVol.DV
+					End If
 				End If
 				If .Last > 0 Then
 					'check the range
@@ -501,6 +527,7 @@ Public Class RecordPrices
 					End If
 				End If
 			End With
+			Record.CheckPrice(DirectCast(ThisPriceVol, IPriceVol))
 			MyListOfIStockPriceVol.Add(ThisPriceVol)
 			MyPriceVols(ThisItems.Index) = New PriceVol(ThisPriceVol)
 			MyListOfPriceVol.Add(MyPriceVols(ThisItems.Index))
@@ -536,6 +563,13 @@ Public Class RecordPrices
 			'   This implementation intentionally uses the statistical
 			'   interpretation and therefore does NOT subtract 1.0.
 			'
+		Next
+		MyListOfCumulativeLogGain = StockPriceLogGainExtensions.ToCumulativeLogGain(MyListOfStockPriceVol)
+		MyListOfLogGain = StockPriceLogGainExtensions.ToLogGain(MyListOfStockPriceVol)
+		For Each ThisItems In MyListOfStockPriceVol.WithIndex
+			ThisPriceVol = ThisItems.Item
+			Record.CheckPrice(DirectCast(ThisPriceVol, IPriceVol))
+
 			ThisFilterPLLForGain.FilterRun(MyListOfCumulativeLogGain(ThisItems.Index).Last)
 			GainDeltaYearly =
 					ThisFilterPLLForGain.FilterLast -
@@ -561,6 +595,8 @@ Public Class RecordPrices
 		IsRecordNormalized = False
 		PriceNormalized = 100.0
 		DateNormalized = Me.DateStart
+		LDVMin = If(DVMin > 0, Math.Log(DVMin), 0)
+		LDVMax = If(DVMax > 0, Math.Log(DVMax), 0)
 	End Sub
 
 #End Region
@@ -821,12 +857,16 @@ Public Class RecordPrices
 		'set the default value for that condition
 		_StartPoint = -1
 		_StopPoint = -1
+		_IsNull = False
 		If ThisListOfRecordQuoteValue.Count = 0 Then
+			'invalid record data stream no valid data in the stream
+			'we can leave everything to zero and set the IsNull to true to indicate that the data is not valid
 			_IsNull = True
 			'in that case initialize the pricevol with null values
 			Dim ThisDateStop As Date = Me.DateStart
 			Do
 				MyListOfIPriceVol.Add(New PriceVol(0) With {.IsNull = True, .DateLastTrade = ThisDateStop})
+				Record.CheckPrice(MyListOfIPriceVol.Last)
 				ThisDateStop = ThisDateStop.AddDays(1)
 				'sunday is not possible here because DateStart is always a monday and we increase by one day at a time
 				If Me.DateStop.DayOfWeek = DayOfWeek.Saturday Then
@@ -846,16 +886,24 @@ Public Class RecordPrices
 			_PriceMaxTarget = 0
 			_VolMax = 0
 			_VolMin = 0
+			_DVMax = 0
+			_DVMin = 0
+			'_DVAverage60Min = 0
+			'_DVAverage60Max = 0
 			_IsPriceTarget = False
 			Return
 		Else
 			'initialize the range variable before we start the data processing
 			_PriceMax = 0.0
-			_PriceMin = Single.MaxValue
+			_PriceMin = Double.MaxValue
 			_PriceMinTarget = _PriceMin
 			_PriceMaxTarget = _PriceMax
 			_VolMax = 0
-			_VolMin = Integer.MaxValue
+			_VolMin = Long.MaxValue
+			_DVMax = 0
+			_DVMin = Double.MaxValue
+			'_DVAverage60Min = 0
+			'_DVAverage60Max = 0
 			_IsPriceTarget = False
 		End If
 		'adjust the data
@@ -867,7 +915,8 @@ Public Class RecordPrices
 		'collect to be on a valid weekly working day
 		Dim ThisRecordQuoteValueFirst = ThisListOfRecordQuoteValue.First
 		'scan the list and collect the priceVol data 
-		'first make sure the record QuoteValue aligh with teh starting date and if not create null price vol until we reach the first record quote value date
+		'first make sure the record QuoteValue aligh with teh starting date and if not
+		'create null price vol until we reach the first record quote value date
 		Do Until ThisDateCurrent >= ThisRecordQuoteValueFirst.DateDay.Date
 			ThisPriceVol = PriceVolUpdateToNull(ThisRecordQuoteValueFirst, ThisDateCurrent)
 			_NumberNullPoint = _NumberNullPoint + 1
@@ -875,6 +924,7 @@ Public Class RecordPrices
 				MyListOfIPriceVol.Last.OpenNext = ThisPriceVol.Open
 			End If
 			MyListOfIPriceVol.Add(ThisPriceVol)
+			Record.CheckPrice(MyListOfIPriceVol.Last)
 			ThisPriceVolLast = ThisPriceVol
 			ThisDateCurrent = ThisDateCurrent.AddDays(1)
 			ThisDateCurrent = If(ThisDateCurrent.DayOfWeek = DayOfWeek.Saturday, ThisDateCurrent.AddDays(2), ThisDateCurrent)
@@ -902,6 +952,7 @@ Public Class RecordPrices
 					MyListOfIPriceVol.Last.OpenNext = ThisPriceVol.Open
 				End If
 				MyListOfIPriceVol.Add(ThisPriceVol)
+				Record.CheckPrice(MyListOfIPriceVol.Last)
 				ThisPriceVolLast = ThisPriceVol
 				ThisDateCurrent = ThisDateCurrent.AddDays(1)
 				ThisDateCurrent = If(ThisDateCurrent.DayOfWeek = DayOfWeek.Saturday, ThisDateCurrent.AddDays(2), ThisDateCurrent)
@@ -914,7 +965,7 @@ Public Class RecordPrices
 				_IsVol = True
 			End If
 			MyListOfIPriceVol.Add(ThisPriceVol)
-
+			Record.CheckPrice(MyListOfIPriceVol.Last)
 			ThisDateCurrent = ThisDateCurrent.AddDays(1)
 			ThisDateCurrent = If(ThisDateCurrent.DayOfWeek = DayOfWeek.Saturday, ThisDateCurrent.AddDays(2), ThisDateCurrent)
 			ThisRecordQuoteValuePrevious = ThisRecordQuoteValue
@@ -922,6 +973,7 @@ Public Class RecordPrices
 		MyListOfStockPriceVol = New List(Of StockPriceVol)
 		MyListOfIStockPriceVol = New List(Of IStockPriceVol)
 		MyListOfCumulativeLogGain = New List(Of StockPriceVol)
+		MyListOfLogGain = New List(Of StockPriceVol)
 		'set the default value for that condition
 		If MyListOfIPriceVol.Count > 0 Then
 			_StartPoint = 0
@@ -947,6 +999,7 @@ Public Class RecordPrices
 		_StopPoint = MyListOfIPriceVol.Count - 1
 		_NumberPoint = MyListOfIPriceVol.Count
 		If _NumberNullPoint = _NumberPoint Then
+			'should not happen but just in case we set the IsNull to true to indicate that the data is not valid
 			_IsNull = True
 		Else
 			_IsNull = False
@@ -959,8 +1012,6 @@ Public Class RecordPrices
 		End If
 		'propagate the liveupdate information form the record to the PriceVol object	
 		'note that there is a name change here 
-		Dim ThisFilterOfVolume60 As New FilterExp(FilterRate:=60)
-		Dim ThisFilterOfDV60 As New FilterExp(FilterRate:=60)
 		ReDim MyPriceVols(0 To Me.NumberPoint - 1)
 		Dim IsFirstVolumeGreaterThanZero As Boolean = False
 		'detecte the first volume greater than zero
@@ -985,16 +1036,6 @@ Public Class RecordPrices
 			'update the advanced parameters of the volume
 			If IsFirstVolumeGreaterThanZero Then
 				With ThisPriceVol.AsIStockPriceVol
-					If .Volume > 0 Then
-						.VolumeAverage60 = ThisFilterOfVolume60.FilterRun(.Volume)
-					Else
-						.VolumeAverage60 = ThisFilterOfVolume60.FilterLast
-					End If
-					If .DV > 0 Then
-						.DVAverage60 = ThisFilterOfDV60.FilterRun(.DV)
-					Else
-						.DVAverage60 = ThisFilterOfDV60.FilterLast
-					End If
 					.VolumePrevious = ThisPriceVolLast.Volume
 					If .VolumePrevious > 0 Then
 						'after first tradind day we can start to record the previous trading volume
@@ -1004,10 +1045,8 @@ Public Class RecordPrices
 				End With
 			Else
 				With ThisPriceVol.AsIStockPriceVol
-					.VolumeAverage60 = 0.0
 					.VolumePrevious = 0
 					.VolumePreviousTrading = 0
-					.DVAverage60 = 0.0
 				End With
 			End If
 			Dim ThisStockPriceVol = New StockPriceVol(ThisPriceVol)
@@ -1018,6 +1057,7 @@ Public Class RecordPrices
 		Next
 		MyPriceVols(Me.NumberPoint - 1).IsIntraDay = IsLiveUpdate
 		MyListOfCumulativeLogGain = StockPriceLogGainExtensions.ToCumulativeLogGain(MyListOfStockPriceVol)
+		MyListOfLogGain = StockPriceLogGainExtensions.ToLogGain(MyListOfStockPriceVol)
 		'Dim ThisListOfCumulativeLogGain = MyListOfCumulativeLogGain.Select(Of Double)(Function(stock) stock.Last).ToList()
 		MyListOfSharpeRatio = New List(Of Double)
 		MyListOfSharpeGaussianProbability = New List(Of Double)
@@ -1159,6 +1199,7 @@ Public Class RecordPrices
 			MyPriceVolLast = New PriceVol(Record.Open)
 		End If
 		Dim ThisPriceVol As New PriceVol
+		Dim ThisStockPriceVol As IStockPriceVol = ThisPriceVol
 		With ThisPriceVol
 			.DateLastTrade = DateValue
 			.LastPrevious = MyPriceVolLast.Last
@@ -1266,11 +1307,19 @@ Public Class RecordPrices
 						_PriceMinTarget = .OneyrTargetPrice
 					End If
 				End If
-				If .Volume > 0 AndAlso .Volume < _VolMin Then
-					_VolMin = .Vol
-				End If
-				If .Vol > _VolMax Then
-					_VolMax = .Vol
+				If .Volume > 0 Then
+					If .Volume < _VolMin Then
+						_VolMin = .Volume
+					End If
+					If .Volume > _VolMax Then
+						_VolMax = .Volume
+					End If
+					If ThisStockPriceVol.DV < DVMin Then
+						DVMin = ThisStockPriceVol.DV
+					End If
+					If ThisStockPriceVol.DV > DVMax Then
+						DVMax = ThisStockPriceVol.DV
+					End If
 				End If
 				.DividendYield = 100 * .DividendShare / .Last
 			End If
@@ -1278,6 +1327,9 @@ Public Class RecordPrices
 				.EarningsShare = MyPriceVolLast.EarningsShare
 			End If
 			MyPriceVolLast = ThisPriceVol
+			If ThisPriceVol.IsNull = False Then
+				MyPriceVolLastNotNull = ThisPriceVol
+			End If
 			.RecordQuoteValue = Record
 		End With
 		Return ThisPriceVol
@@ -1287,10 +1339,12 @@ Public Class RecordPrices
 		ByRef RecordQuote As YahooAccessData.RecordQuoteValue,
 		ByVal DateValue As Date) As PriceVol
 
+		Dim ThisLastPriceVolNotNull As PriceVol = Nothing
 		If MyPriceVolLast Is Nothing Then
 			MyPriceVolLast = New PriceVol(RecordQuote.Open)
 		End If
 		Dim ThisPriceVol As New PriceVol
+		Dim ThisStockPriceVol As IStockPriceVol = ThisPriceVol
 		With ThisPriceVol
 			With .AsISentimentIndicator
 				.Count = RecordQuote.AsISentimentIndicator.Count
@@ -1434,11 +1488,19 @@ Public Class RecordPrices
 					_PriceMinTarget = .OneyrTargetPrice
 				End If
 			End If
-			If .Volume > 0 AndAlso .Volume < _VolMin Then
-				_VolMin = .Volume
-			End If
-			If .Volume > _VolMax Then
-				_VolMax = .Volume
+			If .Volume > 0 Then
+				If .Volume < _VolMin Then
+					_VolMin = .Volume
+				End If
+				If .Volume > _VolMax Then
+					_VolMax = .Volume
+				End If
+				If ThisStockPriceVol.DV < DVMin Then
+					DVMin = ThisStockPriceVol.DV
+				End If
+				If ThisStockPriceVol.DV > DVMax Then
+					DVMax = ThisStockPriceVol.DV
+				End If
 			End If
 			.LastWeighted = RecordPrices.CalculateLastWeighted(DirectCast(ThisPriceVol, IPriceVol))
 			.Range = RecordPrices.CalculateTrueRange(DirectCast(ThisPriceVol, IPriceVol))
@@ -1579,6 +1641,30 @@ Public Class RecordPrices
 		Return ThisList
 	End Function
 
+
+	Private _IsPriceAdjustmentEnabled As Boolean
+	Public ReadOnly Property IsPriceAdjustmentEnabled As Boolean
+		Get
+			Return _IsPriceAdjustmentEnabled
+		End Get
+	End Property
+
+	Public Sub SetListPriceAdjustment(ByVal PriceAdjustmentEnabled As Boolean)
+		If PriceAdjustmentEnabled <> _IsPriceAdjustmentEnabled Then
+			'adjust the value for all array that matter
+			For Each ThisPriceVol In MyListOfStockPriceVol
+				'extract the price adjustment if it was enabled before
+
+				'ThisPriceVol.AsStockPriceAdjusted.SetPriceAdjusted(PriceAdjustment)
+			Next
+
+		End If
+
+		_IsPriceAdjustmentEnabled = PriceAdjustmentEnabled
+
+
+	End Sub
+
 	Public Function ToListOfStockPriceVol() As List(Of StockPriceVol)
 		Return MyListOfStockPriceVol
 	End Function
@@ -1589,6 +1675,10 @@ Public Class RecordPrices
 
 	Public Function ToListOfCumulativeLogGain() As List(Of StockPriceVol)
 		Return MyListOfCumulativeLogGain
+	End Function
+
+	Public Function ToListOfLogGain() As List(Of StockPriceVol)
+		Return MyListOfLogGain
 	End Function
 
 	Public Function ToListOfPriceVol() As List(Of IPriceVol)
@@ -1729,10 +1819,10 @@ Public Class RecordPrices
 	''' <param name="Ratio"></param>
 	<Obsolete("This method is obsolete. Use the new implementation instead.")>
 	Public Sub PriceVolsMultiPly(ByVal Ratio As Single)
-		_PriceMin = Single.MaxValue
-		_PriceMax = Single.MinValue
-		_VolMax = Integer.MinValue
-		_VolMin = Integer.MaxValue
+		_PriceMin = Double.MaxValue
+		_PriceMax = Double.MinValue
+		_VolMax = Long.MinValue
+		_VolMin = Long.MaxValue
 		For I = Me.StartPoint To Me.StopPoint
 			With MyPriceVols(I)
 				.MultiPly(Ratio)
@@ -1762,10 +1852,10 @@ Public Class RecordPrices
 		If RecordPrices.NumberPoint <> Me.NumberPoint Then
 			Throw New InvalidDataException(String.Format("Invalid number of point for {0} price addition...", RecordPrices.Symbol))
 		End If
-		_PriceMin = Single.MaxValue
-		_PriceMax = Single.MinValue
-		_VolMax = Integer.MinValue
-		_VolMin = Integer.MaxValue
+		_PriceMin = Double.MaxValue
+		_PriceMax = Double.MinValue
+		_VolMax = Long.MinValue
+		_VolMin = Long.MaxValue
 		For I = Me.StartPoint To Me.StopPoint
 			With MyPriceVols(I)
 				.Add(RecordPrices.PriceVols(I))
@@ -1847,15 +1937,44 @@ Public Class RecordPrices
 	Private _VolMax As Long
 	Public Property VolMax As Long
 		Get
-			'note do not retuRn a value egual to zero if not the graph may have a problem
+			'note do not return a value egual to zero if not the graph may have a problem
 			'in some zooming scenario
-			If _VolMax = 0 Then Return 1
 			Return _VolMax
 		End Get
 		Set(value As Long)
 			_VolMax = value
 		End Set
 	End Property
+
+	Public Property DVMin As Double
+
+	Public Property DVMax As Double
+
+	Public Property LDVMin As Double
+
+	Public Property LDVMax As Double
+
+	'Private _DVAverage60Max As Double
+	'Public Property DVAverage60Max As Double
+	'	Get
+	'		'note do not return a value egual to zero if not the graph may have a problem
+	'		'in some zooming scenario
+	'		Return _DVAverage60Max
+	'	End Get
+	'	Set(value As Double)
+	'		_DVAverage60Max = value
+	'	End Set
+	'End Property
+
+	'Private _DVAverage60Min As Double
+	'Public Property DVAverage60Min As Double
+	'	Get
+	'		Return _DVAverage60Min
+	'	End Get
+	'	Set(value As Double)
+	'		_DVAverage60Min = value
+	'	End Set
+	'End Property
 
 	Public ReadOnly Property DateStart As Date
 	Public ReadOnly Property DateStop As Date
