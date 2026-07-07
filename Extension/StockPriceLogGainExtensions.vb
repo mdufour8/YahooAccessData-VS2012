@@ -197,7 +197,6 @@ Public Module StockPriceLogGainExtensions
 			'or Low prices would not accurately reflect the previous closing price and could lead to incorrect calculations of log gain.
 			'Therefore, we use ThisSourceItemLast.Last as the reference for computing log gain for all OHLC values.
 
-			Record.CheckPrice(SourceItem.AsIStockPrice)
 
 			'Open and Close gains can be combined directly because they refer to defined time points.
 			'High and Low gains cannot be combined directly in the same way because the daily high
@@ -314,6 +313,10 @@ Public Module StockPriceLogGainExtensions
 			ThisDataResultItem.Open = PriceNormalized * Math.Exp(SourceItem.Open - ThisDataSourceAtIndex.Last)
 			ThisDataResultItem.High = PriceNormalized * Math.Exp(SourceItem.High - ThisDataSourceAtIndex.Last)
 			ThisDataResultItem.Low = PriceNormalized * Math.Exp(SourceItem.Low - ThisDataSourceAtIndex.Last)
+			'set teh Volume to be the same as the source, since we are not changing the volume data, only the price data
+			'in effect the user may have to set teh Volume to the correct value before calling this function, since the volume data
+			'is not affected by the log gain conversion, but we keep it here for consistency
+			ThisDataResultItem.Volume = SourceItem.Volume
 			'note in some case when the gain data has been obtained by calculation The high and low may become flipped, so we need to check
 			'and correct that if needed before we complete the conversion to price space, otherwise we could have a high that is
 			'lower than the low which does nor represent a valid stock prices

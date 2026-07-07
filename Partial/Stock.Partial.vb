@@ -3486,7 +3486,9 @@ Partial Public Class Stock
 	Public Property BuildOriginator As String
 
 	Private _RecordPrices As RecordPrices
+	Private _RecordPricesSegmented As RecordPrices
 	Private _RecordPricesNormalized As RecordPrices
+	Private _RecordPricesSegmentedNormalized As RecordPrices
 	'Private _StockMarketMath As IStockMarketMath
 
 	''' <summary>
@@ -3502,6 +3504,19 @@ Partial Public Class Stock
 		End Get
 	End Property
 
+	Public ReadOnly Property GetRecordsPricesSegmented() As RecordPrices
+		Get
+			Return _RecordPricesSegmented
+		End Get
+	End Property
+
+	Public Function GetRecordsPricesSegmentedNormalized(
+		Optional PriceNormalized As Double = 100.0,
+		Optional DateOfNormalizations As Date = Nothing) As RecordPrices
+
+		Return GetRecordsPricesNormalized(_RecordPricesSegmented, PriceNormalized, DateOfNormalizations)
+	End Function
+
 	''' <summary>
 	''' Rebasing/Indexing Normalized: In finance or data analysis, datasets are often normalized to 100, where the starting value equals 100, 
 	''' and subsequent values show percentage increases or decreases from that starting point.
@@ -3511,27 +3526,54 @@ Partial Public Class Stock
 		Optional PriceNormalized As Double = 100.0,
 		Optional DateOfNormalizations As Date = Nothing) As RecordPrices
 
-		If _RecordPrices Is Nothing Then
+		'If _RecordPrices Is Nothing Then
+		'	Throw New InvalidDataException("The value of the RecordPrices cannot be null.")
+		'	Return Nothing
+		'End If
+		'If DateOfNormalizations <> Nothing Then
+		'	If DateOfNormalizations < _RecordPrices.DateStart Or DateOfNormalizations > _RecordPrices.DateStop Then
+		'		Throw New ArgumentOutOfRangeException("The date of normalization must be within the date range of the RecordPrices dataset.")
+		'		Return Nothing
+		'	End If
+		'Else
+		'	DateOfNormalizations = _RecordPrices.DateStart
+		'End If
+		'Dim Index As Integer = _RecordPrices.ToIndex(DateOfNormalizations)
+		'Dim ThisListOfStockPriceVol = _RecordPrices.ToListOfStockPriceVol
+		'Dim ThisListOfStockPriceVolNormalized = StockPriceLogGainExtensions.ToCumulativeLogGainInverse(
+		'	_RecordPrices.ToListOfCumulativeLogGain,
+		'	PriceNormalized:=100.0,
+		'	Index:=Index)
+
+		'_RecordPricesNormalized = New RecordPrices(Stock:=_RecordPrices.Stock, ThisListOfStockPriceVolNormalized.AsEnumerable)
+		Return GetRecordsPricesNormalized(_RecordPrices, PriceNormalized, DateOfNormalizations)
+	End Function
+
+	Public Shared Function GetRecordsPricesNormalized(
+		Value As RecordPrices,
+		Optional PriceNormalized As Double = 100.0,
+		Optional DateOfNormalizations As Date = Nothing) As RecordPrices
+
+		If Value Is Nothing Then
 			Throw New InvalidDataException("The value of the RecordPrices cannot be null.")
 			Return Nothing
 		End If
 		If DateOfNormalizations <> Nothing Then
-			If DateOfNormalizations < _RecordPrices.DateStart Or DateOfNormalizations > _RecordPrices.DateStop Then
+			If DateOfNormalizations < Value.DateStart Or DateOfNormalizations > Value.DateStop Then
 				Throw New ArgumentOutOfRangeException("The date of normalization must be within the date range of the RecordPrices dataset.")
 				Return Nothing
 			End If
 		Else
-			DateOfNormalizations = _RecordPrices.DateStart
+			DateOfNormalizations = Value.DateStart
 		End If
-		Dim Index As Integer = _RecordPrices.ToIndex(DateOfNormalizations)
-		Dim ThisListOfStockPriceVol = _RecordPrices.ToListOfStockPriceVol
+		Dim Index As Integer = Value.ToIndex(DateOfNormalizations)
+		Dim ThisListOfStockPriceVol = Value.ToListOfStockPriceVol
 		Dim ThisListOfStockPriceVolNormalized = StockPriceLogGainExtensions.ToCumulativeLogGainInverse(
-			_RecordPrices.ToListOfCumulativeLogGain,
+			Value.ToListOfCumulativeLogGain,
 			PriceNormalized:=100.0,
 			Index:=Index)
 
-		_RecordPricesNormalized = New RecordPrices(Stock:=_RecordPrices.Stock, ThisListOfStockPriceVolNormalized.AsEnumerable)
-		Return _RecordPricesNormalized
+		Return New RecordPrices(Stock:=Value.Stock, ThisListOfStockPriceVolNormalized.AsEnumerable)
 	End Function
 
 	''' <summary>
@@ -3546,6 +3588,20 @@ Partial Public Class Stock
 		'create the two record prices for the original and the normalized values
 		_RecordPrices = Value
 		_RecordPricesNormalized = Nothing
+	End Sub
+
+	''' <summary>
+	''' Set the value of the RecordPrices Segmented and from this value also generate a normalized 
+	''' value usually normalized a the value of 100. The user can also specify the date of normalisation but this date must be
+	''' within the date range of the RecordPrices dataset. If the normalisation date 
+	''' is not specified then the first value of the RecordPrices dataset will be used as the current 
+	''' date of normalization.
+	''' </summary>
+	''' <param name="Value"></param>
+	Public Sub SetRecordsPricesSegmented(Value As RecordPrices)
+		'create the two record prices for the original and the normalized values
+		_RecordPricesSegmented = Value
+		_RecordPricesSegmentedNormalized = Nothing
 	End Sub
 
 	Public ReadOnly Property SectorName As String

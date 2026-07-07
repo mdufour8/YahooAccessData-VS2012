@@ -70,34 +70,48 @@ Namespace MathPlus
 			End If
 			'try to fix the count if only one element is missing and the last element of the shorter list
 			'is the same as the last element of the longer list, otherwise throw an exception
-			Select Case (a.Count - b.Count)
+			Dim CountDifference As Integer = (a.Count - b.Count)
+			Select Case CountDifference
 				Case = 0
-				Case 1
-					'missing one element in b
+				Case 1 To 2
+					'missing one or more element in b
 					'make a copy of the list to avoid modifying the original list, ensuring thread safety
 					b = b.ToList
 					'add the last element of the list b to the bCopy to make it the same length as the a list
 					'also make sure the date correspond to the last element of the a list to maintain the correct date alignment for the addition operation
-					b.Add(New StockPriceVol(b.Last) With {
-						.DateDay = a.Last.DateDay,
-						.Open = .Last,
-						.High = .Last,
-						.Low = .Last,
-						.OpenNext = .Last,
-						.LastPrevious = .Last})
-				Case -1
+					For I As Integer = 1 To CountDifference
+						'how to add one day to a date in VB.NET? we can use the AddDays method of the DateTime class
+						'may be better in fact not to touch the date and just use the last date of the a list, because we are not sure if the last date
+						'of the a list is a trading day or not. The difference in point is usually related to the exchange calendar and the trading days, so we will just use the last date of the a list
+						'to avoid any potential issues with non-trading days.
+						'so keep the saame last day and just add the last value of the b list to the bCopy to make it the same length as the a list
+						'also place the volume to zero, because we don't have any volume data for the missing days, and we don't want
+						'to introduce any bias in the calculation.
+						b.Add(New StockPriceVol(b.Last) With {
+							.DateDay = a.Last.DateDay,
+							.Open = .Last,
+							.High = .Last,
+							.Low = .Last,
+							.OpenNext = .Last,
+							.LastPrevious = .Last,
+							.Volume = 0})
+					Next
+				Case -1, -2
 					a = a.ToList
-					a.Add(New StockPriceVol(a.Last) With {
-						.DateDay = b.Last.DateDay,
-						.Open = .Last,
-						.High = .Last,
-						.Low = .Last,
-						.OpenNext = .Last,
-						.LastPrevious = .Last})
+					For I As Integer = 1 To -CountDifference
+						a.Add(New StockPriceVol(a.Last) With {
+							.DateDay = b.Last.DateDay,
+							.Open = .Last,
+							.High = .Last,
+							.Low = .Last,
+							.OpenNext = .Last,
+							.LastPrevious = .Last,
+							.Volume = 0})
+					Next
 				Case Else
 					Throw New InvalidOperationException("Vector lengths do not match.")
 			End Select
-			Return a.Select(Of StockPriceVol)(Function(x, i) Add(x, b(index:=i))).ToList()
+			Return a.Select(Of StockPriceVol)(Function(x, i) Add(x, b(index:=i), Rho:=CORRELATION_HL_RHO_Default)).ToList()
 		End Function
 
 		Public Shared Function Add(a As StockPriceVol, b As StockPriceVol) As StockPriceVol
@@ -117,20 +131,21 @@ Namespace MathPlus
 			With z
 				.Open = a.Open + b.Open
 				.Last = a.Last + b.Last
-				.High = a.High + b.High
-				.Low = a.Low + b.Low
 			End With
 			Dim aHighExc = Math.Max(0, Math.Exp(a.High - a.Open) - 1)
 			Dim bHighExc = Math.Max(0, Math.Exp(b.High - b.Open) - 1)
 			Dim zHighExcRel = Math.Sqrt(aHighExc * aHighExc + bHighExc * bHighExc + 2 * Rho * aHighExc * bHighExc)
 			z.High = z.Open + Math.Log(1 + zHighExcRel)
 
-			Dim aLowExc = Math.Max(0, Math.Exp(a.Low - a.Open) - 1)
-			Dim bLowExc = Math.Max(0, Math.Exp(b.Low - b.Open) - 1)
+			Dim aLowExc = Math.Max(0, Math.Exp(a.Open - a.Low) - 1)
+			Dim bLowExc = Math.Max(0, Math.Exp(b.Open - b.Low) - 1)
 			Dim zLowExcRel = Math.Sqrt(aLowExc * aLowExc + bLowExc * bLowExc + 2 * Rho * aLowExc * bLowExc)
 			z.Low = z.Open - Math.Log(1 + zLowExcRel)
 
-			If SetHighLow(z) = False Then Stop
+			If SetHighLow(z) = False Then
+				'For debugging
+				'z = z
+			End If
 			Return z
 		End Function
 
@@ -169,35 +184,49 @@ Namespace MathPlus
 			End If
 			'try to fix the count if only one element is missing and the last element of the shorter list
 			'is the same as the last element of the longer list, otherwise throw an exception
-			Select Case (a.Count - b.Count)
+			Dim CountDifference As Integer = (a.Count - b.Count)
+			Select Case CountDifference
 				Case = 0
-				Case 1
-					'missing one element in b
+				Case 1 To 2
+					'missing one or more element in b
 					'make a copy of the list to avoid modifying the original list, ensuring thread safety
 					b = b.ToList
 					'add the last element of the list b to the bCopy to make it the same length as the a list
 					'also make sure the date correspond to the last element of the a list to maintain the correct date alignment for the addition operation
-					b.Add(New StockPriceVol(b.Last) With {
-						.DateDay = a.Last.DateDay,
-						.Open = .Last,
-						.High = .Last,
-						.Low = .Last,
-						.OpenNext = .Last,
-						.LastPrevious = .Last})
-				Case -1
+					For I As Integer = 1 To CountDifference
+						'how to add one day to a date in VB.NET? we can use the AddDays method of the DateTime class
+						'may be better in fact not to touch the date and just use the last date of the a list, because we are not sure if the last date
+						'of the a list is a trading day or not. The difference in point is usually related to the exchange calendar and the trading days, so we will just use the last date of the a list
+						'to avoid any potential issues with non-trading days.
+						'so keep the saame last day and just add the last value of the b list to the bCopy to make it the same length as the a list
+						'also place the volume to zero, because we don't have any volume data for the missing days, and we don't want
+						'to introduce any bias in the calculation.
+						b.Add(New StockPriceVol(b.Last) With {
+							.DateDay = a.Last.DateDay,
+							.Open = .Last,
+							.High = .Last,
+							.Low = .Last,
+							.OpenNext = .Last,
+							.LastPrevious = .Last,
+							.Volume = 0})
+					Next
+				Case -1, -2
 					a = a.ToList
-					a.Add(New StockPriceVol(a.Last) With {
-						.DateDay = b.Last.DateDay,
-						.Open = .Last,
-						.High = .Last,
-						.Low = .Last,
-						.OpenNext = .Last,
-						.LastPrevious = .Last})
+					For I As Integer = 1 To -CountDifference
+						a.Add(New StockPriceVol(a.Last) With {
+							.DateDay = b.Last.DateDay,
+							.Open = .Last,
+							.High = .Last,
+							.Low = .Last,
+							.OpenNext = .Last,
+							.LastPrevious = .Last,
+							.Volume = 0})
+					Next
 				Case Else
-					Throw New InvalidOperationException("Vector lengths do not match.")
-			End Select
+						Throw New InvalidOperationException("Vector lengths do not match.")
+      End Select
 
-			Return a.Select(Of StockPriceVol)(Function(x, i) Subtract(x, b(index:=i), Rho:=1.0)).ToList()
+			Return a.Select(Of StockPriceVol)(Function(x, i) Subtract(x, b(index:=i), Rho:=CORRELATION_HL_RHO_Default)).ToList()
 		End Function
 
 		Public Shared Function Subtract(a As StockPriceVol, b As StockPriceVol) As StockPriceVol
@@ -229,7 +258,8 @@ Namespace MathPlus
 			z.Low = z.Open - Math.Log(1 + zLowExcRel)
 
 			If SetHighLow(z) = False Then
-				z = z
+				'For debugging
+				'z = z
 			End If
 			Return z
 		End Function
@@ -422,6 +452,18 @@ Namespace MathPlus
 			'for now we will just let it throw an exception, but we may want to consider
 			'returning some special value or handling it differently in the future
 			'also what would be the purpose of dividing two series of cumulative log gain?
+
+			'the test is already done in the RPN calculator, so we don't need to do it here
+			'If _
+			'	a.DataType <> StockPriceDataType.RawPrice OrElse
+			'	b.DataType <> StockPriceDataType.RawPrice Then
+
+			'	Throw New InvalidOperationException(
+			'		"Divide is only valid for RawPrice data. " &
+			'		"Use subtraction for relative comparison in cumulative log-return space.")
+			'End If
+
+			' division logic make sense for raw price only...
 			Dim z = New StockPriceVol(a)
 			z.Open = a.Open / b.Open
 			z.Last = a.Last / b.Last
@@ -436,20 +478,20 @@ Namespace MathPlus
 		'but with all values set to zero (or a specified default value). The list created essentially represent a stream with a gain of zero across all time periods,
 		'which can be useful as a baseline or starting point for various calculations and comparisons in financial analysis.
 		Public Shared Function Clear(a As List(Of StockPriceVol), Optional DefaultValue As Double = 0.0) As List(Of StockPriceVol)
-			Return a.Select(Function(x)
-												Dim z = New StockPriceVol(x)
-												With z
-													.DataType = StockPriceDataType.CumulativeLogReturn
-													.Open = DefaultValue
-													.High = DefaultValue
-													.Low = DefaultValue
-													.Last = DefaultValue
-													.OpenNext = DefaultValue
-													.LastPrevious = DefaultValue
-													.Volume = 0
-												End With
-												Return z
-											End Function).ToList()
+			Return a.Select(Function(x) Clear(x, DefaultValue)).ToList()
+		End Function
+
+		Public Shared Function Clear(a As StockPriceVol, Optional DefaultValue As Double = 0.0) As StockPriceVol
+			Dim z = New StockPriceVol(a)
+			With z
+				.Open = DefaultValue
+				.High = DefaultValue
+				.Low = DefaultValue
+				.Last = DefaultValue
+				.OpenNext = DefaultValue
+				.LastPrevious = DefaultValue
+			End With
+			Return z
 		End Function
 #End Region
 
@@ -486,10 +528,10 @@ Namespace MathPlus
 			'any variables, unless it Is encountered in a compiled executable (.exe) file.
 			'should not happen, but if it does, we will stop execution to catch the issue
 			If SetHighLow(z, IsApplyCorrection:=False) = False Then Stop
-			'If z.High < Math.Max(z.Open, z.Last) Then Stop
+			'If z.High <Math.Max(z.Open, z.Last) Then Stop
 			'If z.Low > Math.Min(z.Open, z.Last) Then Stop
-			'If z.Low > z.High Then Stop
-		End Sub
+				'If z.Low > z.High Then Stop
+				End Sub
 
 		''' <summary>
 		''' fixing the High and Low values. Also return a boolean indicating if the values were consistent.
