@@ -149,7 +149,6 @@ Public Class FilterExpPredict
 		If MyCircularBuffer.Count > 0 Then
 			'BDelta = (MyCircularBuffer.PeekLast() - MyCircularBuffer.PeekFirst()) / MyCircularBuffer.Count
 		End If
-		Debug.Print(BDelta.ToString)
 		Bp = Bp + BDelta
 
 		MyFilterDeltaALast = Ap - MyFilterALast

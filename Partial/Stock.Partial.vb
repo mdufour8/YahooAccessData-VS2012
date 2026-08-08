@@ -3481,15 +3481,41 @@ Partial Public Class Stock
 	Public Property Exchange As String
 	Public Property ErrorDescription As String
 	Public Property IsInternational As Boolean
+
+	''' <summary>
+	''' Indicates whether the stock data was generated or not. This property is used to
+	''' differentiate between stocks that have been generated from various mathematical models or simulations
+	''' and those that represent real stock from the market.
+	''' </summary>
+	''' <returns></returns>
 	Public Property IsGeneratedStock As Boolean
+
+	''' <summary>
+	''' The GenerateBuild property is used to store a JSON string that
+	''' represents the build property and version needed for the stock data generation process.
+	''' </summary>
 	Public Property GenerateBuild As String
+
+	''' <summary>
+	''' The originator of the build, which can be used to track the source or creator of the build. 
+	''' This property is useful for identifying who or what generated the build, 
+	''' especially in collaborative environments or when multiple builds are being created. 
+	''' It can help in debugging, auditing, and maintaining the build process by providing context about its origin.
+	''' </summary>
 	Public Property BuildOriginator As String
+
+	''' <summary>
+	''' The BuildDescription property is used to provide a textual description of the build, 
+	''' which can include details about the build's purpose, features, changes, or any other relevant information. 
+	''' This description can be helpful for users, developers, or stakeholders to understand the context and significance of the build.
+	''' Generally it contains the math equation used for the stock generation and the parameters used for the generation.
+	''' </summary>
+	Public Property BuildDescription As String
 
 	Private _RecordPrices As RecordPrices
 	Private _RecordPricesSegmented As RecordPrices
 	Private _RecordPricesNormalized As RecordPrices
 	Private _RecordPricesSegmentedNormalized As RecordPrices
-	'Private _StockMarketMath As IStockMarketMath
 
 	''' <summary>
 	''' Returns the prices for various calculations. The user need to set it values 
@@ -3606,13 +3632,13 @@ Partial Public Class Stock
 
 	Public ReadOnly Property SectorName As String
 		Get
-			Return Me.Sector.Name
+			Return If(Me.Sector?.Name, String.Empty)
 		End Get
 	End Property
 
 	Public ReadOnly Property IndustryName As String
 		Get
-			Return Me.Industry.Name
+			Return If(Me.Industry?.Name, String.Empty)
 		End Get
 	End Property
 

@@ -83,6 +83,22 @@ Public Class StockPriceVol
 		End Set
 	End Property
 
+	Private _priceFirst As Double
+
+	''' <summary>
+	''' This data can be usuful to return from a CumulativeLog value to the original price value, 
+	''' for example when the data type is set to CumulativeLogReturn or CumulativeLogYearlyReturn
+	''' </summary>
+	''' <returns></returns>
+	Public Property PriceFirst As Double
+		Get
+			Return _priceFirst
+		End Get
+		Set(value As Double)
+			_priceFirst = value
+		End Set
+	End Property
+
 	Public Property DateDay As Date Implements IStockPriceVol.DateDay
 	Public Property Open As Double Implements IStockPriceVol.Open
 	Public Property OpenNext As Double Implements IStockPriceVol.OpenNext

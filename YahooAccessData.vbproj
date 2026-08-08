@@ -192,7 +192,7 @@
   <ItemGroup>
     <Compile Include="Extension\EnumerableExtension.vb" />
     <Compile Include="Extension\Extensions.vb" />
-    <Compile Include="Extension\StockPriceLogGainExtensions.vb" />
+    <Compile Include="Partial\PriceVolDefinition\StockPriceLogGainExtensions.vb" />
     <Compile Include="MathSupport\Buffer\CircularBuffer.vb" />
     <Compile Include="FileSupport\FileMutex.vb" />
     <Compile Include="GlobalSuppressions.vb" />

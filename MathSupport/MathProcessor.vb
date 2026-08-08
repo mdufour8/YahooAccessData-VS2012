@@ -29,9 +29,35 @@ Namespace MathPlus
 		End Function
 
 		Public Shared Function Add(a As List(Of Double), b As List(Of Double)) As List(Of Double)
-			If a.Count <> b.Count Then
-				Throw New InvalidOperationException("Vector lengths do not match.")
-			End If
+			'try to fix the count if only one element is missing and the last element of the shorter list
+			'is the same as the last element of the longer list, otherwise throw an exception
+			Dim CountDifference As Integer = (a.Count - b.Count)
+			Select Case CountDifference
+				Case = 0
+				Case > 0
+					'missing one or more element in b
+					'make a copy of the list to avoid modifying the original list, ensuring thread safety
+					b = b.ToList
+					'add the last element of the list b to the bCopy to make it the same length as the a list
+					'also make sure the date correspond to the last element of the a list to maintain the correct date alignment for the addition operation
+					For I As Integer = 1 To CountDifference
+						'how to add one day to a date in VB.NET? we can use the AddDays method of the DateTime class
+						'may be better in fact not to touch the date and just use the last date of the a list, because we are not sure if the last date
+						'of the a list is a trading day or not. The difference in point is usually related to the exchange calendar and the trading days, so we will just use the last date of the a list
+						'to avoid any potential issues with non-trading days.
+						'so keep the saame last day and just add the last value of the b list to the bCopy to make it the same length as the a list
+						'also place the volume to zero, because we don't have any volume data for the missing days, and we don't want
+						'to introduce any bias in the calculation.
+						b.Add(b.Last)
+					Next
+				Case < 0
+					a = a.ToList
+					For I As Integer = 1 To -CountDifference
+						a.Add(a.Last)
+					Next
+				Case Else
+					Throw New InvalidOperationException("Vector lengths do not match.")
+			End Select
 			Return a.Select(Of Double)(Function(x, i) x + b(i)).ToList()
 		End Function
 
@@ -59,7 +85,7 @@ Namespace MathPlus
 			Return Add(b, a)
 		End Function
 
-		Public Shared Function Add(a As List(Of StockPriceVol), b As List(Of StockPriceVol)) As List(Of StockPriceVol)
+		Public Shared Function Add(a As List(Of StockPriceVol), b As List(Of StockPriceVol), Optional Rho As Double = CORRELATION_HL_RHO_Default) As List(Of StockPriceVol)
 			'try to make the list teh same length if the count difference is only 1 and the shorter list
 			'has a added the last value for the missing element, otherwise throw an exception
 			If _
@@ -111,7 +137,12 @@ Namespace MathPlus
 				Case Else
 					Throw New InvalidOperationException("Vector lengths do not match.")
 			End Select
-			Return a.Select(Of StockPriceVol)(Function(x, i) Add(x, b(index:=i), Rho:=CORRELATION_HL_RHO_Default)).ToList()
+			If Rho >= 0.99 Then
+				'perfect correlation, so we can just add the values directly without using the Rho parameter
+				Return a.Select(Of StockPriceVol)(Function(x, i) Add(x, b(index:=i))).ToList()
+			Else
+				Return a.Select(Of StockPriceVol)(Function(x, i) Add(x, b(index:=i), Rho:=Rho)).ToList()
+			End If
 		End Function
 
 		Public Shared Function Add(a As StockPriceVol, b As StockPriceVol) As StockPriceVol
@@ -123,7 +154,50 @@ Namespace MathPlus
 				.Low = a.Low + b.Low
 			End With
 			SetHighLow(z)
+
+			''compare the z result with the result of the Add(a, b, Rho) function to see if they are the same
+			'Dim ZRho = Add(a, b, Rho:=1.0)
+
+			'Dim DeltaHigh = 100 * (Math.Abs(z.High - ZRho.High) / Math.Max(1.0, Math.Abs(z.High)))
+			'Dim DeltaLow = 100 * (Math.Abs(z.Low - ZRho.Low) / Math.Max(1.0, Math.Abs(z.Low)))
+
 			Return z
+		End Function
+
+		''' <summary>
+		''' not completed yet, but the idea is to measure the error between the Add(a, b) and Add(a, b, Rho) functions
+		''' </summary>
+		''' <param name="a"></param>
+		''' <param name="b"></param>
+		''' <returns></returns>
+		Public Shared Function MesureCorrelationError(a As StockPriceVol, b As StockPriceVol) As (ErrorLow As Double, ErrorHigh As Double)
+			Dim z = New StockPriceVol(a)
+			With z
+				.Open = a.Open + b.Open
+				.Last = a.Last + b.Last
+				.High = a.High + b.High
+				.Low = a.Low + b.Low
+			End With
+			'SetHighLow(z)
+
+			'compare the z result with the result of the Add(a, b, Rho) function to see if they are the same
+			Dim ZRho = Add(a, b, Rho:=1.0)
+
+			Dim aHighExc = Math.Max(0, Math.Exp(Math.Abs(z.High - ZRho.High)) - 1)
+			Dim bHighExc = Math.Max(0, Math.Exp(b.High - b.Open) - 1)
+
+
+
+			Dim DeltaHigh = Math.Exp(Math.Abs(z.High - ZRho.High)) - 1
+			Dim HighMean = (z.High + ZRho.High) / 2
+
+			Dim DeltaLow = Math.Exp(Math.Abs(z.Low - ZRho.Low)) - 1
+			Dim LowMean = (z.Low + ZRho.Low) / 2
+
+
+
+
+			Return (DeltaLow, DeltaHigh)
 		End Function
 
 		Public Shared Function Add(a As StockPriceVol, b As StockPriceVol, Rho As Double) As StockPriceVol
@@ -132,6 +206,10 @@ Namespace MathPlus
 				.Open = a.Open + b.Open
 				.Last = a.Last + b.Last
 			End With
+			'go back to the original price space to calculate the high and low values relative gain, because the high and low values are not necessarily correlated in time
+			'refer everything back to the open  of the same day
+
+			'Approximativly the value of the gain inverse assuming a value of 1 for open
 			Dim aHighExc = Math.Max(0, Math.Exp(a.High - a.Open) - 1)
 			Dim bHighExc = Math.Max(0, Math.Exp(b.High - b.Open) - 1)
 			Dim zHighExcRel = Math.Sqrt(aHighExc * aHighExc + bHighExc * bHighExc + 2 * Rho * aHighExc * bHighExc)
@@ -140,8 +218,8 @@ Namespace MathPlus
 			Dim aLowExc = Math.Max(0, Math.Exp(a.Open - a.Low) - 1)
 			Dim bLowExc = Math.Max(0, Math.Exp(b.Open - b.Low) - 1)
 			Dim zLowExcRel = Math.Sqrt(aLowExc * aLowExc + bLowExc * bLowExc + 2 * Rho * aLowExc * bLowExc)
-			z.Low = z.Open - Math.Log(1 + zLowExcRel)
 
+			z.Low = z.Open - Math.Log(1 + zLowExcRel)
 			If SetHighLow(z) = False Then
 				'For debugging
 				'z = z
@@ -173,7 +251,7 @@ Namespace MathPlus
 			Return Add(a, -b)
 		End Function
 
-		Public Shared Function Subtract(a As List(Of StockPriceVol), b As List(Of StockPriceVol)) As List(Of StockPriceVol)
+		Public Shared Function Subtract(a As List(Of StockPriceVol), b As List(Of StockPriceVol), Optional Rho As Double = CORRELATION_HL_RHO_Default) As List(Of StockPriceVol)
 			'try to make the list teh same length if the count difference is only 1 and the shorter list
 			'has a added the last value for the missing element, otherwise throw an exception
 			If _
@@ -187,7 +265,7 @@ Namespace MathPlus
 			Dim CountDifference As Integer = (a.Count - b.Count)
 			Select Case CountDifference
 				Case = 0
-				Case 1 To 2
+				Case > 0
 					'missing one or more element in b
 					'make a copy of the list to avoid modifying the original list, ensuring thread safety
 					b = b.ToList
@@ -210,7 +288,7 @@ Namespace MathPlus
 							.LastPrevious = .Last,
 							.Volume = 0})
 					Next
-				Case -1, -2
+				Case < 0
 					a = a.ToList
 					For I As Integer = 1 To -CountDifference
 						a.Add(New StockPriceVol(a.Last) With {
@@ -223,14 +301,15 @@ Namespace MathPlus
 							.Volume = 0})
 					Next
 				Case Else
-						Throw New InvalidOperationException("Vector lengths do not match.")
-      End Select
+					Throw New InvalidOperationException("Vector lengths do not match.")
+			End Select
 
-			Return a.Select(Of StockPriceVol)(Function(x, i) Subtract(x, b(index:=i), Rho:=CORRELATION_HL_RHO_Default)).ToList()
+			Return a.Select(Of StockPriceVol)(Function(x, i) Subtract(x, b(index:=i), Rho:=Rho)).ToList()
 		End Function
 
 		Public Shared Function Subtract(a As StockPriceVol, b As StockPriceVol) As StockPriceVol
 			Dim z = New StockPriceVol(a)
+			'not sure yet how to use rho with substraction, so we will just ignore it for now, but we may want to consider how to use it in the future
 			With z
 				.Open = a.Open - b.Open
 				.Last = a.Last - b.Last
@@ -320,7 +399,7 @@ Namespace MathPlus
 			Return Multiply(b, a)
 		End Function
 
-		Public Shared Function Multiply(a As List(Of StockPriceVol), b As List(Of StockPriceVol)) As List(Of StockPriceVol)
+		Public Shared Function Multiply(a As List(Of StockPriceVol), b As List(Of StockPriceVol), Optional Rho As Double = CORRELATION_HL_RHO_Default) As List(Of StockPriceVol)
 			'try to fix the count if only one element is missing and the last element of the shorter list
 			'is the same as the last element of the longer list, otherwise throw an exception
 			Select Case (a.Count - b.Count)
@@ -350,8 +429,9 @@ Namespace MathPlus
 			Return a.Select(Of StockPriceVol)(Function(x, i) Multiply(x, b(i))).ToList()
 		End Function
 
-		Public Shared Function Multiply(a As StockPriceVol, b As StockPriceVol) As StockPriceVol
+		Public Shared Function Multiply(a As StockPriceVol, b As StockPriceVol, Optional Rho As Double = CORRELATION_HL_RHO_Default) As StockPriceVol
 			Dim z = New StockPriceVol(a)
+			'not sure how to use the rho for multiplication, so we will just ignore it for now, but we may want to consider how to use it in the future
 			With z
 				.Open = a.Open * b.Open
 				.High = a.High * b.High
@@ -447,7 +527,7 @@ Namespace MathPlus
 			End Try
 		End Function
 
-		Public Shared Function Divide(a As StockPriceVol, b As StockPriceVol) As StockPriceVol
+		Public Shared Function Divide(a As StockPriceVol, b As StockPriceVol, Optional Rho As Double = CORRELATION_HL_RHO_Default) As StockPriceVol
 			'what should we do with division by zero cases?
 			'for now we will just let it throw an exception, but we may want to consider
 			'returning some special value or handling it differently in the future
@@ -464,6 +544,7 @@ Namespace MathPlus
 			'End If
 
 			' division logic make sense for raw price only...
+			'not sure how to use the rho for division, so we will just ignore it for now, but we may want to consider how to use it in the future
 			Dim z = New StockPriceVol(a)
 			z.Open = a.Open / b.Open
 			z.Last = a.Last / b.Last
@@ -573,7 +654,7 @@ Namespace MathPlus
 			Return IsConsistent
 		End Function
 
-		Public Shared Sub SetNextLast(ByRef a As List(Of StockPriceVol))
+		Public Shared Sub SetLastPreviousOpenNext(ByRef a As List(Of StockPriceVol))
 			a(0).LastPrevious = a(0).Open
 			For i As Integer = 0 To a.Count - 2
 				a(i).OpenNext = a(i + 1).Open

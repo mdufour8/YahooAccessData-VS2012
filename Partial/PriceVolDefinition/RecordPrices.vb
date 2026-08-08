@@ -1748,6 +1748,10 @@ Public Class RecordPrices
 		Return ReportDate.MarketTradingDeltaDays(Me.DateStart, DateValue)
 	End Function
 
+	Public Shared Function ToIndex(DateStart As Date, DateValue As Date) As Integer
+		Return ReportDate.MarketTradingDeltaDays(DateStart, DateValue)
+	End Function
+
 	Public Shared Function ToDate(ByVal DateStart As Date, ByVal Index As Integer) As Date
 		Dim ThisNumberOfTradingFullWeek As Integer = Index \ 5
 		Dim ThisNumberOfTradingDayLeft As Integer = Index Mod 5

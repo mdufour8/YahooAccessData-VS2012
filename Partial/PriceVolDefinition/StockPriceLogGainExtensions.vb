@@ -64,6 +64,7 @@ Public Module StockPriceLogGainExtensions
 		Dim ThisSourceItemLast As StockPriceVol = DataSource.First
 		Dim ThisDataResultLast As StockPriceVol = New StockPriceVol
 		Dim ThisDataResultItem As StockPriceVol
+		Dim ThisPriceFirst As Double = ThisSourceItemLast.Last
 		For Each SourceItem In DataSource
 			ThisDataResultItem = New StockPriceVol(SourceItem)
 			'The data input is expected to be clean but just in case, we try to compute log gain,
@@ -75,6 +76,8 @@ Public Module StockPriceLogGainExtensions
 			'bad data has not too much impact on the overall analysis.
 			'This is a pragmatic approach to handle data quality issues while still providing useful results.
 			ThisDataResultItem.DataType = StockPriceDataType.CumulativeLogReturn
+			ThisDataResultItem.PriceFirst = ThisPriceFirst
+
 			'.Open = Measure.GainLog(SourceItem.Open, ThisSourceItemLast.Open, OnErrorReturn:=0.0) + ThisDataResultLast.Open
 			'.High = Measure.GainLog(SourceItem.High, ThisSourceItemLast.High, OnErrorReturn:=0.0) + ThisDataResultLast.High
 			'.Low = Measure.GainLog(SourceItem.Low, ThisSourceItemLast.Low, OnErrorReturn:=0.0) + ThisDataResultLast.Low

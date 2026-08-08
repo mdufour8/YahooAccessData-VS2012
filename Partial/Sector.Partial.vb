@@ -41,13 +41,16 @@ Partial Public Class Sector
     End With
   End Sub
 
-  Public Sub New(ByVal Name As String)
-    With Me
-      .Name = Name
-      .Industries = New LinkedHashSet(Of Industry, String)
-      .Stocks = New LinkedHashSet(Of Stock, String)
-    End With
-    If MyListHeaderInfo Is Nothing And LIST_OF_HEADER_FILE_ENABLED Then
+	Public Sub New(ByVal Name As String)
+		If String.IsNullOrEmpty(Name) Then
+			Name = ""
+		End If
+		With Me
+			.Name = Name
+			.Industries = New LinkedHashSet(Of Industry, String)
+			.Stocks = New LinkedHashSet(Of Stock, String)
+		End With
+		If MyListHeaderInfo Is Nothing And LIST_OF_HEADER_FILE_ENABLED Then
       Dim ThisFile = My.Application.Info.DirectoryPath & "\HeaderInfo\" & TypeName(Me) & ".HeaderInfo.json"
       MyListHeaderInfo = FileHeaderRead(ThisFile, ListOfHeader, Me.Exception)
     Else

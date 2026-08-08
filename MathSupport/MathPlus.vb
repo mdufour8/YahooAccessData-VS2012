@@ -6753,7 +6753,7 @@ Namespace MathPlus
 						ThisValuePVFiltered = MyFilterPV.Filter(Value)
 					End If
 				Catch ex As Exception
-					ex = ex
+					Throw ex
 				End Try
 
 				If MyListOfRSI.Count = 0 Then
