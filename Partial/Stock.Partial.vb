@@ -1240,6 +1240,19 @@ Partial Public Class Stock
 		Return True
 	End Function
 
+	''' <summary>
+	''' Can be used to store the filterate of secondary function of the stock.
+	''' </summary>
+	Public Property FilterRate As Double?
+
+	''' <summary>
+	''' Optional rate adjustment associated with this stock.
+	''' This is a secondary parameter and is normally Nothing (or treated as 0.0).
+	''' It can be specified by the user for evaluation or testing purposes,
+	''' for example to model an interest-bearing CASH or bond-like instrument.
+	''' </summary>
+	Public Property Rate As Double?
+
 	Public Function IsRecordLoaded() As Boolean
 		Return True
 		'Do not trust the current code in record for that
