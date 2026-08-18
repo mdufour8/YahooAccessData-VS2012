@@ -255,19 +255,32 @@ Public Class LinkedHashSet(Of T As {New, Class, IRegisterKey(Of U),  IDateUpdate
     End Get
   End Property
 
-  ''' <summary>
-  ''' Use by an external thread to lock the LinkedHashset thread using SyncLock
-  ''' </summary>
-  ''' <value></value>
-  ''' <returns></returns>
-  ''' <remarks>can be use with SyncLock to lock the list for multiple operation</remarks>
-  Public ReadOnly Property Lock As Object
-    Get
-      Return ThisLock
-    End Get
-  End Property
+	''' <summary>
+	''' Use by an external thread to lock the LinkedHashset thread using SyncLock
+	''' </summary>
+	''' <value></value>
+	''' <returns></returns>
+	''' <remarks>can be use with SyncLock to lock the list for multiple operation</remarks>
+	Public ReadOnly Property Lock As Object
+		Get
+			Return ThisLock
+		End Get
+	End Property
 
-  Public Property SinkEvent As ISystemEvent(Of T) Implements ISystemEventRegister(Of T).SinkEvent
+
+	''' <summary>
+	''' Optional rate adjustment associated with this stock.
+	''' This is a secondary parameter and is normally Nothing (or treated as 0.0).
+	''' It can be specified by the user for evaluation or testing purposes,
+	''' for example to model an interest-bearing CASH or bond-like instrument.
+	''' It is also normally store at the level of the Stock object, but is ised here
+	''' to indicate the current level of the rate adjustment for this particular collection of data.
+	''' Hence the user can decide if the rate value do not match the expected value
+	''' to read the full data set again and readkust appropriately
+	''' </summary>
+	Public Property Rate As Double?
+
+	Public Property SinkEvent As ISystemEvent(Of T) Implements ISystemEventRegister(Of T).SinkEvent
     Get
       Return MySinkEvent
     End Get

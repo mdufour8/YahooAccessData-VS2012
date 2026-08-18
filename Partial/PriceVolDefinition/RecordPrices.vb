@@ -1,4 +1,5 @@
 ﻿Imports System.IO
+Imports System.Text.Json
 Imports MathNet.Filtering
 Imports WebEODData
 Imports YahooAccessData.ExtensionService
@@ -1675,6 +1676,40 @@ Public Class RecordPrices
 
 	Public Function ToListOfCumulativeLogGain() As List(Of StockPriceVol)
 		Return MyListOfCumulativeLogGain
+	End Function
+
+	''' <summary>
+	''' Apply a fixed interest rate to the the cumulative log gain. This can be use for example 
+	''' with the CASH 0% bond to simulate the effect of interest rate on the expected cash value of the bond. 
+	''' This function will also cumulativly superimpose an interest rate to a stock gain andc an be used to remove or add the effect of a dividend
+	''' on the stock price 
+	''' </summary>
+	''' <param name="InterestRatePerYear"></param>
+	'''		The interest rate is a percentage that is applied to the stock price or here the gain of the stock, it can 
+	'''		be positive or negative, and it is applied cumulativly on a daily basic.
+	''' <returns></returns>
+	Public Function ToListOfCumulativeLogGain(InterestRatePerYear As Double) As List(Of StockPriceVol)
+		If InterestRatePerYear = 0 Then Return MyListOfCumulativeLogGain
+
+		Dim totalDays As Integer = If(DateTime.IsLeapYear(Now.Year), 366, 365)
+		Dim ThisRateFactorPerDay = InterestRatePerYear / totalDays
+		Dim ThisDateFirst As Date = MyListOfCumulativeLogGain.First.DateDay
+		'copy the data and apply the interest rate to the stock price, this is done by adding a fixed interest rate to the stock price for each day
+		Dim ThisListOfStockPriceVol = MyListOfCumulativeLogGain.Select(
+			Function(item)
+				Dim ThisDateDiff As Integer = (item.DateDay - ThisDateFirst).Days
+				Dim ThisRateFactor As Double = ThisRateFactorPerDay * ThisDateDiff
+				Dim ThisStockPriceVol As New StockPriceVol(item)
+				With ThisStockPriceVol
+					.Open = .Open + ThisRateFactor
+					.High = .High + ThisRateFactor
+					.Low = .Low + ThisRateFactor
+					.Last = .Last + ThisRateFactor
+					MathProcessor.SetHighLow(ThisStockPriceVol)
+				End With
+				Return ThisStockPriceVol
+			End Function).ToList()
+		Return ThisListOfStockPriceVol
 	End Function
 
 	Public Function ToListOfLogGain() As List(Of StockPriceVol)

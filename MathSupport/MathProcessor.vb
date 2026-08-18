@@ -63,7 +63,7 @@ Namespace MathPlus
 
 		Public Shared Function Add(a As Double, b As List(Of StockPriceVol)) As List(Of StockPriceVol)
 			If _
-			b.First.DataType = StockPriceDataType.RawPrice Then
+				b.First.DataType = StockPriceDataType.RawPrice Then
 				'already in log space
 				Throw New InvalidOperationException("Adding is only supported for cumulative log return data sources.")
 			End If
@@ -84,6 +84,10 @@ Namespace MathPlus
 		Public Shared Function Add(a As List(Of StockPriceVol), b As Double) As List(Of StockPriceVol)
 			Return Add(b, a)
 		End Function
+
+		'Public Shared Function Add(a As Double, b As List(Of StockPriceVol)) As List(Of StockPriceVol)
+		'	Return Add(a, b)
+		'End Function
 
 		Public Shared Function Add(a As List(Of StockPriceVol), b As List(Of StockPriceVol), Optional Rho As Double = CORRELATION_HL_RHO_Default) As List(Of StockPriceVol)
 			'try to make the list teh same length if the count difference is only 1 and the shorter list

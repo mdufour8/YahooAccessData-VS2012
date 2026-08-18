@@ -5,6 +5,7 @@ Public Class StockPriceVol
 	Implements IStockPriceVol
 	Implements IStockPriceAdjusted
 	Implements IPriceVol
+	Implements IStockPriceVolExport
 
 	Public Enum StockPriceDataType
 		RawPrice = 0
@@ -455,10 +456,6 @@ Public Class StockPriceVol
 	''' AvgReturn = Sum( Return(i) ) / N
 	''' Growth    = Exp( AvgReturn )
 	'''
-	''' Interpretation:
-	'''   LDV equal to 0  -> Normal liquidity
-	'''   LDV greater than 0  -> Above-average participation
-	'''   LDV less than 0  -> Below-average participation
 	'''
 	''' Example:
 	'''   DV = 2 * AvgDV60
@@ -510,11 +507,71 @@ Public Class StockPriceVol
 			Return _IsPriceAdjustedEnabled
 		End Get
 	End Property
-
 	Public Sub SetPriceAdjusted(Enable As Boolean) Implements IStockPriceAdjusted.SetPriceAdjusted
 		Throw New NotImplementedException
 		'_IsPriceAdjustedEnabled = Enable
 	End Sub
 #End Region  '"IStockPriceAdjusted"
+
+#Region "IStockPriceVolExport"
+	Private Property IStockPriceVolExport_DateDay As Date Implements IStockPriceVolExport.DateDay
+		Get
+			Return DateDay
+		End Get
+		Set(value As Date)
+			DateDay = value
+		End Set
+	End Property
+
+	Private Property IStockPriceVolExport_High As Double Implements IStockPriceVolExport.High
+		Get
+			Return High
+		End Get
+		Set(value As Double)
+			High = value
+		End Set
+	End Property
+
+	Private Property IStockPriceVolExport_Open As Double Implements IStockPriceVolExport.Open
+		Get
+			Return Open
+		End Get
+		Set(value As Double)
+			Open = value
+		End Set
+	End Property
+
+	Private Property IStockPriceVolExport_Low As Double Implements IStockPriceVolExport.Low
+		Get
+			Return Low
+		End Get
+		Set(value As Double)
+			Low = value
+		End Set
+	End Property
+
+	Private Property IStockPriceVolExport_Last As Double Implements IStockPriceVolExport.Last
+		Get
+			Return Last
+		End Get
+		Set(value As Double)
+			Last = value
+		End Set
+	End Property
+	Private Property IStockPriceVolExport_Volume As Long Implements IStockPriceVolExport.Volume
+		Get
+			Return Volume
+		End Get
+		Set(value As Long)
+			Volume = value
+		End Set
+	End Property
+
+	Private ReadOnly Property IStockPriceVolExport_LDV As Double Implements IStockPriceVolExport.LDV
+		Get
+			Return Me.LDV()
+		End Get
+	End Property
+#End Region
 End Class
 

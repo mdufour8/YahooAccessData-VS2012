@@ -2,8 +2,8 @@
   Implements IPriceVolShort
 
   Public Sub New()
-    Me.DateStamp = Now
-    Me.Open = 0.0
+		Me.DateDay = Now
+		Me.Open = 0.0
     Me.Low = 0.0
     Me.High = 0.0
     Me.Last = 0.0
@@ -16,8 +16,8 @@
 
   Public Sub New(ByRef PriceVol As IPriceVol)
     With PriceVol
-      Me.DateStamp = .DateDay
-      Me.Open = .Open
+			Me.DateDay = .DateDay
+			Me.Open = .Open
       Me.Low = .Low
       Me.High = .High
       Me.Last = .Last
@@ -31,8 +31,8 @@
     End Get
   End Property
 
-  Public Property DateStamp As Date Implements IPriceVolShort.DateStamp
-  Public Property Open As Single Implements IPriceVolShort.Open
+	Public Property DateDay As Date Implements IPriceVolShort.DateDay
+	Public Property Open As Single Implements IPriceVolShort.Open
   Public Property High As Single Implements IPriceVolShort.High
   Public Property Low As Single Implements IPriceVolShort.Low
   Public Property Last As Single Implements IPriceVolShort.Last

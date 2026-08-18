@@ -4,6 +4,7 @@
 Imports System.IO
 Imports System.Threading
 Imports System.Threading.Tasks
+Imports System.Windows.Forms.VisualStyles.VisualStyleElement.ToolTip
 Imports Newtonsoft.Json.Linq
 Imports SharedContracts
 Imports StockViewInterface
@@ -339,6 +340,12 @@ Partial Public Class Stock
 	End Function
 
 
+	''' <summary>
+	''' function not used anymore; use WebRefreshRecordNewAsync
+	''' </summary>
+	''' <param name="DateStart"></param>
+	''' <param name="DateStop"></param>
+	''' <returns></returns>
 	Public Async Function WebRefreshRecordAsync(DateStart As Date, DateStop As Date) As Task(Of IResponseStatus(Of Date))
 		Dim ThisWebDataSource = Me.Report.WebDataSource
 		Dim IsLastRecordLive As Boolean
@@ -374,6 +381,7 @@ Partial Public Class Stock
 		Dim ThisDateOfNextTrading = ThisWebDataSource.DayTimeOfNextTrading(ThisWebEOD.ExchangeCode, DateValue:=ThisRecordDateStop)
 		Dim IsLiveUpdateReady = ThisWebDataSource.IsLiveUpdateReady(ThisWebEOD.ExchangeCode, DateValue:=ThisRecordDateStop)
 		Dim ThisWebDateStart As Date
+
 		If _Records.Count = 0 Then
 			'reset the date
 			ThisWebDateStart = Me.DateStart
@@ -609,6 +617,12 @@ Partial Public Class Stock
 		Dim IsLiveUpdateReady = ThisWebDataSource.IsLiveUpdateReady(ThisWebEOD.ExchangeCode, DateValue:=DateStop)
 		Dim ThisWebDateStart As Date
 		Dim ThisWebDateStop As Date
+
+
+		'If Me.Rate <> MyRecordQuoteValues.Rate Then
+		'	'clear the record and get new values with the new rate factor
+		'	_Records.Clear()
+		'End If
 		If _Records.Count = 0 Then
 			'reset the date
 			Me.DateStart = DateStart
@@ -748,6 +762,36 @@ Partial Public Class Stock
 						IsLastRecordLive = False
 					End If
 					If ThisListOfStockQuote.Count > 0 Then
+						Dim ThisStockQuoteDateLast As Date = ThisListOfStockQuote.Last.DateTime
+						If ThisStockQuoteDateLast.Date > Now.Date Then
+							ThisListOfStockQuote.RemoveAt(ThisListOfStockQuote.Count - 1)
+						End If
+						'for now do not use the rate here because it is not clear how to use it properly. The rate is used to adjust the stock price to a desired value. But the rate is not always available and hence it is not clear how to use it properly. The rate is also not always accurate and hence it is not clear how to use it properly. The rate is also not always available and hence it is not clear how to use it properly.
+						'it appear that it is better to use the rate in the EvaluateRPN_Stock function in the RPN calculator.
+						'Keep this code here for now but do not use unless some other requirement change this perpective.
+						'If Me.Rate.HasValue Then
+						'	'we may also have a rate assigned to the stock
+						'	'this require to add a rate factor to the stock price to adjust the price to the desired current value form
+						'	'the rate need to be adjusted in reverse so that the current price is not affected by the rate factor.
+						'	'The rate factor is used to adjust the price to a desired value
+						'	Dim ThisRateFactorPerDay As Double
+						'	ThisRateFactorPerDay = Me.Rate.Value / 365
+						'	Dim ThisDateLast As Date = ThisListOfStockQuote.Last.DateTime
+						'	For Each StockItem As StockQuote In ThisListOfStockQuote
+						'		Dim ThisDateDiff As Integer = (ThisDateLast - StockItem.DateTime).Days
+						'		Dim ThisRateFactor As Double = Math.Exp(-ThisRateFactorPerDay * ThisDateDiff)
+						'		'special interface allowing some adjustment to the stock quote data.
+						'		'this is used to adjust the stock price to a desired value
+						'		With StockItem.AsStockQuoteValidate
+						'			.SetOpen(StockItem.Open * ThisRateFactor)
+						'			.SetHigh(StockItem.High * ThisRateFactor)
+						'			.SetLow(StockItem.Low * ThisRateFactor)
+						'			.SetClose(StockItem.Close * ThisRateFactor)
+						'		End With
+						'	Next
+						'End If
+						'MyRecordQuoteValues.Rate = Me.Rate
+
 						'new data record available for this stock
 						'tranform the StockQuote to a local record type
 						Dim ThisListOfRecord = ThisListOfStockQuote.ToListOfRecord(StockReference:=Me)

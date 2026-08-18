@@ -1335,6 +1335,17 @@ Namespace ExtensionService
 				Return CInt(Value)
 			End If
 		End Function
+
+		<Extension>
+		Public Function ToIntegerSafe(ByVal Value As Double) As Integer
+			If Value > Integer.MaxValue Then
+				Return Integer.MaxValue
+			ElseIf Value < Integer.MinValue Then
+				Return Integer.MinValue
+			Else
+				Return CInt(Value)
+			End If
+		End Function
 #End Region
 
 #Region "StockSymbols"
